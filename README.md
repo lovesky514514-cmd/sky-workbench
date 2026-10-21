@@ -1,23 +1,38 @@
-# SKY Workbench 2.0.0 — public-source review snapshot
+<p align="center">
+  <img src="frontend/src/assets/brand/workbench-icon-256.png" width="96" alt="SKY Workbench logo">
+</p>
 
-This is a **sanitized source snapshot prepared for final release review**, not yet a published release. Owned first-party code is offered under Apache-2.0; publication of the full distribution remains gated. The first-party license, COMSOL integration distribution rights, third-party redistribution obligations, branding rights, and exact security exceptions require owner approval before this repository or its installer may be made public.
+<h1 align="center">SKY Workbench</h1>
 
-SKY Workbench is a local-first Windows scientific modeling workbench. Its React/TypeScript frontend, Rust/Tauri desktop shell, Python scientific Runtime, and Java COMSOL bridge remain separate. The owner selected CC BY 4.0 for licensable original desktop-pet and icon artwork; overall software publication remains gated. This snapshot does not include COMSOL, a COMSOL license, proprietary knowledge-base documents, user models, credentials, or local-model weights.
+<p align="center">A local-first scientific workflow assistant for planning, running, and reviewing COMSOL models.</p>
 
-## Repository map
+<p align="center">本地优先的 COMSOL 科学工作流助手：从建模计划、受控执行到结果证据复核。</p>
 
-- `frontend/src`: application UI; `frontend/src-tauri`: Tauri shell and resource declarations.
-- `backend/app`: scientific Runtime; `backend/tests`: source-level regression tests.
-- `java_bridge/src`: COMSOL-adjacent Java bridge source; requires the user's licensed COMSOL environment to execute.
-- `scripts` and `packaging`: build and historical compatibility scripts.
-- `frontend/src-tauri/resources/licenses`: unmodified third-party licenses, notices, and covered-source packages. Do not remove these to make a scan pass.
+SKY Workbench combines a React/TypeScript interface, a Rust/Tauri desktop shell, a Python scientific runtime, and a Java bridge to a separately installed COMSOL. It keeps command execution, model-state readback, and scientific validation as distinct results. A successful command alone is **not** a verified scientific result.
 
-Build status and limitations are in [BUILDING.md](BUILDING.md). The final targeted-fix internal Setup SHA-256 is `FA21A4EB43ADBD7895699D27E319BBE6356BB307035DC21137E9C43F5EA52DFB`; its sidecar SHA-256 is `89ED868FFB28D2EBF54F5F4D33CF902BF8C50D20CE76629D85203DF4451D2FEF`. Prior candidates remain separate historical evidence. This source snapshot corresponds to the new candidate's first-party code and resources, but does not include frozen binaries or prove byte-for-byte reproducibility. It is not authorized for GitHub or public download.
+> **Release status:** This is a sanitized V2.0 source-review snapshot, not a published release. Do not present its internal installer as a public download. The repository does not include COMSOL, a COMSOL license, proprietary knowledge-base documents, private models, credentials, or local-model weights.
 
-## Licensing and release boundary
+## Start here
 
-Owned first-party code: [Apache-2.0](LICENSE) (Copyright 2026 SuKoYa).
-Artwork: [CC BY 4.0 provenance](docs/ASSET_LICENSE.md). Third-party
-components retain their own licenses in `frontend/src-tauri/resources/licenses`.
-[COMSOL workflow scope](docs/COMSOL_DISTRIBUTION_SCOPE.md) and
-[MIT history](docs/HISTORICAL_LICENSES.md).
+- [Windows installation and first launch](docs/INSTALL_WINDOWS.md) — current internal-candidate instructions; public download is not yet available.
+- [User guide](docs/USER_GUIDE.md) — projects, plans, evidence, and safe interruption.
+- [Help and troubleshooting](docs/TROUBLESHOOTING.md) — environment checks, logs, recovery, and support information.
+- [Build from source](BUILDING.md) — exact toolchain boundary and unverified reproducibility limits.
+
+Users must provide their own valid COMSOL 6.3 installation and license for real COMSOL execution. Local Ollama/model availability is detected, not assumed; missing capabilities are shown as unavailable. The desktop interface can open without COMSOL, but a real COMSOL run cannot be claimed in that state.
+
+## Source layout
+
+| Path | Purpose |
+| --- | --- |
+| `frontend/src` | Desktop interface and task views |
+| `frontend/src-tauri` | Tauri shell, owned-process lifecycle, and release resources |
+| `backend/app` | Scientific runtime, validation, and run evidence |
+| `java_bridge/src` | Bridge source used with the user's COMSOL installation |
+| `scripts`, `packaging` | Build and packaging inputs |
+
+## Licensing and distribution
+
+First-party code is offered under [Apache-2.0](LICENSE) by SuKoYa. Licensable original artwork has separate [CC BY 4.0 provenance](docs/ASSET_LICENSE.md). Historical [MIT notices](docs/HISTORICAL_LICENSES.md) and third-party licenses/NOTICE files remain with their respective components in `frontend/src-tauri/resources/licenses` and must not be removed. [COMSOL integration scope](docs/COMSOL_DISTRIBUTION_SCOPE.md) describes the distribution boundary; this project is not an official COMSOL product or a substitute for a COMSOL license.
+
+Publication of the complete distribution and installer remains subject to release approval. The internal targeted-fix Setup SHA-256 is `FA21A4EB43ADBD7895699D27E319BBE6356BB307035DC21137E9C43F5EA52DFB`; its sidecar SHA-256 is `89ED868FFB28D2EBF54F5F4D33CF902BF8C50D20CE76629D85203DF4451D2FEF`. These hashes identify internal evidence, **not** an authorized public download or a byte-for-byte reproducible build from this source archive.
