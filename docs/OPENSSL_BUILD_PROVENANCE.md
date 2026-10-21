@@ -11,3 +11,19 @@ The packaged Python `_ssl` and `_hashlib` extensions require the OpenSSL 3 ABI. 
 - Byte scan of the two candidate DLLs found zero references to the private workspace path and zero Windows user-directory paths. The neutral mapped `R:\` build path remains in debug/assertion metadata (7 and 3 occurrences respectively); it contains no personal identity. These are unsigned, locally built DLLs and must not be described as vendor-signed.
 
 The library license text is the unchanged upstream Apache-2.0 text. The exact source archive, toolchain archive, build logs and resulting DLLs are retained outside the public source snapshot. This record establishes engineering provenance only; it is not legal approval for the full COMSOL-integrated application or a security exception sign-off for a future installer.
+
+The first frozen Bridge probe exposed a separate Python packaging defect: this
+builder's CPython 3.12.14 `ssl.py` had four local lines loading an internal PEM
+file not present in the distributable. The official CPython 3.12.14 source
+archive (SHA-256 `5C8462AF5790BAF43A321A1559DBE0DB06D1BE4300FB85FB53C40060668E548A`)
+was fetched from python.org. Its unmodified `Lib/ssl.py` (SHA-256
+`039A0E3F1782E14824B1624C7FFEFC2DE31714B4A9994424BE45A4271966097C`)
+and original LICENSE are retained in `packaging/vendor/python-3.12.14/`.
+PyInstaller replaces only the `ssl` pure module with that exact upstream file;
+it retains normal TLS verification and the bundled certifi CA data. The
+existing bundled CPython LICENSE contains the official 3.12.14 LICENSE text
+as an exact prefix. The repaired frozen sidecar's native self-test constructed
+an HTTPX TLS context successfully, and a separate COMSOL 6.3 Java Bridge
+read-only model-tree probe returned verified readback while direct missing and
+incorrect Bridge credentials were rejected with HTTP 401. This is a targeted
+verification, not a claim that every COMSOL workflow passed.

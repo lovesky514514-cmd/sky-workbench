@@ -16,3 +16,5 @@
 # These third-party notice files are hash-pinned to their upstream bytes.
 # Keep their original line endings when archiving or checking out source.
 frontend/src-tauri/resources/licenses/** -text
+# The verified upstream CPython replacement is also hash-pinned at build time.
+packaging/vendor/python-3.12.14/** -text

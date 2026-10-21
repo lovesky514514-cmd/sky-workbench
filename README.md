@@ -12,7 +12,7 @@ SKY Workbench is a local-first Windows scientific modeling workbench. Its React/
 - `scripts` and `packaging`: build and historical compatibility scripts.
 - `frontend/src-tauri/resources/licenses`: unmodified third-party licenses, notices, and covered-source packages. Do not remove these to make a scan pass.
 
-Build status and limitations are in [BUILDING.md](BUILDING.md). The OpenSSL-updated internal Setup SHA-256 is `7C4F1886D4A57C3F9A4DDF7D2F706506C28F19EB975B9477B205CDF1158E8A58`; its sidecar SHA-256 is `CE8E1412E791F68198D3426C7685C27D2208F8AB387534374A21478302DFC183`. The previous Setup and sidecar remain separate historical evidence. This source snapshot corresponds to the new candidate's first-party code and resources, but does not include frozen binaries or prove byte-for-byte reproducibility. It is not authorized for GitHub or public download.
+Build status and limitations are in [BUILDING.md](BUILDING.md). The final targeted-fix internal Setup SHA-256 is `FA21A4EB43ADBD7895699D27E319BBE6356BB307035DC21137E9C43F5EA52DFB`; its sidecar SHA-256 is `89ED868FFB28D2EBF54F5F4D33CF902BF8C50D20CE76629D85203DF4451D2FEF`. Prior candidates remain separate historical evidence. This source snapshot corresponds to the new candidate's first-party code and resources, but does not include frozen binaries or prove byte-for-byte reproducibility. It is not authorized for GitHub or public download.
 
 ## Licensing and release boundary
 

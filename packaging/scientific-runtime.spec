@@ -21,6 +21,12 @@ datas = [
 ]
 datas.extend(collect_data_files("mph"))
 datas.extend(collect_data_files("tzdata"))
+# HTTPX constructs its TLS context even for the loopback Java Bridge client.
+# The frozen Runtime must carry certifi's CA file, not point into the build venv.
+certifi_data = collect_data_files("certifi")
+if len([row for row in certifi_data if Path(row[0]).name.lower() == "cacert.pem"]) != 1:
+    raise RuntimeError("Expected exactly one certifi CA bundle in the frozen Runtime")
+datas.extend(certifi_data)
 datas.extend(copy_metadata("tzdata"))
 license_root = root / "frontend" / "src-tauri" / "resources" / "licenses"
 if not (license_root / "LICENSE_MANIFEST.json").is_file():
@@ -37,6 +43,21 @@ analysis = Analysis(
     runtime_hooks=[],
     excludes=["pytest"],
     noarchive=False,
+)
+# The build interpreter is CPython 3.12.14 with one vendor-local ssl.py
+# modification that loads an internal PEM absent from redistributable Python.
+# Replace that single module with the checksum-pinned official 3.12.14 source;
+# the standard certificate verification path and bundled certifi stay enabled.
+official_ssl = root / "packaging" / "vendor" / "python-3.12.14" / "ssl.py"
+official_ssl_hash = "039A0E3F1782E14824B1624C7FFEFC2DE31714B4A9994424BE45A4271966097C"
+if not official_ssl.is_file() or sha256(official_ssl.read_bytes()).hexdigest().upper() != official_ssl_hash:
+    raise RuntimeError("Official CPython 3.12.14 ssl.py source is missing or changed")
+ssl_entries = [row for row in analysis.pure if row[0] == "ssl"]
+if len(ssl_entries) != 1:
+    raise RuntimeError("Expected exactly one Python ssl module")
+analysis.pure = TOC(
+    (name, str(official_ssl) if name == "ssl" else source, kind)
+    for name, source, kind in analysis.pure
 )
 # Local wheel provenance and uv cache hints are build-only metadata. The
 # exact frozen tzdata version is pinned here so dependency drift fails closed;

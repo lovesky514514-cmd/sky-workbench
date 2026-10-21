@@ -85,7 +85,7 @@ Copy-Item -LiteralPath $semanticSource -Destination (Join-Path $semanticTarget '
 # This isolated candidate accepts only the exact OpenSSL-updated sidecar tested
 # for local Runtime health and authentication; public approval remains separate.
 if ($FrozenSidecarPath) {
-  $expectedFrozenHash = 'CE8E1412E791F68198D3426C7685C27D2208F8AB387534374A21478302DFC183'
+  $expectedFrozenHash = '89ED868FFB28D2EBF54F5F4D33CF902BF8C50D20CE76629D85203DF4451D2FEF'
   if (-not (Test-Path -LiteralPath $FrozenSidecarPath -PathType Leaf)) {
     throw 'SKY_FROZEN_SIDECAR_PATH does not identify a file.'
   }

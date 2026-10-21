@@ -1,6 +1,6 @@
 # Windows installation draft — not yet publicly approved
 
-Current OpenSSL-updated SKY Workbench V2.0 internal candidate Setup SHA-256: `7C4F1886D4A57C3F9A4DDF7D2F706506C28F19EB975B9477B205CDF1158E8A58`. Stop if the file differs. This is an internal candidate only; it does not authorize public distribution.
+Current targeted-fix SKY Workbench V2.0 internal candidate Setup SHA-256: `FA21A4EB43ADBD7895699D27E319BBE6356BB307035DC21137E9C43F5EA52DFB`. Stop if the file differs. This is an internal candidate only; it does not authorize public distribution.
 
 The workbench targets Windows 11 x64. It does not bundle COMSOL or a COMSOL license; scientific execution requires a separately licensed installation. It also does not bundle Ollama model weights. The Setup includes a WebView2 Evergreen bootstrapper, which may download the runtime if absent, so a machine without WebView2 may require network access.
 
