@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://comsol-workbench.local/schemas/context-snapshot-v2.json",
+  "title": "ContextSnapshot",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "session_id", "state", "plan", "model", "facts", "active_run", "assumptions", "validated_memories", "recent_events", "canonical_hash"],
+  "properties": {
+    "schema_version": {"const": 2},
+    "session_id": {"type": "string"},
+    "state": {"type": "string"},
+    "plan": {"type": ["object", "null"]},
+    "model": {"type": ["object", "null"]},
+    "facts": {"type": "object", "additionalProperties": {"type": "object", "required": ["value", "provenance", "fact_id"]}},
+    "active_run": {"type": ["object", "null"]},
+    "assumptions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["assumption_id", "run_id", "attempt_id", "plan_node_id", "choice", "reason", "source", "confidence", "user_confirmed", "affected_nodes", "decision", "executable"]
+      }
+    },
+    "validated_memories": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["memory_id", "type", "content", "provenance", "validation_status", "version_scope", "applicability"]
+      }
+    },
+    "recent_events": {"type": "array", "items": {"type": "object"}, "maxItems": 100},
+    "canonical_hash": {"type": "string", "pattern": "^[a-f0-9]{64}$"}
+  }
+}

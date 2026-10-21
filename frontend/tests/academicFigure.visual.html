@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>Academic figure visual QA · illustrative only</title>
+<style>body{margin:0;background:#e7eceb;font:16px Segoe UI,sans-serif;padding:24px}img{display:block;max-width:100%;margin:auto;box-shadow:0 8px 24px #8998a244}p{text-align:center}</style>
+<p>VISUAL QA ONLY · GENERATED ILLUSTRATION · NOT SCIENTIFIC EVIDENCE</p>
+<div id="preview">Rendering…</div>
+<script type="module">
+  import { renderAcademicFigure } from '../src/components/academicFigure.ts'
+  const source = document.createElement('canvas')
+  source.width = 900; source.height = 500
+  const context = source.getContext('2d')
+  const field = context.createLinearGradient(0, 0, 900, 0)
+  field.addColorStop(0, '#e45748'); field.addColorStop(.5, '#f6ce62'); field.addColorStop(1, '#4c87c5')
+  context.fillStyle = field; context.fillRect(0, 0, 900, 500)
+  context.fillStyle = '#15242c'; context.font = 'bold 32px Segoe UI'
+  context.fillText('ILLUSTRATIVE FIELD · NO COMSOL DATA', 95, 250)
+  const blob = await renderAcademicFigure({ source: source.toDataURL('image/png'), title: 'Illustrative temperature field', quantity: 'Temperature', unit: 'K', filename: 'illustration.png', runId: 'visual-qa-only', originalSha256: '0'.repeat(64) })
+  const image = document.createElement('img')
+  image.src = URL.createObjectURL(blob)
+  image.alt = 'Illustrative academic figure sheet'
+  image.onload = () => { document.title = `Figure visual QA · ${image.naturalWidth}×${image.naturalHeight}` }
+  document.getElementById('preview').replaceWith(image)
+</script>
+</html>

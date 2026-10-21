@@ -1,0 +1,59 @@
+{
+  "schema_version": "phase2-benchmark-framework-v1",
+  "purpose": "Define future evidence contracts without claiming executable support.",
+  "scientific_claims": "PROHIBITED_UNTIL_REAL_EVIDENCE",
+  "execution_policy": "No case may enter the production workflow registry from this file.",
+  "required_gate_fields": [
+    "command_success",
+    "model_state_verified",
+    "scientific_validation_passed",
+    "evidence_contract_passed"
+  ],
+  "cases": [
+    {
+      "case_id": "3d-block-heat-001",
+      "family": "3D_GEOMETRY",
+      "workflow_id": "heat_transfer_3d_stationary",
+      "geometry": "block",
+      "status": "FRAMEWORK_ONLY_UNVERIFIED",
+      "scientific_validation_passed": false,
+      "evidence_required": ["geometry_readback", "material_readback", "boundary_selection_readback", "mesh_dof", "solver_convergence", "finite_results", "energy_balance"]
+    },
+    {
+      "case_id": "3d-cylinder-tds-001",
+      "family": "3D_GEOMETRY",
+      "workflow_id": "tds_3d_stationary_diffusion",
+      "geometry": "cylinder",
+      "status": "FRAMEWORK_ONLY_UNVERIFIED",
+      "scientific_validation_passed": false,
+      "evidence_required": ["geometry_readback", "diffusivity_readback", "boundary_selection_readback", "mesh_dof", "solver_convergence", "finite_results", "maximum_principle"]
+    },
+    {
+      "case_id": "3d-hole-solid-001",
+      "family": "3D_GEOMETRY",
+      "workflow_id": "solid_mechanics_3d_hole",
+      "geometry": "block_with_hole",
+      "status": "FRAMEWORK_ONLY_UNVERIFIED",
+      "scientific_validation_passed": false,
+      "evidence_required": ["topology_readback", "material_readback", "constraint_selection_readback", "mesh_dof", "solver_convergence", "finite_results", "reaction_balance"]
+    },
+    {
+      "case_id": "assembly-contact-001",
+      "family": "ASSEMBLY_MULTIPHYSICS",
+      "workflow_id": "assembly_contact_unregistered",
+      "geometry": "two_part_assembly",
+      "status": "FRAMEWORK_ONLY_UNVERIFIED",
+      "scientific_validation_passed": false,
+      "evidence_required": ["part_identity_readback", "pair_selection_readback", "continuity_or_contact_readback", "mesh_dof", "solver_convergence", "finite_results"]
+    },
+    {
+      "case_id": "heat-tds-3d-001",
+      "family": "MULTIPHYSICS_3D",
+      "workflow_id": "heat_tds_3d_coupling",
+      "geometry": "block",
+      "status": "FRAMEWORK_ONLY_UNVERIFIED",
+      "scientific_validation_passed": false,
+      "evidence_required": ["coupling_expression_readback", "temperature_artifact_identity", "tds_parameter_readback", "mesh_dof", "solver_convergence", "finite_results", "coupled_invariants"]
+    }
+  ]
+}

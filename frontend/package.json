@@ -1,0 +1,27 @@
+{
+  "name": "sky-workbench-ui",
+  "private": true,
+  "version": "2.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "check": "tsc --noEmit -p tsconfig.app.json",
+    "build": "tsc --noEmit -p tsconfig.app.json && vite build",
+    "preview": "vite preview --host 127.0.0.1",
+    "desktop:prepare": "powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File ../scripts/prepare_desktop.ps1",
+    "tauri": "tauri"
+  },
+  "dependencies": {
+    "react": "19.1.1",
+    "react-dom": "19.1.1",
+    "@tauri-apps/api": "2.11.1"
+  },
+  "devDependencies": {
+    "@types/react": "19.1.10",
+    "@types/react-dom": "19.1.7",
+    "@vitejs/plugin-react": "5.0.2",
+    "@tauri-apps/cli": "2.11.4",
+    "typescript": "5.9.2",
+    "vite": "7.3.6"
+  }
+}

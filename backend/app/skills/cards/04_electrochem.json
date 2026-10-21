@@ -1,0 +1,20 @@
+{
+  "skill_id": "electrochem-primary-current-v1",
+  "title": "2D primary current distribution",
+  "workflow_id": "electrochem_primary_current",
+  "provenance": [{"kind": "PROJECT_VALIDATED_WORKFLOW", "title": "Workbench Electrochem workflow contract", "locator": "backend/app/comsol/electrochem_worker.py", "license": "MIT project source"}],
+  "applicability": ["2D electrolyte rectangle", "constant conductivity", "two explicit potential boundaries", "stationary study"],
+  "assumptions": ["homogeneous electrolyte", "remaining boundaries insulated"],
+  "equations": ["J = -sigma grad(phi)"],
+  "quantities_and_units": {"length": "m", "conductivity": "S/m", "potential": "V"},
+  "geometry_procedure": ["Create a parameterized rectangle"],
+  "material_procedure": ["Assign explicit electrolyte conductivity"],
+  "selection_procedure": ["Resolve named potential edges by coordinates"],
+  "boundary_procedure": ["Apply explicit left/right potentials and insulation elsewhere"],
+  "mesh_and_solver": ["Physics-controlled mesh", "Stationary study"],
+  "common_mistakes": ["Inventing boundaries from two unlabeled voltages", "Wrong conductivity unit"],
+  "mandatory_readback": ["physics interface", "conductivity", "potential selections", "mesh/DOF", "solver status"],
+  "invariants": ["Finite potential/current", "potential is bounded", "linear potential", "Ohm-law current agreement"],
+  "escalation": ["Unlabeled potentials", "missing conductivity", "license unavailable"],
+  "confidence": 0.9
+}

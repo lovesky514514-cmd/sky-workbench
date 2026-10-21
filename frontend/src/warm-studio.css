@@ -1,0 +1,1076 @@
+/* Warm Scientific Studio design tokens are the sole visual source for this shell. */
+.warm-studio{
+  --warm-window:#f5f2eb;
+  --warm-navigation:#ede9e1;
+  --warm-surface:#fbf8f2;
+  --warm-border:#ddd8ce;
+  --warm-text:#30362f;
+  --warm-muted:#6a7067;
+  --warm-accent:#3f6b5c;
+  --warm-primary:#34473b;
+  --warm-viewport:#202e30;
+  display:grid;
+  grid-template-columns:200px minmax(0,1fr);
+  grid-template-rows:60px minmax(0,1fr);
+  min-height:100vh;
+  min-height:100dvh;
+  color:var(--warm-text);
+  background:var(--warm-window);
+  font:16px/1.45 'Segoe UI',Arial,sans-serif
+}
+
+.warm-studio *{
+  box-sizing:border-box
+}
+.warm-studio button,.warm-studio textarea{
+  font:inherit
+}
+.warm-studio button{
+  cursor:pointer
+}
+.warm-studio button:disabled{
+  cursor:not-allowed;
+  opacity:.5
+}
+.warm-studio h1,.warm-studio h2,.warm-studio p{
+  margin:0
+}
+.warm-studio h1{
+  font-size:28px;
+  font-weight:600;
+  letter-spacing:-.03em
+}
+.warm-studio h2{
+  font-size:21px;
+  font-weight:600;
+  letter-spacing:-.02em
+}
+.warm-studio small{
+  font-size:13px
+}
+.warm-studio code{
+  overflow-wrap:anywhere;
+  font-size:12px
+}
+
+/* A single quiet header anchors all three design-package screens. */
+.warm-header{
+  grid-column:1/-1;
+  display:flex;
+  align-items:center;
+  gap:23px;
+  padding:0 28px 0 16px;
+  border-bottom:1px solid var(--warm-border);
+  background:var(--warm-window);
+  min-width:0
+}
+.warm-brand{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  white-space:nowrap;
+  font-size:17px
+}
+.warm-brand strong{
+  font-weight:700
+}
+.warm-brand span{
+  font-weight:400
+}
+.warm-brand img{
+  object-fit:contain
+}
+.warm-header-divider{
+  height:26px;
+  width:1px;
+  background:var(--warm-border);
+  margin-left:8px
+}
+.warm-workspace-label{
+  font-size:14px;
+  color:var(--warm-muted);
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap
+}
+.warm-header-actions{
+  display:flex;
+  align-items:center;
+  gap:22px;
+  margin-left:auto;
+  white-space:nowrap;
+  font-size:14px;
+  color:var(--warm-muted)
+}
+.warm-connection{
+  display:flex;
+  align-items:center;
+  gap:9px
+}
+.warm-connection i{
+  width:7px;
+  height:7px;
+  border-radius:50%;
+  background:#9c9b93
+}
+.warm-connection.is-connected i{
+  background:var(--warm-accent)
+}
+.warm-language{
+  border:0;
+  background:none;
+  color:var(--warm-muted);
+  font-size:13px!important
+}
+.warm-more{
+  position:relative
+}
+.warm-more summary{
+  cursor:pointer;
+  list-style:none;
+  font-size:18px
+}
+.warm-more summary::-webkit-details-marker{
+  display:none
+}
+.warm-more>div{
+  position:absolute;
+  right:0;
+  top:32px;
+  z-index:20;
+  width:170px;
+  padding:8px;
+  background:var(--warm-surface);
+  border:1px solid var(--warm-border);
+  box-shadow:0 14px 32px #30362f20;
+  border-radius:10px
+}
+.warm-more button{
+  display:block;
+  width:100%;
+  padding:9px 10px;
+  text-align:left;
+  background:none;
+  border:0;
+  color:var(--warm-text)
+}
+.warm-more button:hover{
+  background:#e9ece4
+}
+
+/* Recent work stays navigable without taking space from the scientific canvas. */
+.warm-rail{
+  grid-row:2;
+  display:flex;
+  flex-direction:column;
+  min-height:0;
+  padding:28px 12px 22px;
+  background:var(--warm-navigation);
+  border-right:1px solid var(--warm-border)
+}
+.warm-new-task{
+  height:40px;
+  margin:0 4px 34px;
+  border:1px solid var(--warm-border);
+  border-radius:8px;
+  background:var(--warm-surface);
+  color:var(--warm-text);
+  font-weight:600;
+  font-size:14px!important
+}
+.warm-new-task:hover{
+  border-color:var(--warm-accent)
+}
+.warm-rail-caption{
+  margin:0 12px 12px;
+  font-size:12px;
+  color:var(--warm-muted);
+  letter-spacing:.02em
+}
+.warm-recent-list{
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+  max-height:45vh;
+  overflow:auto
+}
+.warm-recent-item{display:flex;align-items:stretch;gap:2px;min-width:0}
+.warm-recent-item>button:first-child{flex:1;min-width:0}
+.warm-recent-list .warm-archive-task{width:28px;flex:0 0 28px;padding:0;text-align:center;font-size:19px;color:var(--warm-muted)}
+.warm-recent-list .warm-archive-task:hover{color:#ad4b43;background:#f2e2df}
+.warm-recent-list button,.warm-project-list button{
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+  width:100%;
+  padding:11px 12px;
+  text-align:left;
+  border:0;
+  border-radius:8px;
+  background:transparent;
+  color:var(--warm-text)
+}
+.warm-recent-list button:hover,.warm-project-list button:hover{
+  background:#e7e8de
+}
+.warm-recent-list button.is-current,.warm-project-list button.is-current{
+  background:#dfe6dc
+}
+.warm-recent-list strong{
+  font-size:14px;
+  font-weight:600;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap
+}
+.warm-recent-list small{
+  color:var(--warm-muted)
+}
+.warm-all-projects{
+  display:flex;
+  gap:10px;
+  align-items:center;
+  width:100%;
+  margin-top:12px;
+  padding:10px 12px;
+  border:0;
+  background:none;
+  text-align:left;
+  color:var(--warm-muted);
+  font-size:14px!important
+}
+.warm-project-list{
+  max-height:145px;
+  overflow:auto
+}
+.warm-project-list button{
+  font-size:13px!important
+}
+.warm-rail-settings{
+  display:flex;
+  gap:11px;
+  align-items:center;
+  width:100%;
+  margin-top:auto;
+  padding:10px 12px;
+  border:0;
+  background:none;
+  text-align:left;
+  color:var(--warm-muted);
+  font-size:14px!important
+}
+
+/* The primary surface is spacious;
+   ancillary detail is revealed by page choice. */
+.warm-main{
+  display:flex;
+  flex-direction:column;
+  min-width:0;
+  min-height:0;
+  padding:0 24px
+}
+.warm-tabs{
+  flex:0 0 49px;
+  display:flex;
+  justify-content:space-between;
+  align-items:stretch;
+  border-bottom:1px solid var(--warm-border);
+  color:var(--warm-muted);
+  font-size:14px
+}
+.warm-tabs>div{
+  display:flex;
+  gap:58px
+}
+.warm-tabs button{
+  position:relative;
+  padding:0;
+  border:0;
+  background:none;
+  color:inherit;
+  font-size:14px!important
+}
+.warm-tabs button.is-active{
+  color:var(--warm-text);
+  font-weight:600
+}
+.warm-tabs button.is-active:after{
+  content:'';
+  position:absolute;
+  bottom:-1px;
+  left:0;
+  right:0;
+  height:2px;
+  background:var(--warm-primary)
+}
+.warm-tabs>span{
+  align-self:center;
+  max-width:280px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap
+}
+.warm-page{
+  flex:1;
+  min-height:0;
+  overflow:auto;
+  padding-top:22px
+}
+.warm-page-heading{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:20px;
+  margin-bottom:24px
+}
+.warm-page-heading p{
+  margin-top:3px;
+  color:var(--warm-muted);
+  font-size:14px
+}
+.warm-status-pill{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width:192px;
+  margin-top:6px;
+  padding:5px 18px;
+  background:#eeece6;
+  border-radius:999px;
+  color:var(--warm-muted);
+  font-size:13px;
+  text-align:center
+}
+.warm-status-pill.needs-review{
+  background:#f7e9cd;
+  color:#926422
+}
+.warm-status-pill.is-verified{
+  background:#dfe8dc;
+  color:var(--warm-accent)
+}
+.warm-page-footer{
+  flex:0 0 33px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:15px;
+  border-top:1px solid var(--warm-border);
+  font-size:12px;
+  color:var(--warm-muted);
+  white-space:nowrap
+}
+.warm-primary{
+  border:1px solid var(--warm-primary)!important;
+  background:var(--warm-primary)!important;
+  color:#fff!important
+}
+.warm-primary:hover:not(:disabled){
+  background:#263b30!important
+}
+
+/* Imports remain a distinct home workspace, not another scientific run. */
+.warm-home-sections{display:flex;gap:22px;padding:12px 28px 0;border-bottom:1px solid var(--warm-border)}
+.warm-home-sections button{padding:9px 2px 12px;border:0;border-bottom:2px solid transparent;background:transparent;color:var(--warm-muted)}
+.warm-home-sections button.is-active{border-bottom-color:var(--warm-accent);color:var(--warm-text);font-weight:700}
+.warm-import-rail{width:calc(100% - 28px);margin:8px 14px 12px;padding:9px;border:1px solid var(--warm-border);border-radius:8px;background:var(--warm-surface);text-align:left}
+.warm-example-fill{margin-top:14px;padding:8px 0;border:0;background:transparent;color:var(--warm-accent);text-decoration:underline}
+.warm-import-workspace{width:min(1180px,100%);margin:auto}
+.warm-import-layout{display:grid;grid-template-columns:minmax(280px,.8fr) minmax(0,1.2fr);gap:24px;margin-top:26px}
+.warm-import-drop,.warm-import-preview{min-height:410px;padding:26px;border:1px solid var(--warm-border);border-radius:12px;background:var(--warm-surface)}
+.warm-import-drop.is-dragging{border:2px dashed var(--warm-accent);background:#eef4eb}
+.warm-import-drop>strong,.warm-import-preview>strong{display:block;font-size:19px}
+.warm-import-drop>p{margin:12px 0 20px;color:var(--warm-muted)}
+.warm-import-drop button,.warm-import-preview button{padding:9px 14px;border:1px solid var(--warm-border);border-radius:7px;background:#fff;color:var(--warm-text)}
+.warm-import-list{margin-top:34px}.warm-import-list h2{margin-bottom:12px}
+.warm-import-list>button{display:block;width:100%;margin-bottom:8px;text-align:left}.warm-import-list>button.is-current{border-color:var(--warm-accent);background:#edf3ec}
+.warm-import-list small,.warm-import-preview small{display:block;margin-top:4px;color:var(--warm-muted);overflow-wrap:anywhere}
+.warm-import-preview>p{margin:16px 0}.warm-import-preview-actions{display:flex;gap:10px;margin:22px 0}
+.warm-import-preview dl{margin-top:18px}.warm-import-preview dl>div{display:grid;grid-template-columns:100px minmax(0,1fr);gap:10px;padding:7px 0;border-bottom:1px solid var(--warm-border)}
+.warm-import-preview dd{margin:0;overflow-wrap:anywhere}.warm-import-preview dt{color:var(--warm-muted)}
+.warm-import-error{color:#a44135!important;font-weight:650}.warm-import-verified{color:var(--warm-accent);font-weight:650}
+.warm-import-note{font-size:13px;color:var(--warm-muted)}
+@media(max-width:950px){.warm-import-layout{grid-template-columns:1fr}}
+
+/* The opt-in literature surface reuses the calm workspace language and keeps
+   source evidence, missing facts, and the human decision visually separate. */
+.warm-literature-workspace{width:min(1180px,100%);margin:auto}
+.warm-literature-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px;margin-top:26px}
+.warm-literature-input,.warm-literature-review{min-height:420px;padding:26px;border:1px solid var(--warm-border);border-radius:12px;background:var(--warm-surface)}
+.warm-literature-input label{display:block;margin:20px 0 0;font-weight:600}
+.warm-literature-input input:not([type=file]),.warm-literature-input textarea{display:block;width:100%;margin-top:8px;padding:10px 12px;border:1px solid var(--warm-border);border-radius:7px;background:#fff;color:var(--warm-text)}
+.warm-literature-input textarea{min-height:165px;resize:vertical}
+.warm-literature-input input[type=file]{display:block;margin-top:8px;max-width:100%}
+.warm-literature-input p,.warm-literature-review p{margin:16px 0;color:var(--warm-muted)}
+.warm-literature-input button,.warm-literature-actions button{padding:9px 14px;border:1px solid var(--warm-border);border-radius:7px;background:#fff}
+.warm-literature-review blockquote{max-height:190px;overflow:auto;margin:16px 0;padding:12px 16px;border-left:3px solid var(--warm-accent);background:#f1f3eb;white-space:pre-wrap;overflow-wrap:anywhere}
+.warm-literature-review dl>div{display:grid;grid-template-columns:135px minmax(0,1fr);padding:8px 0;border-bottom:1px solid var(--warm-border)}
+.warm-literature-review dd{margin:0;overflow-wrap:anywhere}.warm-literature-review dt{color:var(--warm-muted)}
+.warm-literature-warning{color:#925922!important;font-weight:650}
+.warm-literature-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}
+.warm-literature-divider{height:1px;margin:24px 0;background:var(--warm-border)}
+@media(max-width:950px){.warm-literature-layout{grid-template-columns:1fr}}
+
+/* Task composer follows the approved reference: one question is the visual focus. */
+.warm-task-focus{
+  width:min(936px,100%);
+  margin:38px auto 0
+}
+.warm-task-focus>h2{
+  margin-bottom:16px
+}
+.warm-compose{
+  min-height:260px;
+  padding:22px 23px 18px;
+  border:1px solid var(--warm-border);
+  border-radius:12px;
+  background:var(--warm-surface)
+}
+.warm-compose textarea{
+  display:block;
+  width:100%;
+  height:150px;
+  padding:0;
+  resize:vertical;
+  border:0;
+  outline:none;
+  background:transparent;
+  color:var(--warm-text);
+  font-size:20px;
+  line-height:1.7
+}
+.warm-compose textarea::placeholder{
+  color:#989c93
+}
+.warm-compose-actions{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+  padding-top:15px;
+  border-top:1px solid var(--warm-border)
+}
+.warm-compose-actions span{
+  color:var(--warm-muted);
+  font-size:14px
+}
+.warm-compose-actions button,.warm-plan-actions button,.warm-science-inspector button{
+  min-height:40px;
+  padding:8px 20px;
+  border:1px solid var(--warm-border);
+  border-radius:8px;
+  background:var(--warm-surface);
+  color:var(--warm-text);
+  font-weight:600;
+  font-size:14px!important
+}
+.warm-task-next{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:52px;
+  margin-top:38px;
+  padding-top:19px;
+  border-top:1px solid var(--warm-border)
+}
+.warm-task-next article{
+  display:flex;
+  gap:22px
+}
+.warm-task-next b{
+  color:var(--warm-accent);
+  font-size:14px
+}
+.warm-task-next strong{
+  font-size:16px
+}
+.warm-task-next p{
+  margin-top:4px;
+  color:var(--warm-muted);
+  font-size:14px;
+  line-height:1.65
+}
+.warm-plan-review,.warm-plan-summary{
+  margin-top:24px;
+  padding:22px;
+  border:1px solid var(--warm-border);
+  border-radius:10px;
+  background:var(--warm-surface)
+}
+.warm-plan-summary>div:first-child{
+  display:flex;
+  justify-content:space-between;
+  gap:16px
+}
+.warm-plan-summary span{
+  color:var(--warm-accent);
+  font-size:13px
+}
+.warm-plan-summary p{
+  margin:10px 0;
+  color:var(--warm-muted);
+  font-size:14px
+}
+.warm-plan-actions{
+  display:flex;
+  justify-content:flex-end;
+  gap:10px
+}
+.warm-secondary-tools{
+  margin:28px 0 50px;
+  border-top:1px solid var(--warm-border);
+  font-size:14px
+}
+.warm-secondary-tools>summary{
+  padding:14px 0;
+  cursor:pointer;
+  color:var(--warm-muted)
+}
+.warm-secondary-tools .task-history-list{
+  max-height:400px;
+  overflow:auto
+}
+.warm-mode-row{
+  display:flex;
+  gap:7px;
+  margin-bottom:12px
+}
+.warm-mode-row button{
+  padding:6px 12px;
+  border:1px solid var(--warm-border);
+  border-radius:7px;
+  background:var(--warm-surface)
+}
+.warm-mode-row button.is-selected{
+  border-color:var(--warm-accent);
+  color:var(--warm-accent)
+}
+
+/* Model and result screens share one dominant 784:376 scientific workspace. */
+.warm-science-layout{
+  display:grid;
+  grid-template-columns:minmax(0,784fr) minmax(306px,376fr);
+  gap:24px;
+  min-height:540px;
+  max-height:calc(100vh - 270px)
+}
+.warm-viewport{
+  position:relative;
+  display:flex;
+  flex-direction:column;
+  min-height:540px;
+  overflow:hidden;
+  padding:20px 24px;
+  border-radius:12px;
+  background:var(--warm-viewport);
+  color:#e3e9e3
+}
+.warm-viewport>header{
+  display:flex;
+  justify-content:space-between;
+  font-size:14px
+}
+.warm-viewport>header strong{
+  font-size:17px;
+  font-weight:600
+}
+.warm-viewport>header span{
+  color:#9eafaa
+}
+.warm-readback-tag{
+  align-self:flex-start;
+  margin-top:12px;
+  padding:4px 15px;
+  border-radius:20px;
+  background:var(--warm-surface);
+  color:var(--warm-muted);
+  font-size:13px
+}
+.warm-schematic{
+  position:relative;
+  flex:1;
+  min-height:340px;
+  margin:10px 10px 0;
+  color:#aabcb5
+}
+.warm-rectangle{
+  position:absolute;
+  left:19%;
+  right:19%;
+  top:20%;
+  bottom:23%;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  border:2px solid #566f6a;
+  background:#29403e
+}
+.warm-rectangle.has-review{
+  border-left:4px solid #deb45d
+}
+.warm-rectangle.has-review-right{
+  border-right:4px solid #deb45d
+}
+.warm-rectangle strong{
+  font-size:20px;
+  color:#e4ebe7
+}
+.warm-rectangle span{
+  margin-top:3px;
+  font-size:14px
+}
+.warm-top-boundary,.warm-bottom-boundary,.warm-left-label,.warm-right-label,.warm-dimension-x,.warm-dimension-y{
+  position:absolute;
+  font-size:14px
+}
+.warm-top-boundary{
+  top:12%;
+  left:38%
+}
+.warm-bottom-boundary{
+  bottom:14%;
+  left:35%
+}
+.warm-left-label{
+  top:10%;
+  left:19%;
+  color:#deb45d
+}
+.warm-right-label{
+  top:10%;
+  right:18%
+}
+.warm-dimension-x{
+  bottom:3%;
+  left:48%
+}
+.warm-dimension-y{
+  top:47%;
+  left:4%
+}
+.warm-viewport footer{
+  display:flex;
+  justify-content:space-between;
+  gap:10px;
+  padding-top:18px;
+  border-top:1px solid #49605d;
+  color:#adbbb5;
+  font-size:14px
+}
+.warm-viewport-empty{
+  display:flex;
+  flex:1;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:12px;
+  text-align:center
+}
+.warm-viewport-empty strong{
+  font-size:21px
+}
+.warm-viewport-empty p{
+  max-width:420px;
+  color:#aebdb8;
+  font-size:14px
+}
+.warm-science-inspector{
+  display:flex;
+  flex-direction:column;
+  min-height:540px;
+  overflow:auto;
+  padding:20px 24px;
+  border-radius:12px;
+  background:var(--warm-surface)
+}
+.warm-science-inspector h2{
+  margin-bottom:20px
+}
+.warm-science-inspector>small{
+  color:var(--warm-muted);
+  font-size:12px;
+  letter-spacing:.06em
+}
+.warm-review-object{
+  margin-top:14px;
+  font-size:14px
+}
+.warm-review-values{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:5px;
+  margin:20px 0 16px
+}
+.warm-review-values>div{
+  display:flex;
+  flex-direction:column
+}
+.warm-review-values>div:last-child{
+  text-align:right
+}
+.warm-review-values strong{
+  font-size:32px;
+  white-space:nowrap
+}
+.warm-review-values>div:last-child strong{
+  color:var(--warm-accent)
+}
+.warm-review-values span,.warm-review-values i{
+  font-size:14px;
+  color:var(--warm-muted);
+  font-style:normal
+}
+.warm-science-inspector>p{
+  font-size:14px
+}
+.warm-review-note{
+  margin:20px 0;
+  padding-top:14px;
+  border-top:1px solid var(--warm-border);
+  font-weight:600
+}
+.warm-review-note span{
+  font-weight:400;
+  color:var(--warm-muted)
+}
+
+/* The result verdict footer is a separate decision area. At 1440 × 810 its
+   warning and action must not visually collapse into one crowded line. */
+.warm-result-viewport + .warm-science-inspector > .warm-review-note{
+  margin-top:auto;
+  margin-bottom:0;
+  padding:20px 0 0;
+  line-height:1.55
+}
+.warm-result-viewport + .warm-science-inspector > button{
+  min-height:46px;
+  margin-top:16px;
+  flex:0 0 auto
+}
+
+.warm-help-backdrop{position:fixed;inset:0;z-index:60;display:grid;place-items:center;background:#202a2499;padding:18px}
+.warm-help{width:min(680px,100%);max-height:90vh;overflow:auto;padding:25px 30px;border-radius:12px;background:var(--warm-surface);color:var(--warm-text);box-shadow:0 20px 55px #0005}
+.warm-help header,.warm-help footer{display:flex;align-items:center;justify-content:space-between;gap:15px}
+.warm-help header small{color:var(--warm-accent);font-size:11px;letter-spacing:.08em}
+.warm-help h2{margin:5px 0 0;font-size:24px}
+.warm-help header button{border:0;background:transparent;font-size:26px;cursor:pointer}
+.warm-help>p{color:var(--warm-muted);line-height:1.6}
+.warm-help-sections{display:grid;gap:12px;margin:20px 0}
+.warm-help-sections article{display:grid;gap:7px;padding:14px 16px;border:1px solid var(--warm-border);border-radius:8px;line-height:1.5}
+.warm-help-sections small{color:var(--warm-muted)}
+.warm-help footer{justify-content:flex-end}
+.warm-help footer button{min-height:38px;padding:0 14px;border:1px solid var(--warm-border);border-radius:6px;background:var(--warm-surface);cursor:pointer}
+.warm-task-jump{flex:0 0 auto;border:0;background:transparent;color:var(--warm-accent);font-size:13px;font-weight:650;cursor:pointer}
+.warm-project-list small{display:block;padding:7px 10px;color:var(--warm-muted);font-size:11px;line-height:1.35}
+.warm-science-inspector>.warm-primary{
+  width:100%;
+  margin-top:auto
+}
+.warm-review-actions{
+  display:flex;
+  gap:10px;
+  margin-top:14px
+}
+.warm-review-actions button{
+  flex:1
+}
+.warm-fact-list{
+  margin:18px 0
+}
+.warm-fact-list div{
+  display:flex;
+  justify-content:space-between;
+  gap:14px;
+  padding:12px 0;
+  border-bottom:1px solid var(--warm-border);
+  font-size:14px
+}
+.warm-fact-list dt{
+  color:var(--warm-muted)
+}
+.warm-fact-list dd{
+  margin:0;
+  text-align:right;
+  overflow-wrap:anywhere
+}
+.warm-run-controls{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin-top:auto;
+  padding-top:18px;
+  border-top:1px solid var(--warm-border)
+}
+.warm-run-controls span{
+  flex-basis:100%;
+  font-size:12px;
+  color:var(--warm-muted)
+}
+.warm-run-controls button{
+  padding:6px 12px;
+  min-height:33px;
+  font-size:12px!important
+}
+
+/* Execution controls remain reachable on every page. A resumable pause and
+   a terminal emergency stop have deliberately different visual treatment. */
+.warm-emergency-controls{
+  display:flex; align-items:center; flex-wrap:wrap; gap:8px 18px;
+  padding:10px 15px; margin-top:12px;
+  border:1px solid #dfc8bd; border-radius:9px;
+  background:#fbf0e9; color:#573e35;
+}
+.warm-emergency-controls>span{font-size:15px; flex:1 1 200px}
+.warm-emergency-controls>div{display:flex; gap:9px}
+.warm-emergency-controls button{min-height:36px; padding:6px 13px; border:1px solid #ad8c73; border-radius:7px; background:#fffaf5; font-size:14px; font-weight:700}
+.warm-emergency-controls .warm-resume{border-color:#5b886d; color:#2f6649; background:#ecf4ec}
+.warm-emergency-controls .warm-emergency-stop{border-color:#a63e37; color:#fff; background:#b5483e}
+.warm-emergency-controls>small{flex-basis:100%; color:#775b50; font-size:12px}
+
+/* Result images preserve the backend artifact hash check and their native ratio. */
+.warm-result-viewport{
+  justify-content:center
+}
+.warm-result-viewport .verified-artifact-viewer{
+  height:100%;
+  background:transparent
+}
+.warm-result-viewport .verified-artifact-viewer>header{
+  color:#e3e9e3
+}
+.warm-result-viewport .artifact-stage{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  max-height:370px;
+  background:transparent
+}
+.warm-result-viewport .artifact-stage img{
+  max-width:100%;
+  max-height:350px;
+  object-fit:contain
+}
+.warm-result-viewport .verified-artifact-viewer dl{
+  max-height:130px;
+  overflow:auto;
+  color:#dbe3dd
+}
+.warm-result-viewport .artifact-unavailable,.warm-result-viewport .artifact-integrity-lost{
+  color:#e3e9e3
+}
+.warm-result-viewport .artifact-unavailable p{
+  color:#acbab4
+}
+
+/* The old Phase 2.1 artifact viewer was absolutely positioned with a 330 px
+   metadata sidebar. The Warm gallery explicitly resets that inherited grid;
+   scientific metadata moves behind an optional details disclosure. */
+.warm-result-viewport{background:#f7f5ef; color:var(--warm-text); padding:0; border:1px solid var(--warm-border)}
+.warm-result-viewport .verified-artifact-viewer.warm-gallery{
+  position:relative; inset:auto; display:flex; flex-direction:column;
+  width:100%; height:100%; min-height:0; overflow:hidden; background:transparent;
+}
+.warm-result-viewport .warm-gallery-title{
+  display:flex; align-items:center; justify-content:space-between; gap:15px;
+  flex:0 0 auto; padding:18px 25px 14px; border-bottom:1px solid var(--warm-border);
+  color:var(--warm-text);
+}
+.warm-result-viewport .verified-artifact-viewer.warm-gallery>.warm-gallery-title{color:var(--warm-text)}
+.warm-gallery-title span{font-size:12px; font-weight:700; color:var(--warm-accent)}
+.warm-gallery-title h2{margin:3px 0!important; font-size:22px}
+.warm-gallery-title small{color:var(--warm-muted)}
+.warm-gallery-title button{padding:8px 11px; border:1px solid var(--warm-border); border-radius:7px; background:#fff; color:var(--warm-text); font-size:13px}
+.warm-gallery-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px}
+.warm-gallery-stage{display:grid; grid-template-columns:46px minmax(0,1fr) 46px; align-items:center; justify-items:center; gap:10px; flex:1 1 auto; min-height:160px; max-height:min(38vh,430px); padding:12px 15px; overflow:hidden; background:#fff}
+.warm-gallery-stage img{display:block; max-width:100%; max-height:min(34vh,390px); width:auto; height:auto; object-fit:contain; cursor:zoom-in; border:1px solid #d7e0df}
+.warm-gallery-stage button{width:38px; height:38px; border:1px solid var(--warm-border); border-radius:50%; background:#fff; color:var(--warm-text); font-size:28px; line-height:1}
+.warm-gallery-stage button:disabled{visibility:hidden}
+.warm-result-viewport .warm-gallery-footer{display:flex; flex-direction:column; align-items:center; gap:3px; flex:0 0 auto; padding:11px 20px 8px; border-top:1px solid var(--warm-border); color:var(--warm-text); text-align:center}
+.warm-gallery-footer strong{font-size:17px}
+.warm-gallery-footer span{font-size:13px; color:var(--warm-muted)}
+.warm-gallery-footer small{color:var(--warm-accent)}
+.warm-gallery-pages{display:flex; justify-content:center; gap:7px; padding:2px 0 8px}
+.warm-gallery-pages button{min-width:26px; min-height:26px; border:1px solid var(--warm-border); border-radius:5px; background:#fff; color:var(--warm-muted); font-size:12px}
+.warm-gallery-pages button.is-current{border-color:var(--warm-accent); color:var(--warm-accent); font-weight:700}
+.warm-gallery-provenance{flex:0 0 auto; padding:0 20px 9px; color:var(--warm-muted); font-size:12px}
+.warm-gallery-provenance summary{cursor:pointer; text-align:center}
+.warm-result-viewport .warm-gallery-provenance dl{display:block; max-height:100px; margin:6px 0 0; padding:0; overflow:auto; border:0; background:transparent; color:var(--warm-text)}
+.warm-gallery-provenance dl>div{display:flex; gap:12px; justify-content:space-between; padding:4px 0}
+.warm-gallery-provenance dd{margin:0; overflow-wrap:anywhere; text-align:right}
+.warm-gallery-fixture-field{display:flex; align-items:flex-end; justify-content:space-between; width:min(72%,470px); aspect-ratio:1.7; padding:12px; border:22px solid #fff; background:linear-gradient(90deg,#ae1429 0%,#ec8e15 22%,#f9eb55 39%,#45dcbc 59%,#4eaff2 79%,#3638ae 100%); box-shadow:0 8px 25px #24312c1c}
+.warm-gallery-fixture-field span{padding:4px 6px; background:#ffffffe8; color:#26322d; font-size:12px}
+.artifact-zoom-dialog{position:fixed; z-index:80; inset:0; display:grid; place-items:center; padding:28px; background:#15221fdf}
+.artifact-zoom-dialog>div{display:flex; flex-direction:column; width:min(96vw,1500px); height:min(95vh,1000px); padding:12px; border-radius:9px; background:#f7f5ef}
+.artifact-zoom-dialog header{display:flex; justify-content:space-between; align-items:center; padding:2px 8px 10px; color:var(--warm-text)}
+.artifact-zoom-dialog header button{width:34px; height:34px; border:0; background:transparent; font-size:26px; cursor:pointer}
+.artifact-zoom-dialog img{min-height:0; width:100%; flex:1; object-fit:contain}
+.artifact-zoom-dialog footer{padding:8px; color:var(--warm-muted); text-align:center; font-size:13px}
+.warm-result-viewport .artifact-unavailable,.warm-result-viewport .artifact-integrity-lost{color:var(--warm-text)}
+.warm-result-viewport .artifact-unavailable p{color:var(--warm-muted)}
+
+/* Evidence and technical tools are deliberately subordinate to the main task. */
+.warm-evidence-layout{
+  display:grid;
+  grid-template-columns:minmax(0,1.8fr) minmax(280px,1fr);
+  gap:24px
+}
+.warm-evidence-layout>section,.warm-evidence-layout>aside{
+  padding:24px;
+  border:1px solid var(--warm-border);
+  border-radius:10px;
+  background:var(--warm-surface)
+}
+.warm-evidence-layout h2{
+  margin-bottom:18px
+}
+.warm-timeline{
+  max-height:55vh;
+  margin:0;
+  padding:0 0 0 9px;
+  overflow:auto;
+  list-style:none
+}
+.warm-timeline li{
+  display:flex;
+  gap:16px;
+  padding:0 0 22px
+}
+.warm-timeline-dot{
+  flex:0 0 8px;
+  width:8px;
+  height:8px;
+  margin-top:7px;
+  border-radius:50%;
+  background:#9eaa9f
+}
+.warm-timeline-dot.success{
+  background:var(--warm-accent)
+}
+.warm-timeline-dot.error{
+  background:#b85f52
+}
+.warm-timeline-dot.warning{
+  background:#c89644
+}
+.warm-timeline li div{
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+  min-width:0
+}
+.warm-timeline strong{
+  font-size:14px;
+  font-weight:600
+}
+.warm-timeline small{
+  color:var(--warm-muted)
+}
+.warm-evidence-layout aside p{
+  margin-bottom:10px;
+  font-size:14px
+}
+.warm-evidence-layout details{
+  margin:15px 0
+}
+.warm-evidence-layout summary{
+  cursor:pointer;
+  font-size:14px;
+  color:var(--warm-accent)
+}
+.warm-technical>div{
+  max-height:380px;
+  overflow:auto
+}
+.warm-inline-warning{
+  position:fixed;
+  right:24px;
+  bottom:47px;
+  z-index:12;
+  max-width:500px;
+  padding:12px 17px;
+  border:1px solid #e1c99c;
+  border-radius:8px;
+  background:#fff3dd;
+  color:#6b4a18;
+  font-size:13px;
+  box-shadow:0 8px 28px #0002
+}
+
+/* Narrower windows retain every action with scroll rather than overlapping. */
+@media(max-width:1100px){
+  .warm-studio{
+  grid-template-columns:170px minmax(0,1fr)
+}
+.warm-tabs>div{
+  gap:28px
+}
+.warm-science-layout{
+  grid-template-columns:minmax(0,1fr);
+  max-height:none
+}
+.warm-science-inspector{
+  min-height:260px
+}
+.warm-viewport{
+  min-height:440px
+}
+.warm-task-focus{
+  margin-top:18px
+}
+
+}
+@media(max-width:720px){
+  .warm-studio{
+  display:block
+}
+.warm-header{
+  height:60px
+}
+.warm-rail{
+  display:none
+}
+.warm-header-divider,.warm-workspace-label,.warm-connection{
+  display:none
+}
+.warm-main{
+  min-height:calc(100dvh - 60px);
+  padding:0 15px
+}
+.warm-tabs>div{
+  gap:18px
+}
+.warm-tabs>span{
+  display:none
+}
+.warm-page-heading{
+  display:block
+}
+.warm-status-pill{
+  margin-top:14px
+}
+.warm-task-next,.warm-evidence-layout{
+  grid-template-columns:1fr
+}
+.warm-compose-actions{
+  align-items:stretch;
+  flex-direction:column
+}
+.warm-science-layout{
+  display:block
+}
+.warm-viewport{
+  min-height:410px
+}
+.warm-science-inspector{
+  margin-top:15px
+}
+.warm-page-footer{
+  white-space:normal;
+  font-size:11px
+}
+.warm-review-values strong{
+  font-size:25px
+}
+
+}

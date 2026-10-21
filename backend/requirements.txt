@@ -1,0 +1,7 @@
+fastapi>=0.116,<1
+uvicorn[standard]>=0.35,<1
+httpx>=0.28,<1
+pydantic>=2.11,<3
+numpy>=1.26,<3
+pypdf>=5,<7
+tzdata==2026.4

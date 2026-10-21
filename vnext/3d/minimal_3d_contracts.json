@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "support_status": "PREPARATION_ONLY_UNVERIFIED",
+  "execution_policy": "No product support claim until real COMSOL readback, mesh, solver and scientific evidence are frozen.",
+  "cases": [
+    {"case_id": "3d-block-001", "geometry": "block", "required_readback": ["feature kind", "size", "domain count"], "execution_claim": false},
+    {"case_id": "3d-cylinder-001", "geometry": "cylinder", "required_readback": ["radius", "height", "axis", "domain count"], "execution_claim": false},
+    {"case_id": "3d-hole-001", "geometry": "hole", "required_readback": ["difference inputs", "result domain", "boundary count"], "execution_claim": false},
+    {"case_id": "3d-assembly-001", "geometry": "assembly", "required_readback": ["component transforms", "domains", "identity pairs"], "execution_claim": false}
+  ]
+}

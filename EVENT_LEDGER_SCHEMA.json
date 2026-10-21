@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://comsol-workbench.local/schemas/event-ledger-v1.json",
+  "title": "EventLedgerEntry",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["sequence", "id", "type", "payload", "created_at"],
+  "properties": {
+    "sequence": {"type": "integer", "minimum": 1},
+    "id": {"type": "string", "format": "uuid"},
+    "type": {"type": "string", "minLength": 1},
+    "payload": {"type": "object"},
+    "created_at": {"type": "string", "format": "date-time"}
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://comsol-workbench.local/schemas/skill-card-v1.json",
+  "title": "SkillCard",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "skill_id", "title", "workflow_id", "provenance", "applicability", "geometry_procedure", "material_procedure", "selection_procedure", "boundary_procedure", "mesh_and_solver", "common_mistakes", "mandatory_readback", "invariants", "escalation", "confidence"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "skill_id": {"type": "string", "minLength": 1},
+    "title": {"type": "string", "minLength": 1},
+    "workflow_id": {"type": "string", "minLength": 1},
+    "provenance": {"type": "array", "minItems": 1, "items": {"type": "object", "required": ["kind", "title", "locator", "license"]}},
+    "applicability": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+    "assumptions": {"type": "array", "items": {"type": "string"}},
+    "equations": {"type": "array", "items": {"type": "string"}},
+    "quantities_and_units": {"type": "object", "additionalProperties": {"type": "string"}},
+    "geometry_procedure": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+    "material_procedure": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+    "selection_procedure": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+    "boundary_procedure": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+    "mesh_and_solver": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+    "common_mistakes": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+    "mandatory_readback": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+    "invariants": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+    "escalation": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+    "confidence": {"type": "number", "minimum": 0, "maximum": 1}
+  }
+}

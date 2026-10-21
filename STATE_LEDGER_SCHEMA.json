@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://comsol-workbench.local/schemas/model-state-ledger-v1.json",
+  "title": "ModelStateLedgerFact",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["fact_id", "session_id", "fact_key", "value", "provenance", "created_at"],
+  "properties": {
+    "fact_id": {"type": "string", "format": "uuid"},
+    "session_id": {"type": "string"},
+    "fact_key": {"type": "string", "minLength": 1},
+    "value": {},
+    "provenance": {"enum": ["USER_REQUEST", "PLAN", "COMSOL_READBACK", "DETERMINISTIC_CHECK", "SOLVER_RESULT", "HUMAN_CORRECTION"]},
+    "run_id": {"type": ["string", "null"]},
+    "attempt_id": {"type": ["string", "null"]},
+    "created_at": {"type": "string", "format": "date-time"}
+  }
+}

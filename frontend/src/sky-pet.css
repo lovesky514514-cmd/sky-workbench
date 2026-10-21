@@ -1,0 +1,14 @@
+/* The pet lives in its own transparent, always-on-top window. The workspace
+   keeps only an optional show/hide control; no model content is displaced. */
+.sky-task-intro{margin-bottom:12px;min-width:0}
+.sky-pet-toggle{border:1px solid #d8ddd2;border-radius:8px;background:#f8f7f2;color:#315144;padding:7px 11px;font:inherit;white-space:nowrap;cursor:pointer}
+.sky-pet-toggle:hover{background:#e9eee7}
+.sky-pet-toggle:disabled{opacity:.45;cursor:not-allowed}
+html:has(#pet-root),body:has(#pet-root){margin:0;background:transparent!important;overflow:hidden}
+.sky-floating-pet{position:relative;width:220px;height:220px;overflow:hidden;user-select:none;cursor:grab}
+.sky-floating-pet:active{cursor:grabbing}
+.sky-floating-pet img{display:block;width:220px;height:220px;object-fit:contain;pointer-events:none}
+.sky-floating-status{position:absolute;left:10px;top:29px;width:95px;text-align:center;color:#22362c;font-size:16px;font-weight:750;white-space:nowrap;pointer-events:none}
+.sky-floating-hide{position:absolute;right:4px;top:4px;border:0;border-radius:50%;width:26px;height:26px;background:#f8f7f2e8;color:#315144;font-size:18px;line-height:22px;cursor:pointer;opacity:.12}
+.sky-floating-pet:hover .sky-floating-hide,.sky-floating-hide:focus-visible{opacity:1}
+@media(prefers-reduced-motion:reduce){.sky-floating-pet *{animation:none!important;transition:none!important}}

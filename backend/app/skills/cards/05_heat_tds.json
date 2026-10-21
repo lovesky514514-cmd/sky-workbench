@@ -1,0 +1,20 @@
+{
+  "skill_id": "heat-to-tds-one-way-v1",
+  "title": "Heat to TDS one-way temperature-dependent diffusion",
+  "workflow_id": "heat_tds_temperature_coupling",
+  "provenance": [{"kind": "PROJECT_VALIDATED_WORKFLOW", "title": "Workbench Heat-to-TDS workflow contract", "locator": "backend/app/comsol/multiphysics_worker.py", "license": "MIT project source"}],
+  "applicability": ["shared 2D domain", "stationary one-way T to D dependency", "explicit D(T) expression"],
+  "assumptions": ["one-way coupling", "constant thermal properties"],
+  "equations": ["D(T)=D0*T/T0"],
+  "quantities_and_units": {"length": "m", "temperature": "K", "diffusion_coefficient": "m^2/s", "concentration": "mol/m^3"},
+  "geometry_procedure": ["Create one shared rectangle"],
+  "material_procedure": ["Assign explicit thermal properties and D0"],
+  "selection_procedure": ["Share the domain and coordinate-resolved edges"],
+  "boundary_procedure": ["Apply temperature and concentration boundaries independently"],
+  "mesh_and_solver": ["One shared mesh", "Stationary OFF/ON comparison"],
+  "common_mistakes": ["Parsing D0 as zero", "Claiming coupling without dependency readback"],
+  "mandatory_readback": ["two interfaces", "shared domain", "D(T) expression", "mesh/DOF", "both solver statuses"],
+  "invariants": ["Finite fields", "mass balance", "OFF/ON solutions differ", "physical flux direction"],
+  "escalation": ["Missing coupling expression", "two-way coupling request", "dependency readback absent"],
+  "confidence": 0.9
+}

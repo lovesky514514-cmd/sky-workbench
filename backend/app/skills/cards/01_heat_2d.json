@@ -1,0 +1,20 @@
+{
+  "skill_id": "heat-2d-stationary-v1",
+  "title": "2D stationary heat conduction",
+  "workflow_id": "heat_transfer_2d_stationary",
+  "provenance": [{"kind": "PROJECT_VALIDATED_WORKFLOW", "title": "Workbench Heat workflow contract", "locator": "backend/app/comsol/heat_worker.py", "license": "MIT project source"}],
+  "applicability": ["2D rectangle", "stationary conduction", "two prescribed edge temperatures", "remaining edges insulated"],
+  "assumptions": ["material properties are explicit", "no internal heat source unless requested"],
+  "equations": ["div(k grad(T)) = 0"],
+  "quantities_and_units": {"length": "m", "temperature": "K", "thermal_conductivity": "W/(m*K)"},
+  "geometry_procedure": ["Create a parameterized rectangle"],
+  "material_procedure": ["Assign explicit isotropic properties to the domain"],
+  "selection_procedure": ["Resolve edges by coordinates and read them back"],
+  "boundary_procedure": ["Apply left/right temperatures and insulation elsewhere"],
+  "mesh_and_solver": ["Physics-controlled mesh", "Stationary study"],
+  "common_mistakes": ["Using edge numbers without coordinate readback", "Treating Celsius as Kelvin"],
+  "mandatory_readback": ["geometry", "material", "edge selections", "temperature conditions", "mesh/DOF", "solver status"],
+  "invariants": ["Finite T", "T remains within imposed bounds", "linear benchmark agrees within declared tolerance"],
+  "escalation": ["Missing material", "ambiguous edge mapping", "missing numerical evidence"],
+  "confidence": 0.95
+}

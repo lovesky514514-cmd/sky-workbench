@@ -1,0 +1,29 @@
+[package]
+name = "sky-workbench"
+version = "2.0.0"
+description = "Independent local-first scientific modeling assistant"
+authors = ["SuKoYa"]
+license = "Apache-2.0"
+edition = "2024"
+rust-version = "1.85"
+
+[[bin]]
+name = "sky-workbench"
+path = "src/main.rs"
+
+[build-dependencies]
+tauri-build = { version = "2.6.3", features = [] }
+
+[dependencies]
+getrandom = "0.3.3"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+tauri = { version = "=2.11.5", features = [] }
+tauri-plugin-shell = "2.3.5"
+
+[profile.release]
+codegen-units = 1
+lto = "thin"
+opt-level = "s"
+panic = "abort"
+strip = false

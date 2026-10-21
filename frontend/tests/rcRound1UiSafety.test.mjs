@@ -1,0 +1,33 @@
+import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
+import { responseError, safeUiError } from '../src/safeUiError.ts'
+
+const read = (path) => readFileSync(new URL(path, import.meta.url), 'utf8')
+assert.match(safeUiError('File C:\\Users\\researcher\\secret.mph failed'), /diagnostic logs/)
+assert.match(safeUiError('Traceback (most recent call last): private'), /diagnostic logs/)
+assert.match(safeUiError('Bearer: secret-token'), /diagnostic logs/)
+assert.equal(safeUiError('Safe pause unavailable'), 'Safe pause unavailable')
+assert.equal(responseError('{"detail":{"title":"Validation failed","summary":"No result was certified."}}', 409), 'Validation failed: No result was certified.')
+assert.match(responseError('{"detail":"C:\\Users\\someone\\model.mph"}', 500), /HTTP 500/)
+
+const rust = read('../src-tauri/src/main.rs')
+const installer = read('../src-tauri/tauri.conf.json')
+const studio = read('../src/WarmStudio.tsx')
+const app = read('../src/App.tsx')
+const scientificView = read('../src/scientificView.ts')
+const translations = read('../src/i18n.ts')
+assert.match(rust, /command\.creation_flags\(CREATE_NO_WINDOW\)/)
+assert.match(rust, /COMSOL_WORKBENCH_PRODUCT_MODE", "rc_round1"/)
+assert.ok(!installer.includes('with verified Heat'))
+assert.ok(studio.includes('onOpenWorkspace') && studio.includes('onOpenHelp'))
+assert.ok(studio.includes('Enter a scientific request →'))
+assert.match(app, /const beginSelection = \(sessionId: string\): SelectionTicket => \{[\s\S]*?setPrompt\(''\); setPendingIntent\(null\)/, 'selection must clear unbound intent and draft text synchronously')
+assert.match(app, /const newSession = async \(\) => \{[\s\S]*?beginSelection\(''\)/, 'a new task must revoke the previous task view')
+assert.match(app, /onSelectSession=\{\(id\) => \{ void selectSession\(id\) \}\}/, 'task switching must use the guarded selection path')
+assert.match(studio, /props\.comsolDetected \? 'COMSOL installed · Bridge disconnected' : 'COMSOL unavailable'/, 'detected COMSOL must not be labeled unavailable merely because the live Bridge is disconnected')
+assert.match(translations, /'COMSOL installed · Bridge disconnected': 'COMSOL 已安装 · 实时桥接未连接'/)
+assert.match(app, /setRuntimeDomain\(\(current\) => currentScientificDomain\(session, current\)\)/, 'same-run domain must survive ordinary refreshes')
+assert.match(app, /const selectedDomain = currentScientificDomain\(session, runtimeDomain\)/, 'rendered domain must be requalified for the current session')
+assert.match(scientificView, /session\?\.state !== 'COMPLETED'/, 'an active or failed run must never retain an earlier certified result')
+assert.match(scientificView, /domain\.runState\?\.runId === run\.runId && domain\.runState\.attemptId === run\.attemptId/, 'retained domain must match the latest run and attempt')
+console.log('RC Round 1 UI safety contracts: PASS')

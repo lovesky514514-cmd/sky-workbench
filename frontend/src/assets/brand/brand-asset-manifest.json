@@ -1,0 +1,88 @@
+{
+  "schema_version": 1,
+  "source": {
+    "path": "frontend/src/assets/brand/workbench-icon-source.png",
+    "width": 1254,
+    "height": 1254,
+    "mode": "RGB",
+    "sha256": "39e96b719871a850155bdc68e8c88e8fc0abd3a23f97c902ae0529652458f6aa"
+  },
+  "policy": {
+    "generative_editing": false,
+    "crop": false,
+    "recolor": false,
+    "sharpen": false,
+    "resampling": "Pillow Image.Resampling.LANCZOS"
+  },
+  "derivatives": [
+    {
+      "path": "frontend/src/assets/brand/workbench-icon-16.png",
+      "width": 16,
+      "height": 16,
+      "mode": "RGB",
+      "sha256": "42d2da5e3085488a826229e5b4e221cee049f2e6773c41ee94cee174fe2e9b4e"
+    },
+    {
+      "path": "frontend/src/assets/brand/workbench-icon-24.png",
+      "width": 24,
+      "height": 24,
+      "mode": "RGB",
+      "sha256": "bf03e70d6bc5ff19753bb4dc3acd5d399d1af0d92286a1ed230d6ffd9b411236"
+    },
+    {
+      "path": "frontend/src/assets/brand/workbench-icon-32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGB",
+      "sha256": "e973ae3f51dcc98f052e801a2cc84d5956abf34bf199d56ff82e3e360c247e05"
+    },
+    {
+      "path": "frontend/src/assets/brand/workbench-icon-48.png",
+      "width": 48,
+      "height": 48,
+      "mode": "RGB",
+      "sha256": "d7d49a28e15feba5ee1476396c3fc7e2444c57b57a7db0a07be74ce11cb63fb3"
+    },
+    {
+      "path": "frontend/src/assets/brand/workbench-icon-64.png",
+      "width": 64,
+      "height": 64,
+      "mode": "RGB",
+      "sha256": "15bbfcc287fbb5ec93f3cb61e7829780ca5789366e47bd1f18fb7038e06bc125"
+    },
+    {
+      "path": "frontend/src/assets/brand/workbench-icon-128.png",
+      "width": 128,
+      "height": 128,
+      "mode": "RGB",
+      "sha256": "5a71ada07e68f7efa991a2289b3fbbf06befd3664e847c4296454fa60a3a73b4"
+    },
+    {
+      "path": "frontend/src/assets/brand/workbench-icon-256.png",
+      "width": 256,
+      "height": 256,
+      "mode": "RGB",
+      "sha256": "aa242f96b1d44f990efbe5125bcb21ffbaa8364365e3a21efceabf0bb3889e20"
+    },
+    {
+      "path": "frontend/src/assets/brand/workbench-icon-512.png",
+      "width": 512,
+      "height": 512,
+      "mode": "RGB",
+      "sha256": "6312cd52d2247fee54013b370ea716f6be8cacf370eee87a40d5ce26205b4362"
+    }
+  ],
+  "windows_ico": {
+    "path": "frontend/src-tauri/icons/icon.ico",
+    "sizes": [
+      16,
+      24,
+      32,
+      48,
+      64,
+      128,
+      256
+    ],
+    "sha256": "f0f1b1bc9cddd84a88afaeaef9340be98fdf7ed3f9578d107b7e8bb34246d57c"
+  }
+}

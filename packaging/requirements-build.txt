@@ -1,0 +1,3 @@
+# Build the candidate sidecar from its public scientific Runtime dependencies.
+-r ../backend/requirements-comsol.txt
+pyinstaller==6.22.2

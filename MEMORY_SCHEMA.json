@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://comsol-workbench.local/schemas/typed-memory-v1.json",
+  "title": "TypedMemoryRecord",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "memory_id", "type", "content", "provenance", "validation_status",
+    "validation_reason", "version_scope", "applicability", "created_at",
+    "superseded_by"
+  ],
+  "properties": {
+    "memory_id": {"type": "string", "minLength": 1},
+    "type": {
+      "enum": [
+        "EPISODIC_RUN", "SEMANTIC_FAILURE_PATTERN", "PROCEDURAL_REPAIR",
+        "NEGATIVE_REPAIR", "RESOURCE_API", "BELIEF_HYPOTHESIS"
+      ]
+    },
+    "content": {"type": "object"},
+    "provenance": {
+      "type": "object",
+      "required": ["run_id", "attempt_id"],
+      "properties": {
+        "run_id": {"type": "string", "minLength": 1},
+        "attempt_id": {"type": "string", "minLength": 1}
+      }
+    },
+    "validation_status": {
+      "enum": ["TRUSTED", "TRUSTED_NEGATIVE", "HYPOTHESIS", "REJECTED", "QUARANTINED", "SUPERSEDED"]
+    },
+    "validation_reason": {"type": "string", "minLength": 1},
+    "version_scope": {"type": "string", "minLength": 1},
+    "applicability": {"type": "object"},
+    "created_at": {"type": "string", "format": "date-time"},
+    "superseded_by": {"type": ["string", "null"]}
+  }
+}

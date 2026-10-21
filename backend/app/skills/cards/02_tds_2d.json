@@ -1,0 +1,20 @@
+{
+  "skill_id": "tds-2d-diffusion-v1",
+  "title": "2D stationary pure diffusion",
+  "workflow_id": "tds_2d_stationary_diffusion",
+  "provenance": [{"kind": "PROJECT_VALIDATED_WORKFLOW", "title": "Workbench TDS workflow contract", "locator": "backend/app/comsol/tds_worker.py", "license": "MIT project source"}],
+  "applicability": ["2D rectangle", "stationary pure diffusion", "fixed left/right concentrations", "top/bottom no flux"],
+  "assumptions": ["constant isotropic D", "zero convection", "no migration", "no reactions"],
+  "equations": ["div(-D grad(c)) = 0"],
+  "quantities_and_units": {"length": "m", "diffusion_coefficient": "m^2/s", "concentration": "mol/m^3"},
+  "geometry_procedure": ["Create a parameterized rectangle"],
+  "material_procedure": ["Use the explicit user-supplied diffusion coefficient"],
+  "selection_procedure": ["Resolve concentration edges from coordinates"],
+  "boundary_procedure": ["Apply two concentrations and no-flux remaining edges"],
+  "mesh_and_solver": ["Physics-controlled mesh", "Stationary study"],
+  "common_mistakes": ["Implicit D", "Accidental convection", "Wrong concentration unit"],
+  "mandatory_readback": ["TDS feature type", "D expression", "velocity mode", "boundary selections", "mesh/DOF", "solver status"],
+  "invariants": ["Finite c", "bounded concentration", "monotonic profile", "mass balance", "flux direction"],
+  "escalation": ["Unsupported transport mechanism", "missing D", "ambiguous selection"],
+  "confidence": 0.95
+}

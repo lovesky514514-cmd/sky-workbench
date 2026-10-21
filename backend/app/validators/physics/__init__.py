@@ -1,0 +1,1 @@
+"""Physics-specific scientific validators."""

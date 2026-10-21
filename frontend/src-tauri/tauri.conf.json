@@ -1,0 +1,84 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "SKY Workbench",
+  "version": "2.0.0",
+  "identifier": "io.scientificworkbench.comsol",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://127.0.0.1:5173",
+    "beforeBuildCommand": "npm run desktop:prepare",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "SKY Workbench",
+        "width": 1440,
+        "height": 810,
+        "minWidth": 1180,
+        "minHeight": 664,
+        "center": true,
+        "resizable": true
+      },
+      {
+        "label": "sky-pet",
+        "title": "SKY Pet",
+        "url": "pet.html",
+        "width": 220,
+        "height": 220,
+        "visible": false,
+        "focus": false,
+        "resizable": false,
+        "decorations": false,
+        "transparent": true,
+        "shadow": false,
+        "alwaysOnTop": true,
+        "skipTaskbar": true
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; connect-src 'self' ipc: http://ipc.localhost http://127.0.0.1:*; img-src 'self' blob: data:; style-src 'self' 'unsafe-inline'; script-src 'self'"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": [
+      "nsis",
+      "msi"
+    ],
+    "icon": [
+      "icons/icon.ico"
+    ],
+    "category": "Education",
+    "copyright": "Copyright 2026 SuKoYa",
+    "shortDescription": "Local-first scientific modeling assistant",
+    "longDescription": "Independent local-first scientific modeling assistant. COMSOL execution and scientific verification depend on the user's installation, license and evidence for each run.",
+    "externalBin": [
+      "binaries/scientific-runtime"
+    ],
+    "resources": [
+      "resources/knowledge_base/.gitkeep",
+      "resources/knowledge_base/build_profile.json",
+      "resources/java_bridge/.gitkeep",
+      "resources/java_bridge/src/main/java/workbench/bridge/ComsolBridgeServer.java",
+      "resources/semantic_runtime/.gitkeep",
+      "resources/semantic_runtime/semantic_runtime_worker.py",
+      "resources/licenses/**/*"
+    ],
+    "windows": {
+      "webviewInstallMode": {
+        "type": "embedBootstrapper"
+      },
+      "nsis": {
+        "installMode": "currentUser",
+        "languages": [
+          "English",
+          "SimpChinese"
+        ],
+        "displayLanguageSelector": false,
+        "startMenuFolder": "SKY Workbench"
+      }
+    }
+  }
+}

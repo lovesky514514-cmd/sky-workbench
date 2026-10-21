@@ -1,0 +1,20 @@
+{
+  "skill_id": "solid-uniaxial-bar-v1",
+  "title": "3D uniaxial elastic bar",
+  "workflow_id": "solid_mechanics_uniaxial_bar",
+  "provenance": [{"kind": "PROJECT_VALIDATED_WORKFLOW", "title": "Workbench Solid workflow contract", "locator": "backend/app/comsol/solid_worker.py", "license": "MIT project source"}],
+  "applicability": ["rectangular bar", "isotropic linear elasticity", "fixed face", "opposite axial traction"],
+  "assumptions": ["small strain", "linear elastic material"],
+  "equations": ["u = sigma L / E"],
+  "quantities_and_units": {"length": "m", "youngs_modulus": "Pa", "traction": "Pa", "density": "kg/m^3"},
+  "geometry_procedure": ["Create a parameterized block"],
+  "material_procedure": ["Assign E, nu and density explicitly"],
+  "selection_procedure": ["Resolve end faces by bounding boxes and read back"],
+  "boundary_procedure": ["Fix one end and load the opposite end"],
+  "mesh_and_solver": ["Tetrahedral mesh", "Stationary study"],
+  "common_mistakes": ["Wrong face orientation", "Pressure/load unit mismatch"],
+  "mandatory_readback": ["block dimensions", "material values", "face selections", "traction", "mesh/DOF", "solver status"],
+  "invariants": ["Finite displacement/stress", "positive axial displacement", "force equilibrium", "analytical displacement agreement"],
+  "escalation": ["Missing material property", "ambiguous loaded face", "nonlinear material request"],
+  "confidence": 0.9
+}

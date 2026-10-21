@@ -1,0 +1,18 @@
+* text=auto
+*.md text eol=lf
+*.json text eol=lf
+*.py text eol=lf
+*.rs text eol=lf
+*.ts text eol=lf
+*.tsx text eol=lf
+*.css text eol=lf
+*.ps1 text eol=lf
+*.bat text eol=crlf
+*.png binary
+*.ico binary
+*.icns binary
+*.crate binary
+*.gz binary
+# These third-party notice files are hash-pinned to their upstream bytes.
+# Keep their original line endings when archiving or checking out source.
+frontend/src-tauri/resources/licenses/** -text

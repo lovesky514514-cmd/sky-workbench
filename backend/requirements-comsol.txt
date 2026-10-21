@@ -1,0 +1,3 @@
+-r requirements.txt
+mcp>=1.12,<2
+mph>=1.3,<2

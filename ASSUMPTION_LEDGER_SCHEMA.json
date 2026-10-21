@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://comsol-workbench.local/schemas/assumption-ledger-v1.json",
+  "title": "AssumptionLedgerRecord",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "assumption_id", "session_id", "run_id", "attempt_id", "plan_node_id",
+    "choice", "reason", "source", "confidence", "user_confirmed",
+    "affected_nodes", "decision", "executable", "domain_sensitive",
+    "safe_default", "created_at", "superseded_by"
+  ],
+  "properties": {
+    "assumption_id": {"type": "string", "minLength": 1},
+    "session_id": {"type": "string", "minLength": 1},
+    "run_id": {"type": "string", "minLength": 1},
+    "attempt_id": {"type": "string", "minLength": 1},
+    "plan_node_id": {"type": "string", "minLength": 1},
+    "choice": {},
+    "reason": {"type": "string", "minLength": 1},
+    "source": {"type": "string", "minLength": 1},
+    "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+    "user_confirmed": {"type": "boolean"},
+    "affected_nodes": {
+      "type": "array", "minItems": 1, "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "decision": {"enum": ["CONTINUE", "ASK_HUMAN"]},
+    "executable": {"type": "boolean"},
+    "domain_sensitive": {"type": "boolean"},
+    "safe_default": {"type": "boolean"},
+    "created_at": {"type": "string", "format": "date-time"},
+    "superseded_by": {"type": ["string", "null"]}
+  }
+}

@@ -1,0 +1,30 @@
+# Local credentials and user data
+.env
+.env.*
+*.key
+*.pem
+*.p12
+*.pfx
+workspace/
+**/_compiled_kb/
+**/comsol_better_pdf/
+*.mph
+*.mphbin
+*.gguf
+*.safetensors
+
+# Toolchains, generated output, and diagnostics
+.venv/
+**/__pycache__/
+**/.pytest_cache/
+**/node_modules/
+frontend/dist/
+frontend/src-tauri/target/
+frontend/src-tauri/binaries/
+packaging/build/
+packaging/dist/
+review_sidecar_*/
+*.log
+*.sqlite
+*.db
+*.png.tmp

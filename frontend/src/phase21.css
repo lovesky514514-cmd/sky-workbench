@@ -1,0 +1,196 @@
+/* Phase 2.1 product polish — preserves the Scientific Instrument Workspace layout. */
+:root {
+  --phase21-ui: 13px;
+  --phase21-meta: 12px;
+  --phase21-title: 18px;
+}
+
+.workspace-topbar.phase21-product-bar {
+  height: 58px;
+  flex-basis: 58px;
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) auto minmax(380px, 1fr);
+  gap: 18px;
+  padding: 0 14px;
+  background: rgb(251 253 253 / 98%);
+}
+.topbar-product { min-width: 0; display: flex; align-items: center; gap: 10px; }
+.workbench-brand-icon { display: block; flex: 0 0 auto; object-fit: cover; border-radius: 9px; }
+.topbar-product .workbench-brand-icon { width: 32px; height: 32px; box-shadow: 0 0 0 1px rgb(17 69 78 / 14%); }
+.workspace-topbar .brand-copy { min-width: 0; }
+.workspace-topbar .brand-copy strong { overflow: hidden; font-size: 14px; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
+.workspace-topbar .brand-copy span { overflow: hidden; margin-top: 2px; color: var(--instrument-muted); font-size: 12px; letter-spacing: 0; text-overflow: ellipsis; text-transform: none; white-space: nowrap; }
+.global-mode-switch { display: flex; align-items: center; gap: 2px; padding: 3px; border-radius: 9px; background: #edf2f2; }
+.global-mode-switch button { height: 32px; padding: 0 12px; border: 0; border-radius: 7px; color: var(--instrument-muted); background: transparent; cursor: pointer; font-size: 13px; transition: color 150ms ease, background 150ms ease, box-shadow 150ms ease; }
+.global-mode-switch button:hover { color: var(--instrument-ink); }
+.global-mode-switch button.active { color: var(--instrument-ink); background: white; box-shadow: 0 1px 4px rgb(28 52 56 / 10%); }
+.topbar-product-status { min-width: 0; display: flex; align-items: center; justify-content: flex-end; gap: 9px; }
+.workspace-topbar .workspace-connection-chip { display: inline-flex; align-items: center; gap: 6px; padding: 0; color: var(--instrument-muted); background: transparent; font-size: 12px; white-space: nowrap; }
+.workspace-connection-chip > i { width: 7px; height: 7px; border-radius: 50%; background: var(--instrument-faint); }
+.workspace-connection-chip.connected > i { background: var(--instrument-green); }
+.topbar-model { color: var(--instrument-ink); font: 12px DM Mono, Consolas, monospace; white-space: nowrap; }
+.workspace-topbar .language-switch { min-width: 48px; font-size: 12px; }
+.workspace-topbar .language-switch button { font-size: 12px; }
+.topbar-settings, .topbar-cancel { height: 30px; padding: 0 9px; border: 0; border-radius: 7px; color: var(--instrument-muted); background: transparent; cursor: pointer; font-size: 12px; }
+.topbar-settings:hover, .topbar-cancel:hover { color: var(--instrument-ink); background: #edf2f2; }
+.topbar-cancel { color: var(--instrument-red); }
+.workspace-menu summary, .phase2-top-action { font-size: 14px; }
+.fixture-audit-label { position: fixed; z-index: 40; top: 66px; left: 50%; color: rgb(69 88 93 / 58%); font-size: 11.5px; pointer-events: none; transform: translateX(-50%); }
+
+/* Rail: hierarchy through spacing and selection, not boxes. */
+.rail-brand { height: 62px; flex-basis: 62px; }
+.rail-brand span { font-size: 12px; letter-spacing: .05em; }
+.rail-brand strong { margin-top: 2px; font-size: 13px; }
+.rail-project-picker select { font-size: 12px; }.rail-project-picker button, .rail-sessions header button { font-size: 14px; }
+.instrument-tree button { min-height: 48px; }
+.instrument-tree .workspace-icon { width: 20px; height: 20px; }
+.rail-node-copy b { font-size: 13px; font-weight: 600; }
+.rail-node-copy small { margin-top: 3px; font-size: 12px; }
+.instrument-tree button > em { font-size: 11.5px; }
+.tree-context span, .tree-context small, .rail-repository summary, .rail-repository p, .rail-sessions header span, .rail-sessions button span, .rail-sessions button small { font-size: 12px; }
+
+/* The canvas owns the window; global modes live in the product bar. */
+.canvas-command-layer { height: 68px; grid-template-columns: minmax(240px, 1fr) auto; gap: 20px; padding: 0 18px; }
+.instrument-workspace:has(.context-inspector) .canvas-command-layer { grid-template-columns: minmax(190px, 1fr) auto; padding-inline: 16px; }
+.canvas-object-title small { font-size: 12px; letter-spacing: .05em; }
+.canvas-object-title h1 { margin-top: 3px; font-size: var(--phase21-title); font-weight: 620; }
+.canvas-object-title span { margin-top: 3px; font-size: var(--phase21-meta); }
+.canvas-live-context { font-size: 12px; }
+.canvas-live-context > span, .canvas-live-context button { font-size: 12px; }
+.canvas-empty-state { max-width: 520px; }
+.canvas-empty-state small { font-size: 12px; letter-spacing: .06em; }
+.canvas-empty-state h2 { margin-top: 10px; font-size: 20px; }
+.canvas-empty-state p { margin-top: 8px; font-size: 14px; line-height: 1.55; }
+.canvas-empty-state button { height: 38px; margin-top: 18px; padding: 0 18px; font-size: 13px; }
+.canvas-empty-state em { margin-top: 14px; font-size: 12px; }
+.plane-coordinate { font-size: 12px; }
+.model-blueprint > header span, .model-blueprint > header small { font-size: 12px; }
+.model-blueprint > header strong { font-size: 15px; }
+.blueprint-path > div > strong { font-size: 14px; }
+.blueprint-path > div > small { font-size: 12px; line-height: 1.35; }
+.blueprint-index { font-size: 11.5px; }
+.active-operation small, .review-callout small { font-size: 12px; letter-spacing: .05em; }
+.active-operation strong, .review-callout strong { font-size: 15px; }
+.active-operation p, .review-callout span, .review-callout button { font-size: 13px; }
+.canvas-status-line { font-size: 12px; }
+
+/* Verified model-state 2D viewport. No geometry is created unless readback is verified. */
+.verified-2d-viewport { position: absolute; inset: 0 0 49px; display: flex; flex-direction: column; overflow: hidden; }
+.verified-2d-viewport > header { height: 68px; flex: 0 0 68px; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; border-bottom: 1px solid var(--instrument-seam); }
+.verified-2d-viewport > header span { display: block; color: var(--instrument-teal); font-size: 12px; }
+.verified-2d-viewport > header strong { display: block; margin-top: 4px; font-size: 16px; font-weight: 620; }
+.verified-2d-viewport > header small { color: var(--instrument-muted); font-size: 12px; }
+.readback-viewport-layout { min-height: 0; flex: 1; display: grid; grid-template-columns: minmax(0, 1fr) 310px; }
+.schematic-stage { position: relative; min-width: 0; display: grid; place-items: center; overflow: hidden; background-image: linear-gradient(rgb(23 79 84 / 4%) 1px, transparent 1px), linear-gradient(90deg, rgb(23 79 84 / 4%) 1px, transparent 1px); background-size: 32px 32px; }
+.schematic-axis { position: absolute; color: var(--instrument-faint); font: 12px DM Mono, Consolas, monospace; }
+.schematic-axis.axis-x { right: 24px; bottom: 20px; }.schematic-axis.axis-y { top: 20px; left: 24px; }
+.rectangle-readback { position: relative; width: min(58%, 560px); aspect-ratio: 2 / 1; border: 2px solid #61868a; background: rgb(234 244 244 / 74%); box-shadow: inset 0 0 0 1px rgb(255 255 255 / 75%); transition: border-color 150ms ease, background 150ms ease; }
+.rectangle-domain { position: absolute; inset: 0; display: grid; place-content: center; gap: 5px; text-align: center; }
+.rectangle-domain small { color: var(--instrument-muted); font-size: 12px; }.rectangle-domain strong { font-size: 16px; font-weight: 620; }
+.boundary-edge { position: absolute; z-index: 2; display: flex; align-items: center; justify-content: center; border: 0; padding: 0; color: transparent; background: transparent; cursor: pointer; }
+.boundary-edge::after { content: ''; position: absolute; background: transparent; transition: background 150ms ease, box-shadow 150ms ease; }
+.boundary-top, .boundary-bottom { left: -2px; width: calc(100% + 4px); height: 16px; }.boundary-top { top: -8px; }.boundary-bottom { bottom: -8px; }
+.boundary-left, .boundary-right { top: -2px; width: 16px; height: calc(100% + 4px); }.boundary-left { left: -8px; }.boundary-right { right: -8px; }
+.boundary-top::after, .boundary-bottom::after { left: 0; width: 100%; height: 3px; }.boundary-left::after, .boundary-right::after { top: 0; width: 3px; height: 100%; }
+.boundary-edge span { position: absolute; min-width: max-content; color: var(--instrument-muted); font-size: 12px; opacity: 0; pointer-events: none; transition: opacity 150ms ease; }
+.boundary-left span { left: 20px; }.boundary-right span { right: 20px; }.boundary-top span { bottom: 15px; }.boundary-bottom span { top: 15px; }
+.focus-boundary .boundary-edge span { opacity: 1; }
+.focus-boundary .boundary-edge::after, .boundary-edge:hover::after { background: var(--instrument-teal); box-shadow: 0 0 0 3px rgb(12 133 135 / 12%); }
+.need-review .focus-boundary .boundary-edge::after { background: var(--instrument-amber); box-shadow: 0 0 0 3px rgb(177 117 24 / 13%); }
+.dimension-readback { position: absolute; display: flex; align-items: center; color: var(--instrument-muted); font-size: 12px; }
+.dimension-readback i { display: block; background: var(--instrument-faint); }
+.dimension-width { left: 50%; bottom: calc(50% - min(29vw, 280px) / 2 - 46px); width: min(58%, 560px); justify-content: center; transform: translateX(-50%); }
+.dimension-width i { width: 28%; height: 1px; }.dimension-width span { padding: 0 10px; }
+.dimension-height { top: 50%; left: calc(50% - min(29vw, 280px) - 48px); flex-direction: column; transform: translateY(-50%); }
+.dimension-height i { width: 1px; height: 36px; }.dimension-height span { padding: 8px 0; writing-mode: vertical-rl; transform: rotate(180deg); }
+.object-readback { min-width: 0; overflow: auto; padding: 28px 24px; border-left: 1px solid var(--instrument-seam); background: rgb(251 253 253 / 78%); }
+.object-readback > small { color: var(--instrument-teal); font-size: 12px; }
+.object-readback h2 { margin: 7px 0 20px; font-size: 19px; }
+.object-readback ul { display: grid; gap: 0; margin: 0; padding: 0; list-style: none; }
+.object-readback li { display: grid; grid-template-columns: 7px minmax(0, 1fr); gap: 9px; align-items: start; padding: 11px 0; border-bottom: 1px solid var(--instrument-seam); color: var(--instrument-muted); font-size: 13px; line-height: 1.45; }
+.object-readback li i { width: 6px; height: 6px; margin-top: 6px; border-radius: 50%; background: var(--instrument-teal); }
+.object-readback footer { display: flex; align-items: center; gap: 7px; margin-top: 20px; color: var(--instrument-green); font-size: 12px; }
+
+/* Inspector and intervention are contextual and readable. */
+.inspector-launch { height: 36px; font-size: 12px; }
+.context-inspector-header span { font-size: 12px; letter-spacing: .05em; }
+.context-inspector-header strong { font-size: 15px; }
+.context-tabs button { font-size: 12px; }
+.action-focus span, .intervention-status span, .inspector-properties > header span, .diagnostic-summary span { font-size: 12px; letter-spacing: 0; text-transform: none; }
+.action-focus strong { font-size: 15px; }.action-focus small { font-size: 12px; }
+.intervention-status strong { font-size: 14px; }
+.intervention-diff > div { grid-template-columns: 90px minmax(0, 1fr); padding: 11px 0; }
+.intervention-diff dt { font-size: 12px; text-transform: none; }.intervention-diff dd { font-size: 13px; }
+.intervention-actions { grid-template-columns: repeat(2, 1fr); gap: 8px; }.intervention-actions.count-1 { grid-template-columns: 1fr; }.intervention-actions.count-3 { grid-template-columns: repeat(3, 1fr); }
+.intervention-actions button { min-height: 36px; font-size: 13px; }
+.intervention-contract { font-size: 12px; line-height: 1.5; }
+.inspector-properties > header strong { font-size: 15px; }.inspector-properties dt { font-size: 11.5px; }.inspector-properties dd, .inspector-empty { font-size: 13px; }.inspector-properties footer { font-size: 12px; }
+.inspector-evidence > header span { font-size: 15px; }.inspector-evidence > header code { font-size: 11.5px; }.inspector-evidence > div span, .inspector-evidence > div strong, .inspector-evidence > p { font-size: 12px; }
+.diagnostic-summary strong { font-size: 12px; }.diagnostic-summary small, .inspector-diagnostics > details summary, .inspector-diagnostics > details p, .fixture-diagnostics { font-size: 12px; }
+
+/* Contextual task actions: readable, compact, and subordinate. */
+.task-dock-capsule small { font-size: 12px; letter-spacing: .04em; }.task-dock-capsule strong { font-size: 13px; }.task-dock-capsule em { font-size: 11.5px; }
+.task-dock.expanded > header small { font-size: 12px; letter-spacing: .04em; }.task-dock.expanded > header strong { font-size: 13px; }
+.task-mode-switch button { font-size: 12px; }
+.task-dock.expanded .task-dock-composer p { font-size: 12px; }
+.task-dock.expanded textarea { height: 64px; font-size: 13px; }
+.task-dock.expanded .task-dock-composer > button { height: 64px; font-size: 13px; }
+.task-dock-warning, .task-history summary, .fixture-confirmation { font-size: 12px; }
+
+/* Collapsed evidence strip remains the default; details are readable on demand. */
+.execution-strip-summary { grid-template-columns: 120px minmax(180px, 1fr) minmax(120px, .7fr) 105px 116px 22px; }
+.execution-state-mark b, .execution-strip-summary > strong, .execution-eta-copy b, .execution-evidence-count, .execution-evidence-count small { font-size: 12px; }
+.execution-eta-copy small { font-size: 11.5px; }
+.execution-drawer > header span, .execution-drawer code { font-size: 11.5px; }.execution-drawer > header strong { font-size: 13px; }
+.execution-stage-path span { font-size: 12px; }.execution-stage-path small { font-size: 11.5px; }
+.execution-events article b { font-size: 12px; }.execution-events article small, .execution-events article em, .execution-events article > div { font-size: 11.5px; }
+.execution-empty strong { font-size: 13px; }.execution-empty span { font-size: 12px; }
+
+.parameter-work-surface > header span, .parameter-work-surface > header strong, .solver-work-surface p, .verdict-work-surface article span { font-size: 13px; }
+.parameter-work-surface article b, .parameter-work-surface article strong, .solver-flow strong, .verdict-work-surface > header span { font-size: 14px; }
+.parameter-work-surface article small, .parameter-work-surface article i, .solver-flow small, .verdict-work-surface article strong, .verdict-work-surface > header code, .verified-result-surface header small, .result-focus aside span, .result-focus aside code { font-size: 12px; }
+.verified-result-surface header span { font-size: 13px; }.verified-result-surface header strong { font-size: 18px; }.result-focus aside strong { font-size: 14px; }.verified-result-surface .result-field > span { font-size: 12px; }
+
+/* RC4.1 real artifact viewer. Images enter this surface only after the runtime
+   integrity endpoint re-hashes them against the frozen evidence contract. */
+.verified-artifact-viewer { position: absolute; inset: 0 0 49px; display: grid; grid-template: 68px minmax(0, 1fr) / minmax(0, 1fr) 330px; overflow: hidden; }
+.verified-artifact-viewer > header { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; border-bottom: 1px solid var(--instrument-seam); }
+.verified-artifact-viewer > header span { display: inline-flex; align-items: center; gap: 7px; color: var(--instrument-green); font-size: 13px; }
+.verified-artifact-viewer > header strong { font-size: 18px; font-weight: 620; }
+.artifact-stage { min-width: 0; min-height: 0; display: grid; place-items: center; padding: 24px; overflow: hidden; background: linear-gradient(145deg, rgb(236 246 246 / 72%), rgb(250 252 252 / 85%)); }
+.artifact-stage img { max-width: 100%; max-height: 100%; object-fit: contain; border: 1px solid var(--instrument-seam); background: white; box-shadow: 0 10px 34px rgb(31 65 72 / 10%); }
+.artifact-loading { color: var(--instrument-muted); font-size: 13px; }
+.verified-artifact-viewer dl { min-width: 0; margin: 0; padding: 22px; overflow: auto; border-left: 1px solid var(--instrument-seam); background: rgb(251 253 253 / 82%); }
+.verified-artifact-viewer dl > div { padding: 10px 0; border-bottom: 1px solid var(--instrument-seam); }
+.verified-artifact-viewer dt { color: var(--instrument-muted); font-size: 11.5px; }
+.verified-artifact-viewer dd { margin: 4px 0 0; overflow-wrap: anywhere; font-size: 13px; }
+.verified-artifact-viewer code { font: 11.5px DM Mono, Consolas, monospace; }
+.artifact-unavailable, .artifact-integrity-lost { position: absolute; inset: 0 0 49px; display: grid; place-content: center; justify-items: center; max-width: none; padding: 40px; text-align: center; }
+.artifact-unavailable h2, .artifact-integrity-lost h2 { margin: 14px 0 6px; font-size: 19px; }
+.artifact-unavailable p, .artifact-integrity-lost p { max-width: 560px; margin: 0; color: var(--instrument-muted); font-size: 13px; line-height: 1.55; }
+.artifact-integrity-lost { color: var(--instrument-red); background: rgb(255 247 246 / 85%); }
+.artifact-integrity-lost code { max-width: 680px; margin-top: 14px; color: var(--instrument-muted); font: 11.5px DM Mono, Consolas, monospace; overflow-wrap: anywhere; }
+
+.topbar-model.missing { color: var(--instrument-amber); }
+.topbar-model.detected { color: var(--instrument-green); }
+.setup-status-card { display: grid; grid-template-columns: 12px minmax(100px, auto) auto; gap: 10px; align-items: center; margin: 24px 0 14px; padding: 16px; border: 1px solid var(--instrument-seam); background: var(--instrument-surface); }
+.setup-status-card strong, .setup-status-card em { font-size: 14px; }.setup-status-card em { justify-self: end; font-style: normal; }.setup-status-card small { grid-column: 2 / -1; color: var(--instrument-muted); font-size: 12px; }
+.first-run-ready { display: grid; gap: 0; margin: 22px 0; border-block: 1px solid var(--instrument-seam); }
+.first-run-ready > div { display: flex; justify-content: space-between; gap: 18px; padding: 13px 2px; border-bottom: 1px solid var(--instrument-seam); font-size: 13px; }.first-run-ready > div:last-child { border: 0; }
+.onboarding-page > footer > span { flex: 1; color: var(--instrument-muted); font-size: 11.5px; line-height: 1.4; }
+
+.onboarding-brand-icon { margin-bottom: 18px; border-radius: 18px; box-shadow: 0 10px 30px rgb(26 63 69 / 14%); }
+.about-dialog .workbench-brand-icon.about-icon { width: 96px; height: 96px; object-fit: cover; }
+
+@media (max-width: 1280px) {
+  .workspace-topbar.phase21-product-bar { grid-template-columns: minmax(220px, 1fr) auto minmax(290px, 1fr); gap: 10px; }
+  .global-mode-switch button { padding: 0 8px; }
+  .topbar-settings { display: none; }
+  .topbar-product-status { gap: 6px; }
+  .readback-viewport-layout { grid-template-columns: minmax(0, 1fr) 280px; }
+  .verified-artifact-viewer { grid-template-columns: minmax(0, 1fr) 280px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .global-mode-switch button, .rectangle-readback, .boundary-edge::after, .boundary-edge span { transition: none; }
+}

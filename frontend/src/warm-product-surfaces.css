@@ -1,0 +1,109 @@
+/* The first-run guide shares the approved Warm Scientific Studio tokens. */
+.warm-onboarding,.warm-settings-backdrop{--w-window:#f5f2eb;--w-nav:#ede9e1;--w-surface:#fbf8f2;--w-line:#ddd8ce;--w-text:#30362f;--w-muted:#6a7067;--w-accent:#3f6b5c;--w-primary:#34473b;box-sizing:border-box;color:var(--w-text);font:16px/1.45 'Segoe UI',Arial,sans-serif}
+.warm-onboarding *,.warm-settings-backdrop *{box-sizing:border-box}
+.warm-onboarding button,.warm-settings-backdrop button,.warm-settings-backdrop select,.warm-settings-backdrop input{font:inherit}
+.warm-onboarding button,.warm-settings-backdrop button{cursor:pointer}
+.warm-onboarding button:disabled,.warm-settings-backdrop button:disabled{cursor:not-allowed;opacity:.5}
+
+/* The full-window surface appears immediately, before runtime discovery ends. */
+.warm-onboarding{position:fixed;inset:0;z-index:110;display:flex;flex-direction:column;background:var(--w-window)}
+.warm-onboarding-header{height:60px;flex:none;display:flex;align-items:center;gap:24px;padding:0 24px 0 16px;border-bottom:1px solid var(--w-line)}
+.warm-onboarding-brand{display:flex;align-items:center;gap:8px;white-space:nowrap;font-size:17px}
+.warm-onboarding-brand strong{font-weight:700}
+.warm-onboarding-brand span{font-weight:400}
+.warm-onboarding-header>span{padding-left:24px;border-left:1px solid var(--w-line);color:var(--w-muted);font-size:14px}
+.warm-onboarding-header>button{margin-left:auto;border:0;background:none;color:var(--w-muted);font-size:14px}
+.warm-onboarding-body{min-height:0;flex:1;display:grid;grid-template-columns:200px minmax(0,1fr)}
+.warm-onboarding-steps{display:flex;flex-direction:column;gap:3px;padding:34px 12px;background:var(--w-nav);border-right:1px solid var(--w-line)}
+.warm-onboarding-nav-title{margin:0 12px 18px;color:var(--w-muted);font-size:12px;font-weight:600;letter-spacing:.09em}
+.warm-onboarding-steps button{height:44px;display:flex;align-items:center;gap:12px;padding:0 12px;border:0;border-radius:8px;background:none;color:var(--w-muted);text-align:left;font-size:14px}
+.warm-onboarding-steps button span{color:#92978e;font-size:12px;font-variant-numeric:tabular-nums}
+.warm-onboarding-steps button.is-active{background:#dfe5db;color:var(--w-text);font-weight:600}
+.warm-onboarding-steps p{margin:auto 12px 0;color:var(--w-muted);font-size:13px;line-height:1.6}
+.warm-onboarding-main{min-width:0;min-height:0;display:flex;flex-direction:column;padding:54px clamp(32px,8vw,128px) 24px;overflow:auto}
+.warm-onboarding-page{width:min(100%,920px);margin:auto 0}
+.warm-onboarding-kicker{color:var(--w-accent);font-size:13px;font-weight:600;letter-spacing:.08em}
+.warm-onboarding-page h1{margin:14px 0 10px;font-size:clamp(32px,3vw,43px);font-weight:600;letter-spacing:-.045em;line-height:1.16}
+.warm-onboarding-lead{max-width:720px;margin:0;color:var(--w-muted);font-size:18px;line-height:1.6}
+.warm-onboarding-sequence{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:26px;margin-top:66px;padding-top:20px;border-top:1px solid var(--w-line)}
+.warm-onboarding-sequence>div{display:flex;flex-direction:column;gap:9px}
+.warm-onboarding-sequence b{color:var(--w-accent);font-size:13px}
+.warm-onboarding-sequence strong{font-size:19px;font-weight:600}
+.warm-onboarding-sequence span{color:var(--w-muted);font-size:14px;line-height:1.5}
+.warm-onboarding-honesty{max-width:760px;margin:42px 0 0;padding-left:16px;border-left:2px solid var(--w-accent);color:var(--w-muted);font-size:14px;line-height:1.6}
+
+/* Detection reads as a quiet scientific checklist, not a dashboard grid. */
+.warm-onboarding-checks{margin-top:42px;border-top:1px solid var(--w-line)}
+.warm-onboarding-checks>div{display:grid;grid-template-columns:minmax(170px,1fr) auto;gap:4px 18px;align-items:center;padding:20px 0;border-bottom:1px solid var(--w-line)}
+.warm-onboarding-checks span{font-size:17px;font-weight:600}
+.warm-onboarding-checks strong{font-size:13px;letter-spacing:.05em}
+.warm-onboarding-checks strong.is-ready,.warm-onboarding-verdict strong.is-ready{color:#3f6b5c}
+.warm-onboarding-checks strong.is-unavailable,.warm-onboarding-verdict strong.is-unavailable{color:#98671f}
+.warm-onboarding-checks small{grid-column:1/-1;overflow-wrap:anywhere;color:var(--w-muted);font-size:13px}
+.warm-onboarding-inline-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:24px}
+.warm-onboarding-inline-actions button,.warm-onboarding-footer button{min-height:40px;padding:0 15px;border:1px solid var(--w-line);border-radius:8px;background:var(--w-surface);color:var(--w-text);font-size:14px}
+.warm-onboarding-inline-actions button:hover,.warm-onboarding-footer button:hover:not(:disabled){background:#e9ece4}
+.warm-onboarding-verdict{margin-top:44px;padding:30px 34px;border:1px solid var(--w-line);border-radius:12px;background:var(--w-surface)}
+.warm-onboarding-verdict>span{display:block;color:var(--w-muted);font-size:13px;letter-spacing:.06em}
+.warm-onboarding-verdict strong{display:block;margin-top:9px;font-size:32px;letter-spacing:-.03em}
+.warm-onboarding-verdict p{margin:10px 0 0;color:var(--w-muted);font-size:15px}
+.warm-onboarding-primary{min-height:40px;padding:0 20px!important;border:1px solid var(--w-primary)!important;border-radius:8px;background:var(--w-primary)!important;color:#faf8f2!important;font-weight:600!important}
+.warm-onboarding-open{margin-top:28px}
+.warm-onboarding-notice{width:min(100%,920px);margin:18px 0 0;color:#98671f;font-size:14px;overflow-wrap:anywhere}
+.warm-onboarding-footer{display:flex;align-items:center;justify-content:space-between;gap:16px;width:100%;margin-top:auto;padding-top:24px;color:var(--w-muted);font-size:13px}
+.warm-onboarding-footer>div{display:flex;gap:10px}
+
+/* Settings use a product-native rail and one readable work surface. */
+.warm-settings-backdrop{position:fixed;inset:0;z-index:105;display:grid;place-items:center;padding:24px;background:#202e3080}
+.warm-settings{width:min(1120px,100%);height:min(740px,100%);display:flex;flex-direction:column;overflow:hidden;border:1px solid var(--w-line);border-radius:14px;background:var(--w-window);box-shadow:0 30px 80px #1b292b33}
+.warm-settings-header{height:68px;flex:none;display:flex;align-items:center;gap:13px;padding:0 24px;border-bottom:1px solid var(--w-line)}
+.warm-settings-header h2{margin:0;font-size:22px;font-weight:600;letter-spacing:-.03em}
+.warm-settings-header>span{margin-left:12px;color:var(--w-muted);font-size:14px}
+.warm-settings-header>button{margin-left:auto;border:0;background:none;color:var(--w-muted);font-size:26px;line-height:1}
+.warm-settings-body{min-height:0;flex:1;display:grid;grid-template-columns:210px minmax(0,1fr)}
+.warm-settings-nav{display:flex;flex-direction:column;gap:3px;padding:24px 12px;background:var(--w-nav);border-right:1px solid var(--w-line)}
+.warm-settings-nav button{min-height:42px;padding:0 14px;border:0;border-radius:8px;background:none;color:var(--w-muted);text-align:left;font-size:14px}
+.warm-settings-nav button.is-active{background:#dfe5db;color:var(--w-text);font-weight:600}
+.warm-settings-nav .warm-settings-guide{margin-top:auto;border-top:1px solid var(--w-line);border-radius:0;color:var(--w-accent)}
+.warm-settings-main{min-width:0;overflow:auto;padding:34px clamp(24px,5vw,64px) 42px}
+.warm-settings-section{max-width:740px}
+.warm-settings-eyebrow{color:var(--w-accent);font-size:12px;font-weight:600;letter-spacing:.09em}
+.warm-settings-section h3{margin:9px 0 8px;font-size:29px;font-weight:600;letter-spacing:-.035em}
+.warm-settings-section>p{max-width:650px;margin:0 0 27px;color:var(--w-muted);font-size:15px;line-height:1.6}
+.warm-settings-row{display:flex;align-items:center;justify-content:space-between;gap:24px;min-height:66px;padding:15px 0;border-bottom:1px solid var(--w-line)}
+.warm-settings-row>div{min-width:0;display:flex;flex-direction:column;gap:4px}
+.warm-settings-row strong{font-size:15px;font-weight:600}
+.warm-settings-row span,.warm-settings-row small{color:var(--w-muted);font-size:13px;overflow-wrap:anywhere}
+.warm-settings-row select,.warm-settings-row input:not([type=checkbox]){min-width:180px;max-width:300px;height:40px;padding:0 12px;border:1px solid var(--w-line);border-radius:8px;background:var(--w-surface);color:var(--w-text);font-size:14px}
+.warm-settings-row button,.warm-settings-section>button,.warm-settings-actions button,.warm-settings-provider button,.warm-settings-model button{min-height:40px;padding:0 15px;border:1px solid var(--w-line);border-radius:8px;background:var(--w-surface);color:var(--w-text);font-size:14px}
+.warm-settings-row button:hover,.warm-settings-section>button:hover,.warm-settings-provider button:hover,.warm-settings-model button:hover{background:#e9ece4}
+.warm-settings-note{margin:24px 0 0;padding:16px 18px;border-left:2px solid var(--w-accent);background:var(--w-surface);color:var(--w-muted);font-size:13px;line-height:1.6}
+.warm-settings-note.is-warning{border-left-color:#98671f;background:#f4e8cf;color:#6c542f}
+.warm-settings-provider,.warm-settings-model{padding:18px 0;border-top:1px solid var(--w-line)}
+.warm-settings-provider header,.warm-settings-model header{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:16px}
+.warm-settings-provider header strong,.warm-settings-model header strong{font-size:18px}
+.warm-settings-provider header span,.warm-settings-model header span{color:var(--w-muted);font-size:13px}
+.warm-settings-provider label:not(.warm-settings-toggle){display:flex;flex-direction:column;gap:6px;margin:12px 0;color:var(--w-muted);font-size:13px}
+.warm-settings-provider label input:not([type=checkbox]){height:40px;padding:0 12px;border:1px solid var(--w-line);border-radius:8px;background:var(--w-surface);color:var(--w-text);font-size:14px}
+.warm-settings-toggle{display:flex;align-items:center;gap:8px;font-size:14px}
+.warm-settings-metadata{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0;color:var(--w-muted);font-size:13px}
+.warm-settings-metadata span{max-width:100%;padding:5px 9px;border:1px solid var(--w-line);border-radius:6px;background:var(--w-surface);overflow-wrap:anywhere}
+.warm-settings-provider-actions,.warm-settings-model-actions{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:16px}
+.warm-settings-provider-actions small{color:var(--w-muted);overflow-wrap:anywhere}
+.warm-settings-acceptance{margin-top:14px;padding:13px 16px;border-left:2px solid var(--w-accent);background:var(--w-surface);font-size:13px}
+.warm-settings-acceptance.is-failed{border-left-color:#98671f}
+.warm-settings-acceptance div{display:flex;justify-content:space-between;gap:15px;margin-top:6px}
+.warm-settings-model>p{margin:5px 0;color:var(--w-muted);font-size:14px;overflow-wrap:anywhere}
+.warm-settings-actions{height:72px;flex:none;display:flex;justify-content:flex-end;align-items:center;gap:10px;padding:0 24px;border-top:1px solid var(--w-line)}
+.warm-settings-actions .is-primary{border-color:var(--w-primary);background:var(--w-primary);color:#faf8f2;font-weight:600}
+.warm-settings-feedback{margin:20px 0;color:#98671f;font-size:13px;overflow-wrap:anywhere}
+.warm-product-fixture-mark{position:fixed;right:18px;bottom:14px;z-index:130;padding:5px 9px;border-radius:4px;background:#34473b;color:#faf8f2;font:11px 'Segoe UI',sans-serif;letter-spacing:.04em}
+
+/* Profile recovery is an honest, persistent status strip, not a success card. */
+.warm-recovery-banner{display:flex;align-items:baseline;flex-wrap:wrap;gap:5px 14px;padding:10px 28px;border-bottom:1px solid #e1c99c;background:#fff3dd;color:#6b4a18;font-size:13px;line-height:1.45}
+.warm-recovery-banner strong{font-weight:650}
+.warm-recovery-banner span{min-width:0;overflow-wrap:anywhere}
+
+/* Compact view keeps the same hierarchy without shrinking text to dashboard size. */
+@media(max-width:850px){.warm-onboarding-body{grid-template-columns:150px minmax(0,1fr)}.warm-onboarding-steps{padding:22px 8px}.warm-onboarding-main{padding:32px 28px 20px}.warm-onboarding-sequence{gap:14px}.warm-settings-body{grid-template-columns:160px minmax(0,1fr)}.warm-settings-main{padding:28px 26px}.warm-settings-row{align-items:flex-start;flex-direction:column;gap:8px}}
+@media(max-width:620px){.warm-onboarding-header>span{display:none}.warm-onboarding-body,.warm-settings-body{display:flex;flex-direction:column}.warm-onboarding-steps,.warm-settings-nav{flex:none;flex-direction:row;overflow:auto;padding:8px;border-right:0;border-bottom:1px solid var(--w-line)}.warm-onboarding-steps p,.warm-onboarding-nav-title,.warm-settings-guide{display:none}.warm-onboarding-steps button,.warm-settings-nav button{flex:none}.warm-onboarding-sequence{grid-template-columns:1fr;margin-top:30px}.warm-onboarding-footer>span{display:none}.warm-settings-backdrop{padding:0}.warm-settings{width:100%;height:100%;border-radius:0}}
