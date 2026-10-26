@@ -63,6 +63,6 @@ export function WarmStudioFixture({ page }: { page: FixturePage }) {
     onPromptChange={setPrompt} onModeChange={setMode} onSend={() => undefined} onCancelAsk={() => undefined}
     onPause={() => undefined} onResume={() => undefined} onApprove={() => undefined}
     onReject={() => undefined} onModify={() => undefined} onCancel={() => undefined} onEmergencyStop={() => undefined}
-    onOpenSettings={() => undefined} onOpenSetup={() => undefined} onOpenAbout={() => undefined} onOpenHelp={() => undefined}
+    onOpenSettings={() => undefined} onOpenLiveInspector={() => undefined} onOpenSetup={() => undefined} onOpenAbout={() => undefined} onOpenHelp={() => undefined}
     onOpenLogs={() => undefined} onOpenWorkspace={() => undefined} onLocaleChange={() => undefined} />
 }

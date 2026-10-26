@@ -22,6 +22,6 @@ assert.ok(css.includes('.scientific-workbench-grid'))
 const windowConfig = JSON.parse(tauri).app.windows[0]
 assert.equal(windowConfig.width / windowConfig.height, 16 / 9)
 // The historical workspace contract remains, while candidate metadata advances.
-assert.equal(JSON.parse(tauri).version, '2.0.0')
+assert.equal(JSON.parse(tauri).version, '3.0.0')
 
 console.log('RC4 scientific workspace contract: PASS')

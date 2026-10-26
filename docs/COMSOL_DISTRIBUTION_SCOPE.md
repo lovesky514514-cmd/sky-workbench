@@ -1,4 +1,4 @@
-# SKY Workbench V2.0 — COMSOL integration scope
+# SKY Workbench 3.0 — COMSOL integration scope
 
 SKY Workbench is an independent, local-first **scientific workflow assistant**.
 Its core purpose is to help a user of separately licensed COMSOL software

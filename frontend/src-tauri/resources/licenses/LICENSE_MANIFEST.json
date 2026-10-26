@@ -6988,6 +6988,69 @@
   "node": [
     {
       "ecosystem": "node",
+      "name": "dompurify",
+      "version": "3.4.15",
+      "declared_license": "MPL-2.0 OR Apache-2.0 (Apache-2.0 selected)",
+      "integrity": "sha512-EUBjM+B+lkDE41iE82DDSCfkoPGfXx8IxFxPMjNzm/Uk4xDet77rTN9wqlxlVg71kK7XGuUMv6wUxJUwwv+Xyw==",
+      "source_url": "https://registry.npmjs.org/dompurify/-/dompurify-3.4.15.tgz",
+      "files": [
+        {
+          "file": "node/dompurify-3.4.15/LICENSE",
+          "bytes": 11358,
+          "sha256": "CFC7749B96F63BD31C3C42B5C471BF756814053E847C10F3EB003417BC523D30",
+          "source": "production package-lock entry dompurify"
+        },
+        {
+          "file": "node/dompurify-3.4.15/LICENSE-MPL",
+          "bytes": 16726,
+          "sha256": "FAB3DD6BDAB226F1C08630B1DD917E11FCB4EC5E1E020E2C16F83A0A13863E85",
+          "source": "production package-lock entry dompurify; alternate license retained"
+        }
+      ],
+      "status": "NOTICE_TEXT_COLLECTED"
+    },
+    {
+      "ecosystem": "node",
+      "name": "marked",
+      "version": "14.0.0",
+      "declared_license": "MIT",
+      "integrity": "sha512-uIj4+faQ+MgHgwUW1l2PsPglZLOLOT1uErt06dAPtx2kjteLAkbsd/0FiYg/MGS+i7ZKLb7w2WClxHkzOOuryQ==",
+      "source_url": "https://registry.npmjs.org/marked/-/marked-14.0.0.tgz",
+      "files": [
+        {
+          "file": "node/marked-14.0.0/LICENSE.md",
+          "bytes": 2942,
+          "sha256": "8E3A3F82F59A60958F56CA08F445647C32A4733DC7CA6C2C46F6EB898471AB9C",
+          "source": "production package-lock entry marked"
+        }
+      ],
+      "status": "NOTICE_TEXT_COLLECTED"
+    },
+    {
+      "ecosystem": "node",
+      "name": "monaco-editor-core",
+      "version": "0.57.0",
+      "declared_license": "MIT",
+      "integrity": "sha512-qmrTRcRS4xlxEE+uTf0FivFudji0I87rvpQzGyzf2VZhbf2Q29PSs0ksaaZAIQoC6LOHpvJOBMpBa6u0zWQlmw==",
+      "source_url": "https://registry.npmjs.org/monaco-editor-core/-/monaco-editor-core-0.57.0.tgz",
+      "files": [
+        {
+          "file": "node/monaco-editor-core-0.57.0/LICENSE",
+          "bytes": 1098,
+          "sha256": "33E4FF1A06EF62BA21788EA162564EE8165269A24A9CE6EF301837447EAB0AC6",
+          "source": "production package-lock entry monaco-editor-core"
+        },
+        {
+          "file": "node/monaco-editor-core-0.57.0/ThirdPartyNotices.txt",
+          "bytes": 3038,
+          "sha256": "3451AB38EA19F7823D468863FC6016A27F81CB60CA6A241100ED1CBD4CB8260C",
+          "source": "production package-lock entry monaco-editor-core"
+        }
+      ],
+      "status": "NOTICE_TEXT_COLLECTED"
+    },
+    {
+      "ecosystem": "node",
       "name": "@tauri-apps/api",
       "version": "2.11.1",
       "declared_license": "Apache-2.0 OR MIT",
@@ -12436,7 +12499,7 @@
           "source": "https://raw.githubusercontent.com/openssl/openssl/openssl-3.5.9/LICENSE.txt"
         }
       ],
-      "status": "NOTICE_COLLECTED_NEW_RUNTIME_REQUIRES_EXACT_PAYLOAD_REVIEW"
+      "status": "NOTICE_COLLECTED_RUNTIME_VERSION_TO_BE_VERIFIED_IN_FROZEN_EXE"
     },
     {
       "name": "openssl-cryptography-static",

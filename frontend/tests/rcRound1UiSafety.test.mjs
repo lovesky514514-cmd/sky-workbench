@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { responseError, safeUiError } from '../src/safeUiError.ts'
+import { comsolHomeStatus } from '../src/installationStatus.ts'
 
 const read = (path) => readFileSync(new URL(path, import.meta.url), 'utf8')
 assert.match(safeUiError('File C:\\Users\\researcher\\secret.mph failed'), /diagnostic logs/)
@@ -24,7 +25,8 @@ assert.ok(studio.includes('Enter a scientific request →'))
 assert.match(app, /const beginSelection = \(sessionId: string\): SelectionTicket => \{[\s\S]*?setPrompt\(''\); setPendingIntent\(null\)/, 'selection must clear unbound intent and draft text synchronously')
 assert.match(app, /const newSession = async \(\) => \{[\s\S]*?beginSelection\(''\)/, 'a new task must revoke the previous task view')
 assert.match(app, /onSelectSession=\{\(id\) => \{ void selectSession\(id\) \}\}/, 'task switching must use the guarded selection path')
-assert.match(studio, /props\.comsolDetected \? 'COMSOL installed · Bridge disconnected' : 'COMSOL unavailable'/, 'detected COMSOL must not be labeled unavailable merely because the live Bridge is disconnected')
+assert.match(studio, /comsolHomeStatus\(props\.comsolVersion/, 'header must use the version-aware, evidence-separated status')
+assert.equal(comsolHomeStatus('COMSOL 6.4', true, '', false, true), 'COMSOL 6.4 已检测 · Bridge 未验证', 'detected COMSOL must not be labeled unavailable or verified merely because Bridge is disconnected')
 assert.match(translations, /'COMSOL installed · Bridge disconnected': 'COMSOL 已安装 · 实时桥接未连接'/)
 assert.match(app, /setRuntimeDomain\(\(current\) => currentScientificDomain\(session, current\)\)/, 'same-run domain must survive ordinary refreshes')
 assert.match(app, /const selectedDomain = currentScientificDomain\(session, runtimeDomain\)/, 'rendered domain must be requalified for the current session')

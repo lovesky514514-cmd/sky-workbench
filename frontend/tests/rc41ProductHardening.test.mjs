@@ -29,10 +29,13 @@ test('Warm Studio first-run opens before runtime discovery and uses a new comple
   const guide = readFileSync(new URL('../src/components/WarmOnboarding.tsx', import.meta.url), 'utf8')
   assert.match(app, /firstRunOpen && <WarmOnboarding/)
   assert.doesNotMatch(app, /firstRunOpen && runtimeReady &&/)
-  assert.match(guide, /warm-studio-onboarding-v2/)
+  assert.match(guide, /warm-studio-onboarding-v3/)
   assert.match(guide, /pullOllama/)
   assert.match(guide, /Scientific Runtime/)
-  assert.match(guide, /COMSOL 6\.3/)
+  // The guide must display the detected version; hard-coding 6.3 would
+  // mislabel a 6.2/6.4 installation as a verified 6.3 environment.
+  assert.match(guide, /comsol\?\.detail\.match/)
+  assert.match(guide, /\?\? 'COMSOL'/)
 })
 
 test('Warm settings retain provider and cache APIs behind product navigation', () => {

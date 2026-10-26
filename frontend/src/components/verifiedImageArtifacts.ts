@@ -10,6 +10,20 @@ export type ArtifactDescriptor = {
   message: Message
 }
 
+export type ArtifactLoad = {
+  key: string
+  state: 'loading' | 'verified' | 'lost' | 'unavailable'
+  source: string
+}
+
+// React effects run after paint. A previous task's image URL must be hidden
+// during the render that switches to a new session, run or attempt.
+export function visibleArtifactLoad(loaded: ArtifactLoad, currentKey: string): Pick<ArtifactLoad, 'state' | 'source'> {
+  return loaded.key === currentKey
+    ? { state: loaded.state, source: loaded.source }
+    : { state: 'loading', source: '' }
+}
+
 // Only declared keys receive a scientific label. Unknown PNGs keep their
 // original filename, so a Python plot cannot be mislabeled as COMSOL data.
 const IMAGE_ARTIFACTS: Record<string, { name: string; quantity: string; unit: string }> = {
@@ -34,7 +48,9 @@ export function verifiedImageArtifacts(session: Session | null, currentRunId?: s
     const verdict = message.execution_verdict
     const evidence = message.evidence_contract
     if (!message.run_id || message.run_id !== currentRunId) continue
-    if (!verdict?.completed || !verdict.command_success || !verdict.model_state_verified || !verdict.scientific_validation_success || !verdict.evidence_contract_passed || !evidence?.passed) continue
+    if (verdict?.completed !== true || verdict.command_success !== true ||
+        verdict.model_state_verified !== true || verdict.scientific_validation_success !== true ||
+        verdict.evidence_contract_passed !== true || evidence?.passed !== true) continue
     if (verdict.run_id !== message.run_id || evidence.run_id !== message.run_id || evidence.attempt_id !== currentAttemptId) continue
     return Object.entries(message.artifacts ?? {}).flatMap(([key, path]) => {
       const record = evidence.artifacts?.[key]

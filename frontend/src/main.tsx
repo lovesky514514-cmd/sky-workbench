@@ -15,7 +15,7 @@ async function mount() {
   let screen = <App />
   // Visual review fixtures are imported only when their explicit dev flag is
   // enabled. Production bundles must not carry synthetic model/verdict data.
-  if (import.meta.env.VITE_VISUAL_FIXTURES === '1') {
+  if (import.meta.env.DEV && import.meta.env.VITE_VISUAL_FIXTURES === '1') {
     const query = new URLSearchParams(window.location.search)
     const product = query.get('warm-product-fixture')
     const warm = query.get('warm-fixture')

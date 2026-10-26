@@ -19,6 +19,7 @@ const source = (relative) => readFileSync(new URL(relative, import.meta.url), 'u
 const verdict = (runId) => ({ run_id: runId, completed: true, command_success: true,
   model_state_verified: true, scientific_validation_success: true, evidence_contract_passed: true, issues: [] })
 const evidence = (runId, attemptId) => ({ passed: true, run_id: runId, attempt_id: attemptId,
+  issues: [],
   artifacts: { temperature_image: { path: 'temperature.png', sha256: 'digest' } } })
 const event = (sequence, type, payload) => ({ sequence, type, payload, id: `${sequence}`, created_at: '' })
 const session = (id, runId, attemptId, state = 'COMPLETED') => ({ id, state, messages: [{
@@ -30,6 +31,7 @@ const session = (id, runId, attemptId, state = 'COMPLETED') => ({ id, state, mes
     execution_verdict: verdict(runId), evidence_contract: evidence(runId, attemptId) })] })
 const domain = (id, runId, attemptId) => ({ contractVersion: 'rc42-v1', studyId: id,
   runState: { runId, attemptId }, authoritativeVerdict: verdict(runId), evidenceState: 'verified',
+  contractGaps: [],
   resultArtifacts: [{ runId, attemptId, evidenceState: 'verified' }],
   objectIds: { boundaries: { left: 'source-left', right: 'source-right' } },
   modelSnapshot: { geometry: { features: [{ id: 'source-geometry', label: 'Rectangle from readback' }], domainCount: 2 },
@@ -113,6 +115,86 @@ test('runtime disconnected or absent evidence never falls back to fabricated sci
     ? { ...item, payload: { run_id: 'run-A', attempt_id: 'attempt-A' } } : item) }
   assert.equal(view.verifiedCurrentResult(noFrozenEvidence, domain('A', 'run-A', 'attempt-A')), false)
   assert.match(source('../src/App.tsx'), /domain=\{runtimeReady && !runtimeUnavailable \? selectedDomain : null\}/)
+})
+
+test('runtime JSON cannot turn string or numeric success flags into certification', () => {
+  const a = session('A', 'run-A', 'attempt-A')
+  const trusted = domain('A', 'run-A', 'attempt-A')
+  for (const field of ['completed', 'command_success', 'model_state_verified',
+    'scientific_validation_success', 'evidence_contract_passed']) {
+    assert.equal(view.verifiedCurrentResult(a, {
+      ...trusted, authoritativeVerdict: { ...trusted.authoritativeVerdict, [field]: 'true' },
+    }), false, field)
+    const badCompletion = { ...a, events: a.events.map((item) => item.type === 'run.completed'
+      ? { ...item, payload: { ...item.payload,
+        execution_verdict: { ...item.payload.execution_verdict, [field]: 1 } } } : item) }
+    assert.equal(view.verifiedCurrentResult(badCompletion, trusted), false, field)
+  }
+})
+
+test('message, artifact and later terminal failure must agree with the completed attempt', () => {
+  const a = session('A', 'run-A', 'attempt-A')
+  const trusted = domain('A', 'run-A', 'attempt-A')
+  assert.equal(view.verifiedCurrentResult(a, trusted), true)
+  assert.equal(view.verifiedCurrentResult({ ...a, messages: [{ ...a.messages[0],
+    execution_verdict: { ...a.messages[0].execution_verdict, command_success: false } }] }, trusted), false)
+  assert.equal(view.verifiedCurrentResult({ ...a, events: [...a.events,
+    event(4, 'run.failed', { run_id: 'run-A', attempt_id: 'attempt-A' })] }, trusted), false)
+  assert.equal(view.verifiedCurrentResult(a, { ...trusted, resultArtifacts: null }), false)
+})
+
+test('recovery reads the journal before projection and drops a superseded selection', async () => {
+  const a = session('A', 'run-A', 'attempt-A')
+  const retried = { ...a, events: [...a.events,
+    event(4, 'run.attempt', { run_id: 'run-A', attempt_id: 'attempt-new' })] }
+  let current = { generation: 1, sessionId: 'A' }
+  let journal = a
+  const calls = []
+  const result = await view.reconcileCurrentEvidence({
+    ticket: current, selection: () => current,
+    refresh: async () => { calls.push('journal'); journal = retried },
+    projection: async () => { calls.push('projection'); return domain('A', 'run-A', 'attempt-A') },
+    session: () => journal,
+  })
+  assert.deepEqual(calls, ['journal', 'projection'])
+  assert.equal(result, null)
+
+  calls.length = 0
+  current = { generation: 2, sessionId: 'A' }
+  const oldTicket = current
+  const late = await view.reconcileCurrentEvidence({
+    ticket: oldTicket, selection: () => current,
+    refresh: async () => { current = { generation: 3, sessionId: 'B' } },
+    projection: async () => { calls.push('projection'); return domain('A', 'run-A', 'attempt-A') },
+    session: () => a,
+  })
+  assert.equal(late, undefined)
+  assert.deepEqual(calls, [])
+})
+
+test('artifact integrity journal failures revoke the result until that artifact is reverified', () => {
+  const a = session('A', 'run-A', 'attempt-A')
+  const trusted = domain('A', 'run-A', 'attempt-A')
+  const failed = { ...a, events: [...a.events,
+    event(4, 'artifact.integrity_failed', { run_id: 'run-A', attempt_id: 'attempt-A', filename: 'temperature.png' })] }
+  assert.equal(view.currentEvidenceState(failed, trusted), 'stale')
+  assert.equal(view.verifiedCurrentResult(failed, trusted), false)
+  const restored = { ...failed, events: [...failed.events,
+    event(5, 'artifact.integrity_verified', { run_id: 'run-A', attempt_id: 'attempt-A', filename: 'temperature.png' })] }
+  assert.equal(view.verifiedCurrentResult(restored, trusted), true)
+  const otherFailure = { ...restored, events: [...restored.events,
+    event(6, 'artifact.integrity_failed', { run_id: 'run-A', attempt_id: 'attempt-A', filename: 'other.png' })] }
+  assert.equal(view.verifiedCurrentResult(otherFailure, trusted), false)
+})
+
+test('contract gaps and contradictory evidence issues cannot certify a result', () => {
+  const a = session('A', 'run-A', 'attempt-A')
+  const trusted = domain('A', 'run-A', 'attempt-A')
+  assert.equal(view.verifiedCurrentResult(a, { ...trusted, contractGaps: ['missing mesh readback'] }), false)
+  const badCompletion = { ...a, events: a.events.map((item) => item.type === 'run.completed'
+    ? { ...item, payload: { ...item.payload,
+      evidence_contract: { ...item.payload.evidence_contract, issues: ['missing hash'] } } } : item) }
+  assert.equal(view.verifiedCurrentResult(badCompletion, trusted), false)
 })
 
 test('an artifact fetch failure revokes the outer Verified claim for only the current attempt', () => {

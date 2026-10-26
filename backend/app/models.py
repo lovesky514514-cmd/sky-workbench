@@ -69,6 +69,7 @@ class ProviderSettingsRequest(BaseModel):
     providers: dict[str, dict[str, Any]]
     retrieval_mode: Literal["basic", "enhanced", "fast", "accurate", "deep"] | None = None
     active_provider: str | None = None
+    comsol_root: str | None = Field(default=None, max_length=2000)
 
 
 class ExtensionToggleRequest(BaseModel):

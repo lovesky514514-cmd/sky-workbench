@@ -1,33 +1,7 @@
-# Windows installation / Windows 安装
+# Windows 使用与安装边界
 
-**Distribution status:** These instructions describe a V2.0 **internal candidate**, not a public release. No public download is authorized by this document.
+SKY Workbench 3.0 当前公开的是**源码**，没有官方公开下载的 3.0 Setup.exe。请勿把旧版安装包改名为 3.0，也不要把非官方二进制当作本仓库的发布资产。
 
-## Requirements / 前提条件
+从源码构建请看 [BUILDING.md](../BUILDING.md)。运行桌面程序需要当前 Windows 用户可用的 WebView2 Runtime；科学执行另需用户安装并合法授权 COMSOL。本仓库不提供 COMSOL 安装程序、API JAR、许可证或破解组件，也不提供 Ollama 模型权重。
 
-- Windows 11 x64 for the tested desktop target.
-- A separate, valid COMSOL 6.3 installation and license for real COMSOL model execution. SKY Workbench does not include COMSOL software, license files, or a license bypass.
-- A locally available Ollama service and selected model if you want local-model assistance. Model weights are not bundled with this source snapshot; the application shows unavailable models explicitly.
-- WebView2. The Setup includes an Evergreen bootstrapper; if WebView2 is absent, installation may require network access to obtain its runtime.
-
-## Install the approved internal candidate / 安装内部候选
-
-1. Obtain the Setup only through an approved internal channel. Do not rename an older installer as V2.0.
-2. Verify the actual Setup file with PowerShell:
-
-   ```powershell
-   Get-FileHash -Algorithm SHA256 -LiteralPath 'path\to\SKY Workbench_2.0.0_x64-setup.exe'
-   ```
-
-   The current targeted-fix internal candidate SHA-256 is `FA21A4EB43ADBD7895699D27E319BBE6356BB307035DC21137E9C43F5EA52DFB`. Stop if it differs; the hash is an identity check, not proof of an authorized public release.
-3. Run the Setup, launch SKY Workbench, and review the first-run environment states. **Ready**, **Degraded**, **Blocked**, and **Unavailable** must reflect the local machine. Do not assume that successful installation means COMSOL or a model is connected.
-4. Open a task, review its scientific plan, and approve execution only when the assumptions, units, boundaries, and intended checks are correct. See the [user guide](USER_GUIDE.md).
-
-## Failure and recovery / 故障与恢复
-
-Use the in-app help and **Open Logs** for diagnosis. If the scientific runtime is unavailable, use the visible restart action; an interrupted run is not completed or certified. If COMSOL is unavailable, the interface may still open, but real COMSOL execution is unavailable. Consult [help and troubleshooting](TROUBLESHOOTING.md) for specific symptoms.
-
-Do not post API keys, license material, user models, private workspaces, or unredacted local paths in an issue. Keep a backup of your workspace before manual repair or uninstall; uninstall is not an implicit request to delete user data.
-
-## Acceptance boundary / 验收边界
-
-A successful command is distinct from verified model state and passed scientific validation. A targeted COMSOL 6.3 heat worker solve was run separately on the new sidecar; it is **not** a complete desktop science acceptance test or evidence that every workflow works on a new user's machine. See [build limitations](../BUILDING.md) for the source/binary boundary.
+首次启动时检查环境扫描和明确的 `Unavailable` / `Degraded` 状态，再创建任务。检测到软件只表示发现安装入口；Bridge 连接、模型读回、求解与科学验证各需自己的证据。遇到问题参见[故障排查](TROUBLESHOOTING.md)。分享诊断前请脱敏 API Key、模型与个人路径。卸载程序不应被当作删除用户工作区的办法。

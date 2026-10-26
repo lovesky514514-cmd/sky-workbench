@@ -29,13 +29,8 @@ def source_digest() -> tuple[str, int]:
         ROOT / "vnext" / "3d" / "minimal_3d_contracts.json",
         ROOT / "frontend" / "src-tauri" / "resources" / "licenses",
         ROOT / "packaging" / "scientific-runtime.spec",
-        ROOT / "packaging" / "vendor" / "python-3.12.14" / "ssl.py",
-        ROOT / "packaging" / "vendor" / "python-3.12.14" / "LICENSE",
         ROOT.parent / "libffi-3.4.4-source.tar.gz",
         ROOT.parent / "libffi-build" / ".libs" / "libffi-8.dll",
-        ROOT.parent / "openssl-3.5.9.tar.gz",
-        ROOT.parent / "openssl-sanitized-build" / "openssl-3.5.9" / "libcrypto-3-x64.dll",
-        ROOT.parent / "openssl-sanitized-build" / "openssl-3.5.9" / "libssl-3-x64.dll",
     )
     files = sorted(
         (path for entry in roots for path in (entry.rglob("*") if entry.is_dir() else (entry,))

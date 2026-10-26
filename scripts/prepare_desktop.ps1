@@ -3,7 +3,8 @@ param(
     [ValidateSet('research', 'public')]
     [string]$BuildProfile = $(if ($env:WORKBENCH_BUILD_PROFILE) { $env:WORKBENCH_BUILD_PROFILE } else { 'public' }),
     [switch]$ProbeOnly,
-    [string]$FrozenSidecarPath = $env:SKY_FROZEN_SIDECAR_PATH
+    [string]$FrozenSidecarPath = $env:SKY_FROZEN_SIDECAR_PATH,
+    [string]$ExpectedSidecarSha256 = $env:SKY_EXPECTED_SIDECAR_SHA256
 )
 
 $ErrorActionPreference = 'Stop'
@@ -57,6 +58,18 @@ if ($BuildProfile -ne 'public') {
   throw 'Desktop packaging is public-only. Use the separate research harness for private Knowledge Base work.'
 }
 
+if ($FrozenSidecarPath) {
+  if ($ExpectedSidecarSha256 -cnotmatch '^[A-F0-9]{64}$') {
+    throw 'A 64-character uppercase expected sidecar SHA-256 is required.'
+  }
+  if (-not (Test-Path -LiteralPath $FrozenSidecarPath -PathType Leaf)) {
+    throw 'Frozen sidecar input does not identify a file.'
+  }
+  if ((Get-DesktopFileSha256 -LiteralPath $FrozenSidecarPath) -cne $ExpectedSidecarSha256) {
+    throw 'Frozen sidecar input does not match the expected SHA-256.'
+  }
+}
+
 & npm.cmd run build --prefix $frontendRoot
 if ($LASTEXITCODE -ne 0) { throw 'React production build failed.' }
 
@@ -73,7 +86,7 @@ if ($unexpectedKb.Count -ne 0) {
 }
 $profilePayload = [ordered]@{
   profile = 'public'
-  version = '2.0.0'
+  version = '3.0.0'
   runtime_version = '1.1.0-rc5.2'
   proprietary_kb_included = $false
   policy = 'public-safe-no-comsol-derived-kb'
@@ -82,20 +95,15 @@ $profilePayload = [ordered]@{
 
 Copy-Item -LiteralPath (Join-Path $javaSource 'src') -Destination $javaTarget -Recurse -Force
 Copy-Item -LiteralPath $semanticSource -Destination (Join-Path $semanticTarget 'semantic_runtime_worker.py') -Force
-# This isolated candidate accepts only the exact OpenSSL-updated sidecar tested
-# for local Runtime health and authentication; public approval remains separate.
+# A staged sidecar must match the exact hash checked before compilation.
 if ($FrozenSidecarPath) {
-  $expectedFrozenHash = '89ED868FFB28D2EBF54F5F4D33CF902BF8C50D20CE76629D85203DF4451D2FEF'
-  if (-not (Test-Path -LiteralPath $FrozenSidecarPath -PathType Leaf)) {
-    throw 'SKY_FROZEN_SIDECAR_PATH does not identify a file.'
-  }
-  $builtHash = Get-DesktopFileSha256 -LiteralPath $FrozenSidecarPath
-  if ($builtHash -cne $expectedFrozenHash) {
-    throw 'OpenSSL-updated sidecar hash does not match the pinned isolated build input.'
+  if ((Test-Path -LiteralPath $binaryTarget -PathType Leaf) -and
+      (Get-DesktopFileSha256 -LiteralPath $binaryTarget) -cne $ExpectedSidecarSha256) {
+    throw 'Existing Tauri sidecar differs from the staged build input.'
   }
   Copy-Item -LiteralPath $FrozenSidecarPath -Destination $binaryTarget -Force
   $sidecarHash = Get-DesktopFileSha256 -LiteralPath $binaryTarget
-  if ($sidecarHash -cne $expectedFrozenHash) { throw 'Staged sidecar bytes differ from frozen input.' }
+  if ($sidecarHash -cne $ExpectedSidecarSha256) { throw 'Staged sidecar bytes differ from frozen input.' }
 } else {
   # Source-build mode is separate; its result must be re-audited for release.
   if (-not (Test-Path -LiteralPath $python -PathType Leaf)) {

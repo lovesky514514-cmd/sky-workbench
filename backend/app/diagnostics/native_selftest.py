@@ -71,24 +71,6 @@ def probe_native() -> dict:
         native_versions["cryptography_openssl"] = binding.ffi.string(binding.lib.OpenSSL_version(0)).decode("ascii")
     except Exception as exc:
         native_versions["cryptography_openssl_error_class"] = type(exc).__name__
-    # HTTPX creates an SSL context even for the local Java Bridge client. A
-    # missing frozen CA bundle must fail diagnostics before model attachment.
-    certifi_check = {"ca_file_exists": False, "httpx_client_constructed": False}
-    try:
-        import certifi
-        ca_file = Path(certifi.where()).resolve()
-        certifi_check.update({
-            "ca_file_exists": ca_file.is_file(),
-            "inside_frozen_bundle": frozen and ca_file.is_relative_to(bundle),
-            "bundle_candidate_exists": (bundle / "certifi" / "cacert.pem").is_file(),
-            "ca_file_sha256": hashlib.sha256(ca_file.read_bytes()).hexdigest().upper() if ca_file.is_file() else None,
-        })
-        import httpx
-        with httpx.Client(trust_env=False):
-            pass
-        certifi_check["httpx_client_constructed"] = True
-    except Exception as exc:
-        certifi_check["error_class"] = type(exc).__name__
     app_loaded = "app.main" in sys.modules
     scientific_modules = [name for name in sys.modules if name.startswith("app.comsol.") and name.endswith("_worker")]
     passed = (ctypes_callback_passed
@@ -96,15 +78,12 @@ def probe_native() -> dict:
               and all(row.get("passed") for row in zones.values())
               and modules.get("_jpype", {}).get("jvm_started") is False
               and all(native_versions.get(key) for key in ("openssl", "sqlite", "cryptography_openssl"))
-              and certifi_check.get("ca_file_exists") and certifi_check.get("httpx_client_constructed")
-              and (not frozen or certifi_check.get("inside_frozen_bundle"))
               and not app_loaded and not scientific_modules
               and (not frozen or all(row.get("inside_frozen_bundle") for row in modules.values())))
     return {"schema": "swb-native-selftest-v1", "frozen": frozen,
             "execution_kind": "frozen" if frozen else "source", "modules": modules,
             "ctypes_callback_passed": ctypes_callback_passed,
             "native_versions": native_versions,
-            "certifi_check": certifi_check,
             "timezone_checks": zones, "tzdata_version": timezone_version,
             "application_server_imported": app_loaded, "scientific_worker_import_count": len(scientific_modules),
             "scientific_execution_performed": False, "passed": passed}

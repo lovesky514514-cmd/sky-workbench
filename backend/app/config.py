@@ -109,9 +109,29 @@ DEFAULT_SETTINGS: dict[str, Any] = {
             "base_url": "https://api.deepseek.com/v1",
             "model": "deepseek-chat",
         },
+        "kimi": {
+            "enabled": False,
+            "base_url": "https://api.moonshot.cn/v1",
+            "model": "",
+        },
+        "doubao": {
+            "enabled": False,
+            "base_url": "https://ark.cn-beijing.volces.com/api/v3",
+            "model": "",
+        },
         "openai": {
             "enabled": False,
             "base_url": "https://api.openai.com/v1",
+            "model": "",
+        },
+        "claude": {
+            "enabled": False,
+            "base_url": "https://api.anthropic.com/v1",
+            "model": "",
+        },
+        "gemini": {
+            "enabled": False,
+            "base_url": "https://generativelanguage.googleapis.com/v1beta",
             "model": "",
         },
         "openrouter": {
@@ -124,20 +144,24 @@ DEFAULT_SETTINGS: dict[str, Any] = {
 
 
 def _apply_product_runtime_overrides(settings: dict[str, Any]) -> None:
-    """Pin the packaged local provider without changing developer defaults."""
+    """Supply a packaged Ollama default without overriding an explicit choice."""
 
     base_url = os.getenv("COMSOL_WORKBENCH_OLLAMA_BASE_URL", "").strip()
     model = os.getenv("COMSOL_WORKBENCH_PRODUCT_MODEL", "").strip()
     if not base_url or not model:
         return
-    settings["active_provider"] = "ollama"
+    # The desktop shell only recommends a locally detected model. A saved
+    # cloud selection must survive restart; it is never silently replaced.
+    if not settings.get("active_provider"):
+        settings["active_provider"] = "ollama"
+        for name, provider in settings.get("providers", {}).items():
+            if name != "ollama" and isinstance(provider, dict):
+                provider["enabled"] = False
     providers = settings.get("providers", {})
-    for name, provider in providers.items():
-        if not isinstance(provider, dict):
-            continue
-        provider["enabled"] = name == "ollama"
     ollama = providers.setdefault("ollama", {})
-    ollama.update({"enabled": True, "base_url": base_url.rstrip("/"), "model": model})
+    ollama["base_url"] = base_url.rstrip("/")
+    if not ollama.get("model"):
+        ollama["model"] = model
 
 
 @dataclass(slots=True)

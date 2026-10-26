@@ -114,9 +114,9 @@ def compile_intent(text: str) -> ScientificIntent:
     issues: list[str] = []
     if "Heat Transfer in Solids" in physics:
         properties = {
-            "thermal_conductivity": (r'(?<![A-Za-z0-9_])k\s*=|thermal conductivity|热导率', 'thermal_conductivity', 'k'),
+            "thermal_conductivity": (r'(?<![A-Za-z0-9_])k\s*=|thermal conductivity|热导率|导热系数', 'thermal_conductivity', 'k'),
             "density": (r'density|(?<![A-Za-z0-9_])rho\s*=|密度', 'density', 'rho'),
-            "heat_capacity": (r'heat capacity|specific heat|(?<![A-Za-z0-9_])Cp\s*=|比热容', 'heat_capacity', 'Cp'),
+            "heat_capacity": (r'heat capacity|specific heat|(?<![A-Za-z0-9_])Cp\s*=|比热容|比热', 'heat_capacity', 'Cp'),
         }
         for name, (labels, kind, symbol) in properties.items():
             quantity = find_quantity(original, labels, kind, gap=12)

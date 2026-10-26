@@ -1,23 +1,25 @@
-# Build boundary and verification
+# 从源码构建
 
-This V2 review snapshot is the sanitized source base plus the V2 product overlay, separate-window desktop-pet code, and targeted OpenSSL 3.5.9 build-input changes. Internal binary inputs and build logs remain separately held by the release owner. This source tree intentionally contains no frozen sidecar or private model.
+本仓库是 3.0 源码发布，不附带安装包、预编译 sidecar、COMSOL 文件或模型权重。完整 Windows 11 x64 桌面构建需要 Node.js、Rust/Cargo、Python 3.12、Windows 构建工具和 Tauri/NSIS 依赖；科学执行另需用户单独安装并授权 COMSOL。
 
-## Source-level commands
+## 源码检查
 
-On Windows 11 x64 with Node, a compatible Rust toolchain, Python 3.12, and access to the locked dependencies:
+在仓库根目录运行：
 
 ```powershell
 cd frontend
 npm ci
+npm run check
 npm run build
-cd src-tauri
-cargo check --locked
+node --test
 ```
 
-The `cargo check` command additionally requires a valid `frontend/src-tauri/binaries/scientific-runtime-x86_64-pc-windows-msvc.exe` because Tauri declares an external binary. That binary is deliberately excluded from this source archive. For the new internal candidate, a fresh `npm ci` from the official npm registry, Vite production build, isolated PyInstaller build, and Tauri/NSIS build completed. The exact external OpenSSL and libffi build inputs were checked separately; these results do not prove an independent build from this archive alone.
+Python 测试从 `backend/` 运行，依赖见 `backend/requirements*.txt`。Java Bridge 的编译和实际连接需要用户本机 COMSOL 提供的 API JAR，本仓库不分发这些文件。
 
-## Why an exact Setup rebuild is not claimed
+## 桌面构建边界
 
-`packaging/scientific-runtime.spec` binds libffi to a separately built libffi 3.4.4 DLL and both OpenSSL 3.5.9 DLLs to their exact audited hashes at paths outside this source root. It also pins the official CPython 3.12.14 `ssl.py` source included in `packaging/vendor/` so the distributable does not require an internal build-environment PEM. Their provenance is documented in `docs/OPENSSL_BUILD_PROVENANCE.md` and the internal release evidence; the native binaries are not redistributed in this source snapshot. `scripts/prepare_desktop.ps1` checks the exact new sidecar hash when `SKY_FROZEN_SIDECAR_PATH` is supplied. The isolated Tauri/NSIS build used that path and a fresh Cargo target with user-profile path remapping.
+Tauri 声明 `scientific-runtime-x86_64-pc-windows-msvc.exe` 为外部二进制。未先由当前源码构建 sidecar 并放入 `frontend/src-tauri/binaries/` 时，`cargo check --locked` 或 Tauri Setup 构建可能在资源检查处停止；不能使用空文件或旧版二进制绕过。
 
-Therefore: this internal candidate was actually built and tested with pinned external inputs, but a third party's byte-for-byte rebuild solely from this archive remains **NOT VERIFIED**. The new binary hash and security exceptions require independent approval before public distribution. Do not treat a successful build as third-party legal authorization.
+`packaging/scientific-runtime.spec` 对 libffi、OpenSSL 原生输入及 SHA-256 作精确约束；这些输入不在源码根目录中。构建者必须自行取得有来源记录的兼容工具链输入。`scripts/prepare_desktop.ps1` 和 `scripts/build_v3_public.ps1` 只接受明确指定且哈希匹配的当前 sidecar。
+
+目前没有证明另一台机器可以逐字节复现内部 3.0 sidecar 或 Setup；本源码发布不声称可复现二进制构建或新安装包的科学验收。更换原生输入后，必须重新审查载荷、许可证、安全扫描与实际运行结果。历史 2.0 测试不认证 3.0 构建。

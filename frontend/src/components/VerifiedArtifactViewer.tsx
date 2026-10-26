@@ -3,21 +3,22 @@ import { api } from '../api'
 import { translate, type Locale } from '../i18n'
 import type { Session } from '../types'
 import { WorkspaceIcon } from './WorkspaceIcon'
-import { verifiedImageArtifacts } from './verifiedImageArtifacts'
+import { verifiedImageArtifacts, visibleArtifactLoad, type ArtifactLoad } from './verifiedImageArtifacts'
 import { exportAcademicFigure } from './academicFigure'
 
 export function VerifiedArtifactViewer({ locale, session, presentation = 'legacy', currentRunId, currentAttemptId, onIntegrityLost }: {
   locale: Locale; session: Session | null; presentation?: 'legacy' | 'gallery'; currentRunId?: string; currentAttemptId?: string
-  onIntegrityLost?: (runId: string, attemptId: string) => void
+  onIntegrityLost?: (runId: string, attemptId: string, filename: string) => void
 }) {
   const t = (value: string) => translate(locale, value)
   const images = useMemo(() => verifiedImageArtifacts(session, currentRunId, currentAttemptId), [session, currentRunId, currentAttemptId])
   const [index, setIndex] = useState(0)
-  const [state, setState] = useState<'loading' | 'verified' | 'lost' | 'unavailable'>('unavailable')
-  const [source, setSource] = useState('')
+  const [loaded, setLoaded] = useState<ArtifactLoad>({ key: '', state: 'unavailable', source: '' })
   const [zoomOpen, setZoomOpen] = useState(false)
   const [exportError, setExportError] = useState(false)
   const artifact = images[index] ?? images[0]
+  const loadKey = [session?.id, currentRunId, currentAttemptId, artifact?.filename, artifact?.record.sha256].join(':')
+  const { state, source } = visibleArtifactLoad(loaded, loadKey)
 
   useEffect(() => { setIndex(0); setZoomOpen(false) }, [session?.id, currentRunId, currentAttemptId])
 
@@ -35,22 +36,22 @@ export function VerifiedArtifactViewer({ locale, session, presentation = 'legacy
   useEffect(() => {
     let current = ''
     let active = true
-    if (!artifact) { setState('unavailable'); setSource(''); return () => undefined }
-    setState('loading'); setSource('')
+    if (!artifact) { setLoaded({ key: loadKey, state: 'unavailable', source: '' }); return () => undefined }
+    setLoaded({ key: loadKey, state: 'loading', source: '' })
     void api.artifactObjectUrl(artifact.message.run_id as string, artifact.filename).then((value) => {
       if (!active) { URL.revokeObjectURL(value); return }
-      current = value; setSource(value); setState('verified')
+      current = value; setLoaded({ key: loadKey, state: 'verified', source: value })
     }).catch(() => {
       if (!active) return
       // Raw API failures can contain private absolute paths. They belong in
       // diagnostics, never inside a shared scientific-results screenshot.
-      setSource(''); setState('lost'); setZoomOpen(false)
+      setLoaded({ key: loadKey, state: 'lost', source: '' }); setZoomOpen(false)
       // The parent must revoke its outer Verified badge too. This callback
       // carries the exact current attempt so a late failure cannot taint B.
-      if (currentRunId && currentAttemptId) onIntegrityLost?.(currentRunId, currentAttemptId)
+      if (currentRunId && currentAttemptId) onIntegrityLost?.(currentRunId, currentAttemptId, artifact.filename)
     })
     return () => { active = false; if (current) URL.revokeObjectURL(current) }
-  }, [artifact?.filename, artifact?.message.run_id, artifact?.record.sha256])
+  }, [loadKey])
 
   useEffect(() => {
     if (!zoomOpen) return

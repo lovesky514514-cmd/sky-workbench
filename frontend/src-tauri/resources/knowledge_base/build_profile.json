@@ -1,8 +1,8 @@
 ﻿{
     "profile":  "public",
-    "version":  "2.0.0",
+    "version":  "3.0.0",
     "runtime_version":  "1.1.0-rc5.2",
     "proprietary_kb_included":  false,
     "policy":  "public-safe-no-comsol-derived-kb",
-    "runtime_binary_sha256":  "89ED868FFB28D2EBF54F5F4D33CF902BF8C50D20CE76629D85203DF4451D2FEF"
+    "runtime_binary_sha256":  null
 }

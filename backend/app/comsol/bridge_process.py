@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import json
 import os
 import socket
@@ -16,7 +17,7 @@ from pathlib import Path
 from threading import RLock, Event
 from typing import Any
 
-from app.comsol.discovery import comsol_java_environment
+from app.comsol.discovery import ComsolJavaEnvironment, comsol_java_environment, discover_comsol_java
 from app.comsol.bridge_auth import BRIDGE_TOKEN_ENV, BRIDGE_TOKEN_HEADER, new_bridge_token
 from app.config import CACHE_ROOT, JAVA_BRIDGE_ROOT, PROJECT_ROOT, WORKSPACE_ROOT, settings_store
 from app.session.store import session_store
@@ -25,8 +26,14 @@ from app.comsol.owned_process import OwnedProcess, attach_windows_job
 
 SOURCE = JAVA_BRIDGE_ROOT / "src" / "main" / "java" / "workbench" / "bridge" / "ComsolBridgeServer.java"
 BUILD = CACHE_ROOT / "java_bridge_build11"
-CLASS_FILE = BUILD / "workbench" / "bridge" / "ComsolBridgeServer.class"
 LOG_ROOT = WORKSPACE_ROOT / "logs"
+
+
+def bridge_build_dir(environment: ComsolJavaEnvironment) -> Path:
+    """Key compiled classes to the exact installed API jar's local identity."""
+    jar = Path(environment.api_jar)
+    identity = f"{environment.root}|{environment.version}|{jar.name}|{jar.stat().st_size}|{jar.stat().st_mtime_ns}"
+    return BUILD / hashlib.sha256(identity.encode("utf-8")).hexdigest()[:16]
 
 
 class JavaBridgeProcessManager:
@@ -81,12 +88,13 @@ class JavaBridgeProcessManager:
             await asyncio.to_thread(self._stop_sync)
         if self._process:
             await asyncio.to_thread(self._stop_sync)
+        environment = discover_comsol_java()
         self._state = {
             "state": "starting",
             "mode": "standalone",
             "model_path": str(selected),
             "base_url": self._configured_url(),
-            "environment": comsol_java_environment.as_dict(),
+            "environment": environment.as_dict(),
             "started_at": _now(),
         }
         self._append("command", "bridge", "starting", f"Starting real COMSOL Java Bridge for {selected.name}")
@@ -159,14 +167,19 @@ class JavaBridgeProcessManager:
 
     def _start_sync(self, model_path: Path) -> dict[str, Any]:
         if self._stop_requested.is_set(): raise RuntimeError('Bridge startup canceled')
-        environment = comsol_java_environment
+        # Re-discover on each start: settings may point to a different licensed
+        # COMSOL installation since Runtime launch. Never reuse a class that
+        # was compiled against another installation's API jar.
+        environment = discover_comsol_java()
         if not environment.found:
             raise RuntimeError("REAL_COMSOL_JAVA_CLASSPATH_NOT_FOUND")
         compile_started = time.perf_counter()
-        BUILD.mkdir(parents=True, exist_ok=True)
-        if not CLASS_FILE.is_file() or CLASS_FILE.stat().st_mtime_ns < SOURCE.stat().st_mtime_ns:
+        build = bridge_build_dir(environment)
+        class_file = build / "workbench" / "bridge" / "ComsolBridgeServer.class"
+        build.mkdir(parents=True, exist_ok=True)
+        if not class_file.is_file() or class_file.stat().st_mtime_ns < SOURCE.stat().st_mtime_ns:
             compiled = subprocess.run(
-                [environment.javac, "-encoding", "UTF-8", "-d", str(BUILD), str(SOURCE)],
+                [environment.javac, "-encoding", "UTF-8", "-d", str(build), str(SOURCE)],
                 cwd=JAVA_BRIDGE_ROOT,
                 capture_output=True,
                 text=True,
@@ -196,7 +209,7 @@ class JavaBridgeProcessManager:
         self._stdout = stdout_path.open("a", encoding="utf-8")
         self._stderr = stderr_path.open("a", encoding="utf-8")
         native_path = ";".join(environment.native_libraries)
-        classpath = f"{BUILD};{Path(environment.root) / 'plugins' / '*'}"
+        classpath = f"{build};{Path(environment.root) / 'plugins' / '*'}"
         poll_ms = int(settings_store.load().get("comsol", {}).get("java_bridge", {}).get("poll_ms", 1000))
         command = [
             environment.java,

@@ -3,13 +3,46 @@ import type { Citation, EnvironmentItem, InspectorTab, JavaBridgeEvent, JavaBrid
 import { CitationList } from './CitationList'
 import { translate, type Locale } from '../i18n'
 import { validationDisplay } from '../ExecutionVerdictBadge'
+import { LiveComsolView } from './LiveComsolView'
+import type { ModelReadback } from '../bridgeReadback'
 
 export const inspectorTabs: Array<[InspectorTab, string]> = [['environment', 'Environment'], ['live', 'Live COMSOL'], ['overview', 'Overview'], ['geometry', 'Geometry'], ['materials', 'Materials'], ['physics', 'Physics'], ['boundaries', 'Boundary Conditions'], ['mesh', 'Mesh'], ['solver', 'Solver'], ['parameters', 'Parameters'], ['validation', 'Validation'], ['sources', 'Sources']]
 
-export function Inspector({ locale, tab, session, items, providers, knowledge, indexTask, semanticIndexTask, resources, capabilities, bridge, bridgeTree, bridgeParameters, bridgeEvents, onRefresh, onStartIndex, onStartSemanticIndex, onStartBridge, onStopBridge, onPauseRun, onCorrectRun, onResumeRun }: { locale: Locale; tab: InspectorTab; session: Session | null; items: EnvironmentItem[]; providers: Provider[]; knowledge: Record<string, unknown>; indexTask: Record<string, unknown>; semanticIndexTask: Record<string, unknown>; resources: Record<string, unknown>; capabilities: Record<string, { status: string; reason: string }>; bridge: JavaBridgeStatus; bridgeTree: Record<string, unknown>; bridgeParameters: Record<string, string>; bridgeEvents: JavaBridgeEvent[]; onRefresh: () => void; onStartIndex: () => void; onStartSemanticIndex: () => void; onStartBridge: () => void; onStopBridge: () => void; onPauseRun: () => void; onCorrectRun: (correction: { path: string; value: number; unit: string; reason: string }) => void; onResumeRun: () => void }) {
+type InspectorProps = {
+  locale: Locale
+  tab: InspectorTab
+  session: Session | null
+  items: EnvironmentItem[]
+  providers: Provider[]
+  knowledge: Record<string, unknown>
+  indexTask: Record<string, unknown>
+  semanticIndexTask: Record<string, unknown>
+  resources: Record<string, unknown>
+  capabilities: Record<string, { status: string; reason: string }>
+  bridge: JavaBridgeStatus
+  bridgeReadback: ModelReadback | null
+  bridgeLoading: boolean
+  bridgeEvents: JavaBridgeEvent[]
+  onRefresh: () => void
+  onRefreshBridge: () => void
+  onStartIndex: () => void
+  onStartSemanticIndex: () => void
+  onStartBridge: () => void
+  onStopBridge: () => void
+  onPauseRun: () => void
+  onCorrectRun: (correction: { path: string; value: number; unit: string; reason: string }) => void
+  onResumeRun: () => void
+}
+
+export function Inspector({
+  locale, tab, session, items, providers, knowledge, indexTask, semanticIndexTask,
+  resources, capabilities, bridge, bridgeReadback, bridgeLoading, bridgeEvents,
+  onRefresh, onRefreshBridge, onStartIndex, onStartSemanticIndex, onStartBridge,
+  onStopBridge, onPauseRun, onCorrectRun, onResumeRun,
+}: InspectorProps) {
   const t = (source: string) => translate(locale, source)
   if (tab === 'environment') return <EnvironmentView locale={locale} items={items} providers={providers} knowledge={knowledge} indexTask={indexTask} semanticIndexTask={semanticIndexTask} resources={resources} capabilities={capabilities} onRefresh={onRefresh} onStartIndex={onStartIndex} onStartSemanticIndex={onStartSemanticIndex} />
-  if (tab === 'live') return <LiveComsolView locale={locale} session={session} bridge={bridge} tree={bridgeTree} parameters={bridgeParameters} events={bridgeEvents} onRefresh={onRefresh} onStart={onStartBridge} onStop={onStopBridge} />
+  if (tab === 'live') return <LiveComsolView locale={locale} bridge={bridge} readback={bridgeReadback} loading={bridgeLoading} events={bridgeEvents} onRefresh={onRefreshBridge} onStart={onStartBridge} onStop={onStopBridge} />
   const model = session?.model
   const plan = session?.plan
   const report = lastValidation(session) ?? model?.validation
@@ -43,23 +76,6 @@ function TdsPhysicsView({ locale, session }: { locale: Locale; session: Session 
   ] as Array<[string, boolean]>
   return <div className="inspector-body"><div className="inspector-section-title"><span>{t('Transport of Diluted Species')}</span></div><div className="physics-checklist">{items.map(([label, passed]) => <div key={label}><span>{passed ? '✓' : state === 'SOLVING' && label === t('Solving') ? '▶' : '○'}</span><strong>{label}</strong></div>)}</div><Fact title={t('Physics readback')} values={model?.physics ?? session?.plan?.physics ?? []} /></div>
 }
-
-function LiveComsolView({ locale, session, bridge, tree, parameters, events, onRefresh, onStart, onStop }: { locale: Locale; session: Session | null; bridge: JavaBridgeStatus; tree: Record<string, unknown>; parameters: Record<string, string>; events: JavaBridgeEvent[]; onRefresh: () => void; onStart: () => void; onStop: () => void }) {
-  const t = (source: string) => translate(locale, source)
-  const process = (bridge.process ?? {}) as Record<string, unknown>
-  const processState = String(process.state ?? (bridge.bridge_running ? 'ready' : 'idle'))
-  const connected = Boolean(bridge.model_connected)
-  const geometry = asStrings(tree.geometry)
-  const physics = asStrings(tree.physics)
-  const mesh = asStrings(tree.mesh)
-  const studies = asStrings(tree.studies)
-  const validation = lastValidation(session) ?? session?.model?.validation
-  const latestSolveEvent = [...events].reverse().find((event) => event.phase === 'solve')
-  const solveActive = Boolean(latestSolveEvent && !['finished', 'failed'].includes(latestSolveEvent.status))
-  return <div className="inspector-body live-comsol"><div className="inspector-section-title"><span>{t('COMSOL live state')}</span><div className="live-actions"><button onClick={onRefresh}>{t('Refresh')}</button>{bridge.bridge_running ? <button onClick={onStop}>{t('Disconnect')}</button> : <button onClick={onStart} disabled={processState === 'starting'}>{processState === 'starting' ? t('Connecting…') : t('Connect')}</button>}</div></div><div className="live-status-grid"><StatusFact label="API" value={bridge.comsol_version || t('Not loaded')} status={bridge.comsol_api_loaded ? 'loaded' : 'unavailable'} /><StatusFact label="Java Bridge" value={bridge.base_url || 'localhost'} status={bridge.bridge_running ? 'connected' : processState} /><StatusFact label={t('Model')} value={bridge.model_tag || t('No model')} status={connected ? 'verified' : 'unavailable'} /><StatusFact label={t('Changes')} value={bridge.detection_method || 'unavailable'} status={connected ? 'live' : 'unavailable'} /><StatusFact label={t('Geometry')} value={geometry.join(', ') || t('No readback')} status={geometry.length ? 'built' : 'pending'} /><StatusFact label={t('Physics')} value={physics.join(', ') || t('No readback')} status={physics.length ? 'verified' : 'pending'} /><StatusFact label={t('Mesh')} value={mesh.join(', ') || t('No readback')} status={mesh.length ? 'built' : 'pending'} /><StatusFact label={t('Study')} value={studies.join(', ') || t('No readback')} status={solveActive ? 'solving' : studies.length ? 'ready' : 'pending'} /><StatusFact label={t('Validation')} value={validation?.execution_verdict?.scientific_validation_success ? t('Scientific checks passed') : t('Python Validator pending')} status={validation?.execution_verdict?.scientific_validation_success ? 'passed' : 'pending'} /></div><div className="metric-grid live-metrics"><div><strong>{Object.keys(parameters).length}</strong><span>{t('real model parameters')}</span></div><div><strong>{bridge.poll_interval_ms || 0} ms</strong><span>{t('polling fallback interval')}</span></div></div><div className="inspector-section-title"><span>{t('Recent activity')}</span><small>{Math.min(events.length, 20)} / 100 {t('shown')}</small></div><div className="live-activity">{!events.length && <p className="muted-block">{t('Connect the Bridge to receive real COMSOL events.')}</p>}{events.slice(-20).reverse().map((event, index) => <article key={`${event.sequence}-${event.created_at ?? index}`}><time>{event.created_at ? new Date(event.created_at).toLocaleTimeString() : '—'}</time><span className={`event-type-chip ${event.event_type}`}>{event.event_type.replaceAll('_', ' ')}</span><div><strong>{event.target || event.phase} · {event.status}</strong><small>{event.old_value != null || event.new_value != null ? `${event.old_value || '∅'} → ${event.new_value || '∅'}` : event.message || event.detail}</small>{event.percent != null && <progress value={event.percent} max={100} />}</div></article>)}</div></div>
-}
-
-function asStrings(value: unknown): string[] { return Array.isArray(value) ? value.map(String) : [] }
 
 function EnvironmentView({ locale, items, providers, knowledge, indexTask, semanticIndexTask, resources, capabilities, onRefresh, onStartIndex, onStartSemanticIndex }: { locale: Locale; items: EnvironmentItem[]; providers: Provider[]; knowledge: Record<string, unknown>; indexTask: Record<string, unknown>; semanticIndexTask: Record<string, unknown>; resources: Record<string, unknown>; capabilities: Record<string, { status: string; reason: string }>; onRefresh: () => void; onStartIndex: () => void; onStartSemanticIndex: () => void }) {
   const t = (source: string) => translate(locale, source)

@@ -4,15 +4,17 @@ from __future__ import annotations
 
 import asyncio
 import json
-import shutil
 import time
 from dataclasses import asdict, dataclass
 from typing import Any, AsyncIterator
+from urllib.parse import urlsplit
 
 import httpx
 
 from app.config import SettingsStore, settings_store
+from app.providers import cloud_protocols
 from app.scientific.schemas import ScientificPlan
+from app.services.model_manager import ollama_executable
 
 
 LABELS = {
@@ -20,7 +22,11 @@ LABELS = {
     "lm_studio": "LM Studio",
     "openai_compatible": "Generic OpenAI Compatible",
     "deepseek": "DeepSeek API",
+    "kimi": "Kimi API",
+    "doubao": "Doubao API",
     "openai": "OpenAI API",
+    "claude": "Claude API",
+    "gemini": "Gemini API",
     "openrouter": "OpenRouter",
 }
 LOCAL_PROVIDERS = {"ollama", "lm_studio", "openai_compatible"}
@@ -94,13 +100,15 @@ class ProviderManager:
 
     async def preferred(self) -> ProviderStatus | None:
         statuses = [ProviderStatus(**self._status_kwargs(item)) for item in await self.detect()]
-        ready = {item.name: item for item in statuses if item.status == "Ready"}
+        usable = {item.name: item for item in statuses if item.status in {"Ready", "Configured"}}
         selected = str(self.store.load().get("active_provider", ""))
-        if selected in ready:
-            return ready[selected]
-        for name in ("ollama", "lm_studio", "openai_compatible", "deepseek", "openai", "openrouter"):
-            if name in ready:
-                return ready[name]
+        # An explicit choice is authoritative: never send its prompt to a
+        # different local or cloud endpoint after a failed request.
+        if selected:
+            return usable.get(selected)
+        for name in ("ollama", "lm_studio", "openai_compatible"):
+            if name in usable:
+                return usable[name]
         return None
 
     async def complete(
@@ -114,24 +122,15 @@ class ProviderManager:
         preferred = await self.preferred()
         if preferred is None:
             return None
-        candidates = [preferred]
-        for item in await self.detect():
-            if item["status"] == "Ready" and item["name"] != preferred.name:
-                candidates.append(ProviderStatus(**self._status_kwargs(item)))
-        for status in candidates:
-            try:
-                text = await self._complete_one(
-                    status.name,
-                    messages,
-                    temperature=temperature,
-                    json_mode=json_mode,
-                    detected_model=status.model,
-                    json_schema=json_schema,
-                )
-                return CompletionResult(text, status.name, status.label, status.model)
-            except (httpx.HTTPError, KeyError, ValueError, json.JSONDecodeError):
-                continue
-        return None
+        try:
+            text = await self._complete_one(
+                preferred.name, messages, temperature=temperature,
+                json_mode=json_mode, detected_model=preferred.model,
+                json_schema=json_schema,
+            )
+            return CompletionResult(text, preferred.name, preferred.label, preferred.model)
+        except (httpx.HTTPError, KeyError, ValueError, TypeError, IndexError, json.JSONDecodeError):
+            return None
 
     async def stream_completion(
         self,
@@ -149,9 +148,14 @@ class ProviderManager:
             "provider_label": status.label,
             "model": status.model,
         }
+        emitted = False
         async for token in self._stream_one(status, messages, temperature):
             if token:
+                emitted = True
                 yield {"type": "delta", "text": token}
+        if not emitted:
+            yield {"type": "unavailable", "detail": "Provider returned no text"}
+            return
         yield {"type": "done"}
 
     async def test_connection(self, provider: str) -> dict[str, Any]:
@@ -160,7 +164,7 @@ class ProviderManager:
             raise KeyError(provider)
         started = time.perf_counter()
         status = await self._detect_one(provider, configs[provider])
-        if status.status != "Ready" or not status.model:
+        if status.status not in {"Ready", "Configured"} or not status.model:
             return {
                 "success": False,
                 "provider": provider,
@@ -187,12 +191,12 @@ class ProviderManager:
                 "latency_ms": round((time.perf_counter() - started) * 1000),
                 "capabilities": asdict(status.capabilities),
             }
-        except (httpx.HTTPError, KeyError, ValueError, json.JSONDecodeError) as exc:
+        except (httpx.HTTPError, KeyError, ValueError, TypeError, IndexError, json.JSONDecodeError) as exc:
             return {
                 "success": False,
                 "provider": provider,
                 "status": "Error",
-                "detail": f"Completion test failed: {type(exc).__name__}: {exc}",
+                "detail": f"Completion test failed: {type(exc).__name__}",
                 "model": status.model,
                 "latency_ms": round((time.perf_counter() - started) * 1000),
             }
@@ -205,7 +209,7 @@ class ProviderManager:
             raise KeyError(provider)
         suite_started = time.perf_counter()
         status = await self._detect_one(provider, configs[provider])
-        if status.status != "Ready" or not status.model:
+        if status.status not in {"Ready", "Configured"} or not status.model:
             return {
                 "success": False,
                 "provider": provider,
@@ -225,7 +229,9 @@ class ProviderManager:
                 tests.append({"name": name, "label": label, "success": True, "detail": detail, "latency_ms": round((time.perf_counter() - started) * 1000)})
                 return value
             except Exception as exc:
-                tests.append({"name": name, "label": label, "success": False, "detail": f"{type(exc).__name__}: {exc}", "latency_ms": round((time.perf_counter() - started) * 1000)})
+                # Provider error bodies can contain submitted prompts or key
+                # fragments. Only the exception class belongs in diagnostics.
+                tests.append({"name": name, "label": label, "success": False, "detail": type(exc).__name__, "latency_ms": round((time.perf_counter() - started) * 1000)})
                 return None
 
         async def exact_text() -> tuple[str, str]:
@@ -315,8 +321,22 @@ class ProviderManager:
             return ProviderStatus(name, label, kind, False, "Disabled", "Disabled in settings", base_url, configured_model, capabilities=empty_capability)
         if not base_url:
             return ProviderStatus(name, label, kind, True, "Not configured", "Endpoint is empty", base_url, configured_model, capabilities=empty_capability)
+        if kind == "local":
+            endpoint = urlsplit(base_url)
+            if endpoint.scheme not in {"http", "https"} or endpoint.hostname not in {"127.0.0.1", "localhost", "::1"} or endpoint.username or endpoint.password or endpoint.query or endpoint.fragment:
+                return ProviderStatus(name, label, kind, True, "Not configured", "Local provider must use a loopback endpoint", base_url, configured_model, capabilities=empty_capability)
         if kind == "cloud" and not self.store.secret(name):
             return ProviderStatus(name, label, kind, True, "Not configured", "API key not set", base_url, configured_model, capabilities=empty_capability)
+        if kind == "cloud":
+            endpoint = urlsplit(base_url)
+            if endpoint.scheme != "https" or not endpoint.hostname or endpoint.username or endpoint.password or endpoint.query or endpoint.fragment:
+                return ProviderStatus(name, label, kind, True, "Not configured", "Cloud endpoint must be HTTPS without embedded credentials", base_url, configured_model, capabilities=empty_capability)
+            if not configured_model:
+                return ProviderStatus(name, label, kind, True, "Not configured", "Select an exact model ID", base_url, configured_model, capabilities=empty_capability)
+            # Avoid paid probe traffic during routine environment polling.
+            # "Configured" is not evidence of connectivity; Test Connection
+            # performs an actual inference against this exact model.
+            return ProviderStatus(name, label, kind, True, "Configured", "Configured; live inference not tested", base_url, configured_model, capabilities=empty_capability)
         try:
             timeout = httpx.Timeout(1.2, connect=0.4)
             async with self._client(timeout) as client:
@@ -336,10 +356,13 @@ class ProviderManager:
             detail = f"{len(models)} model(s) available" if models else "Service reachable; no models listed"
             state = "No Model" if name == "ollama" and not models else "Ready"
             return ProviderStatus(name, label, kind, True, state, detail, base_url, resolved_model, tuple(models), model_details, capability)
-        except (httpx.HTTPError, ValueError, KeyError, json.JSONDecodeError) as exc:
+        # Client construction can raise OSError before an HTTP request exists
+        # (for example, a stale SSL_CERT_FILE in the desktop environment).
+        # Optional local discovery must degrade, never take down Runtime.
+        except (httpx.HTTPError, OSError, ValueError, KeyError, json.JSONDecodeError) as exc:
             if name == "ollama":
-                state = "Installed but Stopped" if shutil.which("ollama") else "Not Installed"
-                detail = "Ollama service did not respond" if shutil.which("ollama") else "Ollama executable not detected"
+                state = "Installed but Stopped" if ollama_executable() else "Not Installed"
+                detail = "Ollama service did not respond" if ollama_executable() else "Ollama executable not detected"
             else:
                 state = "Not detected" if kind == "local" else "Error"
                 detail = "Service did not respond" if kind == "local" else f"Provider unavailable: {type(exc).__name__}"
@@ -401,13 +424,18 @@ class ProviderManager:
             raise ValueError("No model selected")
         timeout = httpx.Timeout(180, connect=5)
         async with self._client(timeout) as client:
+            if name in {"claude", "gemini"}:
+                return await cloud_protocols.complete(client, name, base_url, model, self.store.secret(name), messages, temperature, json_mode)
             if name == "ollama":
                 payload: dict[str, Any] = {"model": model, "messages": messages, "stream": False, "options": {"temperature": temperature}}
                 if json_mode:
                     payload["format"] = json_schema or "json"
                 response = await client.post(f"{base_url}/api/chat", json=payload)
                 response.raise_for_status()
-                return str(response.json()["message"]["content"])
+                content = response.json()["message"]["content"]
+                if not isinstance(content, str) or not content.strip():
+                    raise ValueError("Ollama returned no text")
+                return content
             payload = {"model": model, "messages": messages, "temperature": temperature}
             if json_mode:
                 payload["response_format"] = (
@@ -417,7 +445,10 @@ class ProviderManager:
                 )
             response = await client.post(f"{base_url}/chat/completions", headers=self._headers(name), json=payload)
             response.raise_for_status()
-            return str(response.json()["choices"][0]["message"]["content"])
+            content = response.json()["choices"][0]["message"]["content"]
+            if not isinstance(content, str) or not content.strip():
+                raise ValueError("Provider returned no text")
+            return content
 
     async def _stream_one(
         self,
@@ -427,13 +458,20 @@ class ProviderManager:
     ) -> AsyncIterator[str]:
         timeout = httpx.Timeout(180, connect=5)
         async with self._client(timeout) as client:
+            if status.name in {"claude", "gemini"}:
+                async for token in cloud_protocols.stream(client, status.name, status.base_url, status.model,
+                                                          self.store.secret(status.name), messages, temperature):
+                    yield token
+                return
             if status.name == "ollama":
                 async with client.stream("POST", f"{status.base_url}/api/chat", json={"model": status.model, "messages": messages, "stream": True, "options": {"temperature": temperature}}) as response:
                     response.raise_for_status()
                     async for line in response.aiter_lines():
                         if line:
                             payload = json.loads(line)
-                            yield str(payload.get("message", {}).get("content", ""))
+                            content = payload.get("message", {}).get("content")
+                            if isinstance(content, str):
+                                yield content
                 return
             async with client.stream("POST", f"{status.base_url}/chat/completions", headers=self._headers(status.name), json={"model": status.model, "messages": messages, "temperature": temperature, "stream": True}) as response:
                 response.raise_for_status()
@@ -444,7 +482,9 @@ class ProviderManager:
                     if not data or data == "[DONE]":
                         continue
                     payload = json.loads(data)
-                    yield str(payload.get("choices", [{}])[0].get("delta", {}).get("content", ""))
+                    content = payload.get("choices", [{}])[0].get("delta", {}).get("content")
+                    if isinstance(content, str):
+                        yield content
 
     def _headers(self, name: str) -> dict[str, str]:
         key = self.store.secret(name)

@@ -155,9 +155,9 @@ def extract_heat_transfer_plan(prompt: str) -> dict[str, Any] | None:
     assumptions: list[str] = []
     warnings: list[str] = []
     property_specs = {
-        "thermal_conductivity": (r'(?<![A-Za-z0-9_])k\s*=|thermal conductivity|热导率', 'k', 'W/(m*K)', 238.0),
+        "thermal_conductivity": (r'(?<![A-Za-z0-9_])k\s*=|thermal conductivity|热导率|导热系数', 'k', 'W/(m*K)', 238.0),
         "density": (r'density|(?<![A-Za-z0-9_])rho\s*=|密度', 'rho', 'kg/m^3', 2700.0),
-        "heat_capacity": (r'heat capacity|specific heat|(?<![A-Za-z0-9_])Cp\s*=|比热容', 'Cp', 'J/(kg*K)', 900.0),
+        "heat_capacity": (r'heat capacity|specific heat|(?<![A-Za-z0-9_])Cp\s*=|比热容|比热', 'Cp', 'J/(kg*K)', 900.0),
     }
     for name, (labels, symbol, unit, benchmark_value) in property_specs.items():
         explicit = find_quantity(prompt, labels, name, gap=12)

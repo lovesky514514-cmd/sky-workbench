@@ -20,7 +20,7 @@ test('a candidate needs an explicit Yes before opening a fresh plan draft', () =
   assert.match(review, /No · do not model/)
   assert.doesNotMatch(review, /api\.sendMessage|api\.resumeRun/)
   const shell = source('../src/WarmStudio.tsx')
-  assert.match(shell, /props\.onNewSession\(\)\.then\(\(\) => \{ props\.onPromptChange\(excerpt\)/)
+  assert.match(shell, /props\.onNewSession\(\)\.then\(\(\) => \{\s*props\.onPromptChange\(excerpt\)/)
 })
 
 test('cloud extraction is independently opt-in and official-source lookup is explicit', () => {

@@ -5,6 +5,8 @@ from __future__ import annotations
 import asyncio
 import ctypes
 import os
+import json
+import math
 import shutil
 import subprocess
 from pathlib import Path
@@ -14,6 +16,30 @@ import httpx
 
 from app.app_paths import app_paths
 from app.config import settings_store
+
+
+def ollama_executable() -> str | None:
+    """Find a user-installed Ollama without assuming it was added to PATH."""
+    found = shutil.which("ollama")
+    if found:
+        return found
+    if os.name != "nt":
+        return None
+    roots = [os.getenv("LOCALAPPDATA", ""), os.getenv("ProgramFiles", ""), os.getenv("ProgramFiles(x86)", "")]
+    for root in filter(None, roots):
+        for relative in ("Programs/Ollama/ollama.exe", "Ollama/ollama.exe"):
+            candidate = Path(root) / relative
+            if candidate.is_file():
+                return str(candidate)
+    return None
+
+
+def pull_percent(payload: dict[str, Any]) -> int | None:
+    """Calculate progress only from byte counts reported by Ollama."""
+    total, completed = payload.get("total"), payload.get("completed")
+    if not isinstance(total, (int, float)) or not isinstance(completed, (int, float)) or not math.isfinite(total) or not math.isfinite(completed) or total <= 0 or completed < 0:
+        return None
+    return min(100, round(100 * completed / total))
 
 
 def _ram_bytes() -> int:
@@ -40,11 +66,11 @@ def _gpu() -> dict[str, Any]:
 
 class LocalModelManager:
     def __init__(self) -> None:
-        self._pull_process: asyncio.subprocess.Process | None = None
+        self._pull_task: asyncio.Task[None] | None = None
         self._pull_state: dict[str, Any] = {"state": "idle", "model": "", "detail": "No download running"}
 
     async def status(self) -> dict[str, Any]:
-        executable = shutil.which("ollama")
+        executable = ollama_executable()
         settings = settings_store.load()
         base_url = str(settings["providers"]["ollama"].get("base_url", "http://127.0.0.1:11434")).rstrip("/")
         models: list[dict[str, Any]] = []
@@ -52,15 +78,17 @@ class LocalModelManager:
         state = "Not Installed"
         if executable:
             state, detail = "Installed but Stopped", "Ollama is installed but its local service is not responding"
-            try:
-                async with httpx.AsyncClient(timeout=httpx.Timeout(1.5, connect=0.5)) as client:
-                    response = await client.get(f"{base_url}/api/tags")
-                    response.raise_for_status()
-                    models = list(response.json().get("models", []))
-                state = "Ready" if models else "No Model"
-                detail = f"{len(models)} installed model(s)" if models else "Ollama is running; no local model is installed"
-            except (httpx.HTTPError, ValueError, KeyError):
-                pass
+        try:
+            async with httpx.AsyncClient(timeout=httpx.Timeout(1.5, connect=0.5)) as client:
+                response = await client.get(f"{base_url}/api/tags")
+                response.raise_for_status()
+                models = list(response.json().get("models", []))
+            state = "Ready" if models else "No Model"
+            detail = f"{len(models)} installed model(s)" if models else "Ollama is running; no local model is installed"
+        # A broken certificate path may fail during client construction. Treat
+        # this as unavailable Ollama, not a fatal desktop initialization error.
+        except (httpx.HTTPError, OSError, ValueError, KeyError):
+            pass
         ram = _ram_bytes()
         gpu = _gpu()
         free_disk = shutil.disk_usage(app_paths.models_dir).free if app_paths.models_dir.exists() else shutil.disk_usage(app_paths.workspace_dir).free
@@ -79,7 +107,7 @@ class LocalModelManager:
         }
 
     async def start(self) -> dict[str, Any]:
-        executable = shutil.which("ollama")
+        executable = ollama_executable()
         if not executable:
             return {"started": False, "state": "Not Installed", "detail": "Install Ollama before starting it"}
         flags = subprocess.CREATE_NO_WINDOW | subprocess.DETACHED_PROCESS if os.name == "nt" else 0
@@ -94,37 +122,55 @@ class LocalModelManager:
     async def pull(self, model: str, *, confirmed: bool) -> dict[str, Any]:
         if not confirmed:
             return {"state": "confirmation_required", "model": model, "estimated_download": "Model-dependent; commonly multiple GB", "storage": (await self.status())["model_storage"]}
-        executable = shutil.which("ollama")
-        if not executable:
-            raise RuntimeError("Ollama is not installed")
-        if self._pull_process and self._pull_process.returncode is None:
+        current = await self.status()
+        if current["state"] not in {"Ready", "No Model"}:
+            raise RuntimeError("Ollama service is unavailable; install or start Ollama first")
+        if self._pull_task and not self._pull_task.done():
             raise RuntimeError("A model download is already running")
-        self._pull_state = {"state": "running", "model": model, "detail": "Download started"}
-        self._pull_process = await asyncio.create_subprocess_exec(executable, "pull", model, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.STDOUT, creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0)
-        asyncio.create_task(self._watch_pull(model))
+        self._pull_state = {"state": "running", "model": model, "detail": "Download started", "percent": None}
+        self._pull_task = asyncio.create_task(self._watch_pull(model, current["base_url"]))
         return dict(self._pull_state)
 
-    async def _watch_pull(self, model: str) -> None:
-        assert self._pull_process is not None
-        last = "Downloading"
-        assert self._pull_process.stdout is not None
-        async for line in self._pull_process.stdout:
-            last = line.decode(errors="replace").strip()[-240:] or last
-            self._pull_state = {"state": "running", "model": model, "detail": last}
-        code = await self._pull_process.wait()
-        self._pull_state = {"state": "completed" if code == 0 else "failed", "model": model, "detail": "Model installed" if code == 0 else f"ollama pull exited with {code}"}
+    async def _watch_pull(self, model: str, base_url: str) -> None:
+        """Use Ollama's streaming API so a service-only installation can pull."""
+        try:
+            success = False
+            async with httpx.AsyncClient(timeout=httpx.Timeout(None, connect=5.0)) as client:
+                async with client.stream("POST", f"{base_url}/api/pull", json={"name": model, "stream": True}) as response:
+                    response.raise_for_status()
+                    async for line in response.aiter_lines():
+                        if not line:
+                            continue
+                        payload = json.loads(line)
+                        if not isinstance(payload, dict):
+                            continue
+                        if payload.get("error"):
+                            raise RuntimeError("Ollama reported a model download error")
+                        if payload.get("status") == "success":
+                            success = True
+                        self._pull_state = {"state": "running", "model": model, "detail": str(payload.get("status", "Downloading"))[:240], "percent": pull_percent(payload)}
+            if not success:
+                raise RuntimeError("Ollama closed the download stream without success")
+            self._pull_state = {"state": "completed", "model": model, "detail": "Model installed", "percent": 100}
+        except asyncio.CancelledError:
+            self._pull_state = {"state": "cancelled", "model": model, "detail": "Download request cancelled; Ollama may retain partial layers", "percent": None}
+            raise
+        except (httpx.HTTPError, ValueError, RuntimeError):
+            self._pull_state = {"state": "failed", "model": model, "detail": "Ollama model download failed; check service and logs", "percent": None}
 
     async def cancel_pull(self) -> dict[str, Any]:
-        if self._pull_process and self._pull_process.returncode is None:
-            self._pull_process.terminate()
-            await self._pull_process.wait()
-            self._pull_state = {"state": "cancelled", "model": self._pull_state.get("model", ""), "detail": "Download cancelled"}
+        if self._pull_task and not self._pull_task.done():
+            self._pull_task.cancel()
+            try:
+                await self._pull_task
+            except asyncio.CancelledError:
+                pass
         return dict(self._pull_state)
 
     async def remove(self, model: str, *, confirmed: bool) -> dict[str, Any]:
         if not confirmed:
             return {"state": "confirmation_required", "model": model}
-        executable = shutil.which("ollama")
+        executable = ollama_executable()
         if not executable:
             raise RuntimeError("Ollama is not installed")
         process = await asyncio.create_subprocess_exec(executable, "rm", model, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.STDOUT, creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0)

@@ -1,4 +1,4 @@
-# Third-party notices — SKY Workbench V2.0
+# Third-party notices — SKY Workbench V3.0
 
 Product contact: SuKoYa — swbtest001@yeah.net
 
@@ -315,6 +315,9 @@ The Rust inventory distinguishes Windows normal dependencies from conservative b
 | rust | zlib-rs | 0.6.7 | Zlib | 1 | NOTICE_TEXT_COLLECTED |
 | rust | zmij | 1.0.23 | MIT | 1 | NOTICE_TEXT_COLLECTED |
 | node | @tauri-apps/api | 2.11.1 | Apache-2.0 OR MIT | 2 | NOTICE_TEXT_COLLECTED |
+| node | dompurify | 3.4.15 | MPL-2.0 OR Apache-2.0 (Apache-2.0 selected for this distribution) | 2 | NOTICE_TEXT_COLLECTED |
+| node | marked | 14.0.0 | MIT | 1 | NOTICE_TEXT_COLLECTED |
+| node | monaco-editor-core | 0.57.0 | MIT | 2 | NOTICE_TEXT_COLLECTED |
 | node | react | 19.1.1 | MIT | 1 | NOTICE_TEXT_COLLECTED |
 | node | react-dom | 19.1.1 | MIT | 1 | NOTICE_TEXT_COLLECTED |
 | node | scheduler | 0.26.0 | MIT | 1 | NOTICE_TEXT_COLLECTED |
@@ -485,7 +488,7 @@ The Rust inventory distinguishes Windows normal dependencies from conservative b
 | python_native_components | zerovec | 0.10.4 | Unicode-3.0 | 1 | EXACT_SBOM_SOURCE_NOTICES_COLLECTED |
 | python_native_components | zerovec-derive | 0.10.3 | Unicode-3.0 | 1 | EXACT_SBOM_SOURCE_NOTICES_COLLECTED |
 | python_native_components | zmij | 1.0.6 | MIT | 1 | EXACT_SBOM_SOURCE_NOTICES_COLLECTED |
-| native_libraries | openssl | 3.5.9 | Apache-2.0 | 1 | NOTICE_COLLECTED_NEW_RUNTIME_REQUIRES_EXACT_PAYLOAD_REVIEW |
+| native_libraries | openssl | 3.5.9 | Apache-2.0 | 1 | NOTICE_COLLECTED_RUNTIME_VERSION_TO_BE_VERIFIED_IN_FROZEN_EXE |
 | native_libraries | openssl-cryptography-static | 4.0.3 | Apache-2.0 | 1 | NOTICE_COLLECTED_RUNTIME_VERSION_TO_BE_VERIFIED_IN_FROZEN_EXE |
 | native_libraries | libffi | 3.4.4 | MIT | 1 | INDEPENDENT_SOURCE_BUILD_VERIFIED |
 | native_libraries | sqlite | 3.53.1 | Public-Domain | 1 | NOTICE_COLLECTED_RUNTIME_VERSION_TO_BE_VERIFIED_IN_FROZEN_EXE |

@@ -13,8 +13,8 @@ def provider_store(tmp_path, *, active: str = "ollama") -> SettingsStore:
         {
             "active_provider": active,
             "providers": {
-                "ollama": {"enabled": active == "ollama", "base_url": "http://local.test", "model": ""},
-                "lm_studio": {"enabled": active == "lm_studio", "base_url": "http://local.test/v1", "model": ""},
+                "ollama": {"enabled": active == "ollama", "base_url": "http://127.0.0.1", "model": ""},
+                "lm_studio": {"enabled": active == "lm_studio", "base_url": "http://127.0.0.1/v1", "model": ""},
                 "openai_compatible": {"enabled": False},
                 "deepseek": {"enabled": False},
                 "openai": {"enabled": False},

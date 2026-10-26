@@ -91,10 +91,10 @@ def test_log_redaction_covers_tokens_and_passwords() -> None:
     assert redacted.count("REDACTED") >= 4
 
 
-def test_v2_product_and_scientific_runtime_version_contract() -> None:
-    # V2 is the product release; the unchanged RC5.2 engine has its own version.
+def test_product_and_scientific_runtime_version_contract() -> None:
+    # Product and scientific Runtime versions advance independently.
     root = Path(__file__).resolve().parents[2]
-    product_version = "2.0.0"
+    product_version = "3.0.0"
     assert __version__ == "1.1.0-rc5.2"
     assert json.loads((root / "frontend" / "package.json").read_text(encoding="utf-8"))["version"] == product_version
     assert json.loads((root / "frontend" / "src-tauri" / "tauri.conf.json").read_text(encoding="utf-8"))["version"] == product_version
@@ -102,7 +102,7 @@ def test_v2_product_and_scientific_runtime_version_contract() -> None:
     rust_source = (root / "frontend" / "src-tauri" / "src" / "main.rs").read_text(encoding="utf-8")
     assert 'const VERSION: &str = env!("CARGO_PKG_VERSION");' in rust_source
     preparation = (root / "scripts" / "prepare_desktop.ps1").read_text(encoding="utf-8")
-    assert "version = '2.0.0'" in preparation
+    assert "version = '3.0.0'" in preparation
     assert "runtime_version = '1.1.0-rc5.2'" in preparation
 
 

@@ -7,6 +7,6 @@ import { WarmSettings } from './components/WarmSettings'
 export function WarmProductFixture({ page }: { page: 'onboarding' | 'settings' }) {
   const [locale, setLocale] = useState<'zh-CN' | 'en-US'>('zh-CN')
   return <><span className="warm-product-fixture-mark">DESIGN REVIEW · NOT SCIENTIFIC DATA</span>{page === 'onboarding'
-    ? <WarmOnboarding locale={locale} environment={[]} providers={[]} desktop={null} runtimeReady={false} runtimeUnavailable={false} onComplete={() => undefined} onRetryRuntime={() => undefined} onOpenLogs={() => undefined} onOpenHelp={() => undefined} />
+    ? <WarmOnboarding locale={locale} environment={[]} providers={[]} activeProvider="" desktop={null} runtimeReady={false} runtimeUnavailable={false} onComplete={() => undefined} onRetryRuntime={() => undefined} onOpenLogs={() => undefined} onOpenHelp={() => undefined} />
     : <WarmSettings visualFixture locale={locale} providers={[]} settings={{ providers: {}, retrieval_mode: 'accurate', active_provider: '' }} onLocaleChange={setLocale} onOpenSetup={() => undefined} onClose={() => undefined} onSaved={async () => undefined} />}</>
 }

@@ -24,10 +24,20 @@ class ComsolJavaEnvironment:
     mphserver: str = ""
     native_libraries: tuple[str, ...] = ()
 
+    @property
+    def compatibility(self) -> str:
+        """Version discovery is not a claim that every physics worker passed."""
+        if self.version == "COMSOL 6.3":
+            return "6.3_baseline; validate this installation at runtime"
+        if self.version in {"COMSOL 6.2", "COMSOL 6.4"}:
+            return "Bridge compilation/readback requires a live version-specific test"
+        return "Unverified COMSOL version"
+
     def as_dict(self) -> dict[str, object]:
         payload = asdict(self)
         payload["native_libraries"] = list(self.native_libraries)
         payload["classpath"] = f"{self.root}\\plugins\\*" if self.found else ""
+        payload["compatibility"] = self.compatibility
         return payload
 
 
@@ -41,6 +51,23 @@ def discover_comsol_java() -> ComsolJavaEnvironment:
         status="REAL_COMSOL_JAVA_CLASSPATH_NOT_FOUND",
         detail="No COMSOL 6.x root with the official API jar, JVM and native libraries was found.",
     )
+
+
+def scan_comsol_java(progress, before_candidate=None) -> ComsolJavaEnvironment:
+    """Report a candidate before inspection and count it only after inspection.
+
+    The optional callback preserves existing callers while allowing the UI to
+    distinguish a genuinely active check from one already completed.
+    """
+    roots = _candidate_roots()
+    for index, root in enumerate(roots, 1):
+        if before_candidate is not None:
+            before_candidate(index, len(roots))
+        environment = _inspect_root(root)
+        progress(index, len(roots))
+        if environment:
+            return environment
+    return ComsolJavaEnvironment(False, "REAL_COMSOL_JAVA_CLASSPATH_NOT_FOUND", "No usable COMSOL Java installation found")
 
 
 def _candidate_roots() -> list[Path]:
@@ -64,6 +91,13 @@ def _candidate_roots() -> list[Path]:
     raw.extend((program_root, program_root / "COMSOL64"))
     if program_root.is_dir():
         raw.extend(path for path in program_root.rglob("Multiphysics") if path.is_dir())
+    # Probe common versioned roots on every mounted fixed drive; no full-disk
+    # walk or access to user document directories is needed.
+    for letter in "CDEFGHIJKLMNOPQRSTUVWXYZ":
+        parent = Path(f"{letter}:\\comsol")
+        if parent.is_dir():
+            raw.extend(path for path in parent.glob("COMSOL*/*") if path.is_dir())
+            raw.extend(path for path in parent.glob("*/Multiphysics") if path.is_dir())
 
     # Portable/non-default installs are common in lab workstations. Probe only
     # the conventional top-level COMSOL folder on mounted drive letters.

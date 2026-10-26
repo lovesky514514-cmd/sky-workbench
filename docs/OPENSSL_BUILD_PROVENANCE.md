@@ -1,6 +1,6 @@
-# OpenSSL 3.5.9 build provenance (internal candidate)
+# OpenSSL 3.5.9 native input provenance
 
-The packaged Python `_ssl` and `_hashlib` extensions require the OpenSSL 3 ABI. Both shared libraries must be taken from the same verified build; they must never be mixed with the previous 3.5.8 DLLs.
+The packaged Python `_ssl` and `_hashlib` extensions require the OpenSSL 3 ABI. Both shared libraries must be taken from the same verified build; they must never be mixed with previous 3.5.8 DLLs. This source-only repository does not distribute either DLL.
 
 - Upstream: official OpenSSL 3.5.9 source archive, SHA-256 `603F5602E2EEF00D77FBD429D34DCD5822BB301757A1BC9CDB24C670F1EB859A` (compared with the upstream `.sha256` file).
 - Build: Windows x64, `VC-WIN64A`, Visual Studio 2022 v143 / MSVC 14.44.35207, NASM 2.16.01, Strawberry Perl 5.42.3.1 portable archive SHA-256 `6A081A811781C30ACA51DBC036AFD93092AF91E3297901F02C17043795A10690`.
@@ -12,18 +12,6 @@ The packaged Python `_ssl` and `_hashlib` extensions require the OpenSSL 3 ABI. 
 
 The library license text is the unchanged upstream Apache-2.0 text. The exact source archive, toolchain archive, build logs and resulting DLLs are retained outside the public source snapshot. This record establishes engineering provenance only; it is not legal approval for the full COMSOL-integrated application or a security exception sign-off for a future installer.
 
-The first frozen Bridge probe exposed a separate Python packaging defect: this
-builder's CPython 3.12.14 `ssl.py` had four local lines loading an internal PEM
-file not present in the distributable. The official CPython 3.12.14 source
-archive (SHA-256 `5C8462AF5790BAF43A321A1559DBE0DB06D1BE4300FB85FB53C40060668E548A`)
-was fetched from python.org. Its unmodified `Lib/ssl.py` (SHA-256
-`039A0E3F1782E14824B1624C7FFEFC2DE31714B4A9994424BE45A4271966097C`)
-and original LICENSE are retained in `packaging/vendor/python-3.12.14/`.
-PyInstaller replaces only the `ssl` pure module with that exact upstream file;
-it retains normal TLS verification and the bundled certifi CA data. The
-existing bundled CPython LICENSE contains the official 3.12.14 LICENSE text
-as an exact prefix. The repaired frozen sidecar's native self-test constructed
-an HTTPX TLS context successfully, and a separate COMSOL 6.3 Java Bridge
-read-only model-tree probe returned verified readback while direct missing and
-incorrect Bridge credentials were rejected with HTTP 401. This is a targeted
-verification, not a claim that every COMSOL workflow passed.
+Earlier sidecar probes and their COMSOL readback outcomes apply only to their
+exact tested binaries. They are not evidence that an independently rebuilt
+3.0 executable, or any other COMSOL version, passed acceptance.

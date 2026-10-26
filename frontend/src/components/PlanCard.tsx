@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import type { Plan, ScientificParameter } from '../types'
 import { CitationList } from './CitationList'
 import { currentLocale, translate, type Locale } from '../i18n'
+import { safeUiError } from '../safeUiError'
 
 export function PlanCard({ locale, plan, editable = false, onSave }: { locale?: Locale; plan: Plan; editable?: boolean; onSave?: (plan: Plan) => Promise<void> }) {
   const activeLocale = locale ?? currentLocale()
@@ -9,12 +10,16 @@ export function PlanCard({ locale, plan, editable = false, onSave }: { locale?: 
   const [draft, setDraft] = useState(plan)
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
-  useEffect(() => setDraft(plan), [plan])
+  const [saveError, setSaveError] = useState('')
+  useEffect(() => { setDraft(plan); setSaveError('') }, [plan])
   const updateParameter = (name: string, patch: Partial<ScientificParameter>) => setDraft((current) => ({ ...current, parameters: { ...current.parameters, [name]: { ...current.parameters[name], ...patch } } }))
   const save = async () => {
     if (!onSave) return
+    setSaveError('')
     setSaving(true)
-    try { await onSave(draft); setEditing(false) } finally { setSaving(false) }
+    try { await onSave(draft); setEditing(false) }
+    catch (cause) { setSaveError(safeUiError(cause)) }
+    finally { setSaving(false) }
   }
   return <section className="plan-card">
     <header><div><span className="eyebrow">SCIENTIFICPLAN {plan.schema_version}</span><h3>{plan.title}</h3><code>{plan.plan_id}</code></div><div className="plan-status-stack"><div className={`quality-badge ${plan.quality_status?.toLowerCase() ?? 'invalid'}`}>{plan.quality_status ?? 'INVALID'}</div><div className={`plan-readiness ${plan.runnable ? 'ready' : 'warning'}`}>{plan.runnable ? 'READY TO RUN' : 'NEEDS REVISION'}</div></div></header>
@@ -39,6 +44,7 @@ export function PlanCard({ locale, plan, editable = false, onSave }: { locale?: 
         </div>
       ))}</div>
       {editing && <div className="plan-edit-actions"><span>{t('Edited plans are revalidated before RUN.')}</span><button className="button primary" onClick={() => void save()} disabled={saving}>{saving ? t('Validating…') : t('Save & validate plan')}</button></div>}
+      {saveError && <p className="plan-save-error" role="alert">{saveError}</p>}
     </div>
     {plan.quality_report && <details className={`plan-quality ${plan.quality_status.toLowerCase()}`}><summary>Plan Quality <span>{plan.quality_report.checks.filter((item) => item.status === 'passed').length}/{plan.quality_report.checks.length} checks passed</span></summary><div>{plan.quality_report.checks.map((item) => <article className={item.status} key={`${item.category}-${item.name}`}><span>{item.status === 'passed' ? '✓' : item.status === 'warning' ? '△' : '✕'}</span><p><strong>{item.category} · {item.name}</strong><small>{item.message}</small></p></article>)}</div></details>}
     {(plan.assumptions.length > 0 || plan.missing_information.length > 0 || plan.warnings.length > 0) && <div className="plan-alerts"><PlanSection title={t('Assumptions')} values={plan.assumptions} /><PlanSection title={t('Missing Information')} values={plan.missing_information} /><PlanSection title={t('Warnings')} values={plan.warnings} /></div>}

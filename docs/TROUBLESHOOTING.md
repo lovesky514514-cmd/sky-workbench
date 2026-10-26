@@ -1,25 +1,16 @@
-# Help and troubleshooting / 帮助与查错
+# 故障排查
 
-This guide is for the current V2.0 internal candidate. Use the application's observed status and logs; do not infer a scientific PASS from an installation or health check.
+先在右上角 **设置** 查看环境和 AI 提供商；**••• → 帮助 / 打开日志** 可查看操作说明与本机诊断。分享日志前，请删除 API Key、任务中的私人内容和本机路径。
 
-| Symptom / 现象 | Check and safe action / 检查与处理 |
+| 现象 | 检查方式 |
 | --- | --- |
-| Runtime unavailable / 运行时不可用 | In the app, open **Open Logs**, then use **Restart Runtime**. Preserve the session and logs. If an active run was interrupted, it is not certified as completed. |
-| COMSOL unavailable / COMSOL 不可用 | Confirm a separate COMSOL 6.3 installation and valid license. Re-run the environment check. A detected executable alone does not prove Bridge attachment or model readback. |
-| Java Bridge disconnected / 桥接未连接 | Confirm COMSOL availability, then inspect the Bridge status and diagnostics. Do not bypass local authentication or treat a reachable port as a verified model. |
-| Ollama/model unavailable / 模型不可用 | Check the local Ollama service and the selected model in onboarding or **Settings → Model Center**. Downloads require explicit confirmation; no silent model fallback should be assumed. |
-| Plan needs review / 计划需审核 | Check units, geometry, material, boundaries, selection identities, assumptions, and required validation checks before approving. Approval is not scientific certification. |
-| Pause or stop appears delayed / 暂停或停止延迟 | Pause waits for a verified safe boundary. Stop ends the attempt; wait for the visible cleanup outcome and inspect logs if cleanup is unverified. Do not manually kill unrelated COMSOL/Java processes. |
-| Result unavailable or unverified / 结果不可用或未验证 | Confirm the current session, run, attempt, evidence state, and artifact integrity. A previous attempt's image or a present file cannot certify the current run. |
-| Imported MPH cannot be modified / 导入模型无法修改 | Keep the original. Current support does not cover arbitrary MPH import-and-edit. Use a reviewed copy only when the specific workflow is supported, then require fresh readback and validation. |
+| 启动时提示缺少 WebView2 | 给当前 Windows 用户安装 Microsoft WebView2 Runtime，重新启动程序；源码仓库不附带它。 |
+| 设置打不开或 Runtime 未连接 | 查看 Runtime 健康状态与日志，使用界面提供的重启入口；不要把旧缓存状态当作当前配置。 |
+| 扫描未找到 COMSOL | 在「设置 → 常规」指定真实安装根目录后重新扫描，检查当前用户的安装与许可。发现版本不等于 Bridge 已连接。 |
+| 找到了 COMSOL，但模型仍不可用 | 查看 Java Bridge 状态与错误；确认对应版本的 API、许可和真实模型读回。不要用 6.3 历史结果认证其他版本。 |
+| Ollama 出现 HTTP 400 或模型不可用 | 确认服务正在运行、模型已实际安装，且设置中的模型 ID 与服务返回一致；也可显式选择云端提供商。不会静默切换模型。 |
+| 云端 API 连接失败 | 核对提供商、端点、模型 ID、网络和账户权限；点击「测试连接」会发出真实请求，可能产生费用。不要把 Key 写进任务文本或故障报告。 |
+| 建模被阻断或结果未认证 | 打开计划与证据页，核对缺少的参数、边界选择、读回、求解和科学检查。人工批准与命令成功都不能替代科学验证。 |
+| MATLAB、Wolfram、Materials Studio 没有模型画面 | 当前软件标签提供检测、编辑或有限脚本路径；没有可靠模型读回时不会伪造窗口同步。详见[兼容范围](PROVIDER_AND_SIMULATOR_COMPATIBILITY.md)。 |
 
-## Collect a useful diagnostic report / 收集诊断信息
-
-1. Record the product version, Windows version, and which capability shows **Ready**, **Degraded**, **Blocked**, or **Unavailable**.
-2. Record the task/session and run/attempt IDs only if sharing them is safe. Note the exact stage and whether the failure happened before plan approval, during build/solve/export, or during result review.
-3. Use the application's **Open Logs** action. Share the smallest relevant excerpt, with API keys, tokens, private model data, local account names, and absolute user paths removed.
-4. Do not attach a private MPH model, private knowledge base, or license material without a separate, explicit sharing decision.
-
-中文：提供产品/Windows 版本、环境状态、失败阶段和脱敏日志即可；请勿公开上传 API Key、Token、私人 MPH、知识库或本机用户路径。
-
-For installation prerequisites and the current distribution boundary, see [Windows installation](INSTALL_WINDOWS.md). For build limitations, see [BUILDING.md](../BUILDING.md). Contact: [swbtest001@yeah.net](mailto:swbtest001@yeah.net).
+仍无法解决时，将**脱敏**的错误类别、软件版本和复现步骤发送至 [swbtest001@yeah.net](mailto:swbtest001@yeah.net)。不要发送密钥、许可证、私人 MPH 或知识库。

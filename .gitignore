@@ -23,7 +23,7 @@ frontend/src-tauri/target/
 frontend/src-tauri/binaries/
 packaging/build/
 packaging/dist/
-review_sidecar_*/
+tmp/
 *.log
 *.sqlite
 *.db

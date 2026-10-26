@@ -9,6 +9,7 @@ const compiled = ts.transpileModule(source, { compilerOptions: { module: ts.Modu
 const exports = {}
 new Function('exports', compiled)(exports)
 const select = exports.verifiedImageArtifacts
+const visibleLoad = exports.visibleArtifactLoad
 
 const verdict = { completed: true, command_success: true, model_state_verified: true, scientific_validation_success: true, evidence_contract_passed: true, run_id: 'run-1' }
 const evidence = { passed: true, run_id: 'run-1', attempt_id: 'attempt-1', artifacts: {
@@ -32,4 +33,8 @@ assert.equal(select(session, 'run-1', 'other-attempt').length, 0)
 assert.equal(select({ messages: [{ ...message, evidence_contract: { ...evidence, passed: false } }] }, 'run-1', 'attempt-1').length, 0)
 assert.equal(select({ messages: [{ ...message, execution_verdict: { ...verdict, scientific_validation_success: false } }] }, 'run-1', 'attempt-1').length, 0)
 assert.equal(select({ messages: [{ ...message, artifacts: { ...message.artifacts, python_plot: 'C:/private/wrong.png' } }] }, 'run-1', 'attempt-1').length, 1)
+assert.equal(select({ messages: [{ ...message, execution_verdict: { ...verdict, completed: 'true' } }] }, 'run-1', 'attempt-1').length, 0)
+assert.equal(select({ messages: [{ ...message, evidence_contract: { ...evidence, passed: 'true' } }] }, 'run-1', 'attempt-1').length, 0)
+assert.deepEqual(visibleLoad({ key: 'task-a:run-a:attempt-a:temperature.png:hash-a', state: 'verified', source: 'blob:old' },
+  'task-b:run-b:attempt-b:temperature.png:hash-b'), { state: 'loading', source: '' })
 console.log('Verified gallery binding and multi-image selection: PASS')

@@ -1,5 +1,20 @@
 import type { RuntimeDomain, Session } from './types'
 
+function record(value: unknown): Record<string, unknown> | null {
+  return value !== null && typeof value === 'object' && !Array.isArray(value)
+    ? value as Record<string, unknown> : null
+}
+
+// Network JSON is not type checked at runtime. Only literal booleans from the
+// three Runtime-owned verdict locations may contribute to a verified display.
+function completedVerdict(value: unknown, runId: string): boolean {
+  const verdict = record(value)
+  return verdict?.run_id === runId && verdict.completed === true &&
+    verdict.command_success === true && verdict.model_state_verified === true &&
+    verdict.scientific_validation_success === true && verdict.evidence_contract_passed === true &&
+    Array.isArray(verdict.issues) && verdict.issues.length === 0
+}
+
 // A selection ticket belongs to one user-visible task, even if the user later
 // returns to the same session. The generation prevents a late A→B→A response
 // from being mistaken for the new A selection.
@@ -43,6 +58,24 @@ export function currentScientificDomain(session: Session | null, domain: Runtime
     domain.runState?.runId === run.runId && domain.runState.attemptId === run.attemptId ? domain : null
 }
 
+// Both stream reconnect and Runtime recovery must load the current journal
+// before accepting a projection. Undefined means the user selected another
+// task while either request was pending; null means no matching live evidence.
+export async function reconcileCurrentEvidence({ ticket, selection, refresh, projection, session }: {
+  ticket: SelectionTicket
+  selection: () => SelectionTicket
+  refresh: () => Promise<unknown>
+  projection: () => Promise<RuntimeDomain>
+  session: () => Session | null
+}): Promise<RuntimeDomain | null | undefined> {
+  if (!isCurrentSelection(ticket, selection())) return undefined
+  await refresh()
+  if (!isCurrentSelection(ticket, selection())) return undefined
+  const domain = await projection()
+  if (!isCurrentSelection(ticket, selection())) return undefined
+  return currentScientificDomain(session(), domain)
+}
+
 // Event delivery can precede the next /domain response. An invalidation after
 // the latest completion immediately removes the current verified state.
 export function currentEvidenceState(session: Session | null, domain: RuntimeDomain | null): string {
@@ -50,10 +83,22 @@ export function currentEvidenceState(session: Session | null, domain: RuntimeDom
   const run = latestRun(session)
   if (!current || !run) return 'unavailable'
   const invalidated = (session?.events ?? []).some((item) => item.sequence > run.completedAt &&
-    ['evidence.invalidated', 'validation.invalidated_by_human_correction'].includes(item.type) &&
+    ['evidence.invalidated', 'validation.invalidated_by_human_correction',
+      'run.failed', 'run.canceled', 'run.interrupted'].includes(item.type) &&
     item.payload.run_id === run.runId &&
     (!item.payload.attempt_id || item.payload.attempt_id === run.attemptId))
-  return invalidated ? 'stale' : current.evidenceState
+  const latestIntegrity = new Map<string, { sequence: number; failed: boolean }>()
+  for (const item of session?.events ?? []) {
+    if (item.sequence <= run.completedAt || item.payload.run_id !== run.runId ||
+        item.payload.attempt_id !== run.attemptId ||
+        !['artifact.integrity_failed', 'artifact.integrity_verified'].includes(item.type)) continue
+    const filename = typeof item.payload.filename === 'string' ? item.payload.filename : '*'
+    if (item.sequence > (latestIntegrity.get(filename)?.sequence ?? -1))
+      latestIntegrity.set(filename, { sequence: item.sequence, failed: item.type === 'artifact.integrity_failed' })
+  }
+  let artifactFailed = false
+  latestIntegrity.forEach((item) => { if (item.failed) artifactFailed = true })
+  return invalidated || artifactFailed ? 'stale' : current.evidenceState
 }
 
 // Scientific success remains authored by the Runtime. The UI only withholds
@@ -63,26 +108,23 @@ export function verifiedCurrentResult(session: Session | null, domain: RuntimeDo
   const run = latestRun(session)
   if (!current || !run || session?.state !== 'COMPLETED' || run.completedAt < 0 ||
       currentEvidenceState(session, current) !== 'verified') return false
-  const verdict = current.authoritativeVerdict
-  if (!verdict || verdict.run_id !== run.runId || !verdict.completed ||
-      !verdict.command_success || !verdict.model_state_verified ||
-      !verdict.scientific_validation_success || !verdict.evidence_contract_passed ||
-      !Array.isArray(verdict.issues) || verdict.issues.length !== 0) return false
+  if (!completedVerdict(current.authoritativeVerdict, run.runId) ||
+      !Array.isArray(current.contractGaps) || current.contractGaps.length !== 0) return false
   // The completion event and frozen evidence contract must identify the same
   // attempt. This is a consistency check, never a frontend-issued verdict.
-  const completedVerdict = run.completion?.execution_verdict as Record<string, unknown> | undefined
-  const completedEvidence = run.completion?.evidence_contract as Record<string, unknown> | undefined
+  const frozenVerdict = run.completion?.execution_verdict
+  const completedEvidence = record(run.completion?.evidence_contract)
   if (run.completion?.run_id !== run.runId || run.completion.attempt_id !== run.attemptId ||
-      completedVerdict?.run_id !== run.runId || completedVerdict?.completed !== true ||
-      completedVerdict?.command_success !== true || completedVerdict?.model_state_verified !== true ||
-      completedVerdict?.scientific_validation_success !== true || completedVerdict?.evidence_contract_passed !== true ||
+      !completedVerdict(frozenVerdict, run.runId) ||
       completedEvidence?.passed !== true || completedEvidence.run_id !== run.runId ||
-      completedEvidence.attempt_id !== run.attemptId) return false
+      completedEvidence.attempt_id !== run.attemptId ||
+      !Array.isArray(completedEvidence.issues) || completedEvidence.issues.length !== 0) return false
   const artifacts = current.resultArtifacts
-  if (!artifacts.length || artifacts.some((item) => item.runId !== run.runId ||
+  if (!Array.isArray(artifacts) || !artifacts.length || artifacts.some((item) => item.runId !== run.runId ||
       item.attemptId !== run.attemptId || item.evidenceState !== 'verified')) return false
-  return (session.messages ?? []).some((message) => message.run_id === run.runId &&
-    message.execution_verdict?.run_id === run.runId && message.evidence_contract?.passed === true &&
+  return Array.isArray(session.messages) && session.messages.some((message) => message.run_id === run.runId &&
+    completedVerdict(message.execution_verdict, run.runId) && message.evidence_contract?.passed === true &&
     message.evidence_contract.run_id === run.runId &&
-    message.evidence_contract.attempt_id === run.attemptId)
+    message.evidence_contract.attempt_id === run.attemptId &&
+    Array.isArray(message.evidence_contract.issues) && message.evidence_contract.issues.length === 0)
 }

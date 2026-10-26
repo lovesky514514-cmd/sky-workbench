@@ -15,9 +15,10 @@ from urllib.parse import unquote
 
 from fastapi import FastAPI, Header, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
+from fastapi.responses import FileResponse, JSONResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from httpx import HTTPError
+from pydantic import BaseModel, Field
 
 from app import __version__
 from app.adapter.rc42_contract import project_session, project_event_batch, safe_error
@@ -29,10 +30,10 @@ from app.agent.tool_registry import tool_registry
 from app.comsol.legacy_mcp import legacy_mcp_bridge
 from app.comsol.java_bridge import java_bridge_client
 from app.comsol.bridge_process import java_bridge_process_manager
-from app.comsol.discovery import comsol_java_environment
+from app.comsol.discovery import discover_comsol_java
 from app.comsol.license_probe import probe_optional_modules
 from app.config import FRONTEND_DIST, PROJECT_ROOT, WORKSPACE_ROOT, ensure_workspace, settings_store
-from app.environment import detect_environment
+from app.environment import detect_environment, installation_scan
 from app.knowledge.retrieval import retriever
 from app.knowledge.hybrid_rag import index_task_manager, semantic_index_task_manager
 from app.knowledge.integrity import verify_knowledge_base
@@ -61,6 +62,8 @@ from app.models import (
     RunBoundaryCorrectionRequest,
 )
 from app.providers.manager import provider_manager
+from app.simulation_adapters import capabilities as simulation_capabilities, probe_engine
+from app.script_workspace import ScriptRunManager
 from app.services.projects import project_service
 from app.services.legacy_migration import detect_legacy, handle_legacy
 from app.services.model_manager import local_model_manager
@@ -77,6 +80,15 @@ from app.scientific.schemas import ScientificPlan
 from app.validators.execution_verdict import verify_artifact_integrity
 
 
+script_runs = ScriptRunManager(WORKSPACE_ROOT / "script_runs")
+
+
+class ScriptRunRequest(BaseModel):
+    engine: str
+    source: str = Field(min_length=1, max_length=200_000)
+    confirmed: bool = False
+
+
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     ensure_workspace()
@@ -86,6 +98,7 @@ async def lifespan(_: FastAPI):
     try:
         yield
     finally:
+        await script_runs.shutdown()
         await agent_runtime.shutdown()
         semantic_runtime.shutdown()
         if java_bridge_process_manager.status().get("running") or java_bridge_process_manager.status().get('state') == 'starting':
@@ -158,6 +171,16 @@ async def desktop_shutdown() -> dict[str, Any]:
 @app.get("/api/environment")
 async def environment() -> dict[str, Any]:
     return await detect_environment()
+
+
+@app.post("/api/environment/installations/scan")
+async def start_installation_scan() -> dict[str, Any]:
+    return await installation_scan.start()
+
+
+@app.get("/api/environment/installations/scan")
+async def installation_scan_status() -> dict[str, Any]:
+    return installation_scan.status()
 
 
 @app.get("/api/system/resources")
@@ -320,6 +343,70 @@ async def providers() -> dict[str, Any]:
     return {"providers": await provider_manager.detect(), "settings": settings_store.load()}
 
 
+@app.get("/api/simulation-adapters")
+async def simulation_adapters() -> dict[str, Any]:
+    """Expose discovery without implying an untested adapter can execute."""
+    return {"adapters": simulation_capabilities()}
+
+
+@app.post("/api/simulation-adapters/{engine}/probe")
+async def probe_simulation_adapter(engine: str) -> dict[str, Any]:
+    """Explicit local handshake; it never opens a model or certifies a result."""
+    try:
+        return await probe_engine(engine)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail="Unknown scientific engine") from exc
+
+
+@app.get("/api/script-runs/availability")
+async def script_run_availability() -> dict[str, Any]:
+    """An available interpreter is not a scientific connector or model readback."""
+    return {"engines": await asyncio.to_thread(script_runs.availability)}
+
+
+@app.post("/api/script-runs")
+async def start_script_run(request: ScriptRunRequest) -> dict[str, Any]:
+    # Local code execution is available only behind the desktop session token.
+    # The confirmation flag records explicit user intent; it is not authentication.
+    if not os.getenv("COMSOL_WORKBENCH_SESSION_TOKEN"):
+        raise HTTPException(status_code=403, detail="Desktop session authentication is required")
+    if not request.confirmed:
+        raise HTTPException(status_code=422, detail="Local script execution requires confirmation")
+    try:
+        return await script_runs.start(request.engine, request.source)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except RuntimeError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+
+@app.get("/api/script-runs/{run_id}")
+async def script_run_status(run_id: str) -> dict[str, Any]:
+    try:
+        return script_runs.status(run_id)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Local script run not found") from exc
+
+
+@app.post("/api/script-runs/{run_id}/cancel")
+async def cancel_script_run(run_id: str) -> dict[str, Any]:
+    try:
+        return await script_runs.cancel(run_id)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Local script run not found") from exc
+
+
+@app.get("/api/script-runs/{run_id}/figures/{name}")
+async def script_run_figure(run_id: str, name: str) -> Response:
+    try:
+        mime, data = script_runs.figure(run_id, name)
+    except (KeyError, FileNotFoundError) as exc:
+        raise HTTPException(status_code=404, detail="Local figure unavailable") from exc
+    return Response(content=data, media_type=mime, headers={"Cache-Control": "no-store"})
+
+
 @app.put("/api/settings/providers")
 async def update_providers(request: ProviderSettingsRequest) -> dict[str, Any]:
     payload: dict[str, Any] = {"providers": request.providers}
@@ -327,6 +414,11 @@ async def update_providers(request: ProviderSettingsRequest) -> dict[str, Any]:
         payload["retrieval_mode"] = request.retrieval_mode
     if request.active_provider is not None:
         payload["active_provider"] = request.active_provider
+    if request.comsol_root is not None:
+        root = request.comsol_root.strip()
+        if root and (root.startswith("\\\\") or not Path(root).is_absolute() or not Path(root).is_dir()):
+            raise HTTPException(status_code=422, detail="COMSOL root must be an existing local absolute directory")
+        payload["comsol"] = {"root": root}
     try:
         settings = settings_store.update(payload)
     except RuntimeError as exc:
@@ -570,7 +662,7 @@ async def comsol_diagnostics() -> dict[str, Any]:
         except (OSError, RuntimeError, TimeoutError) as exc:
             live = {"state": "attachment_probe_failed", "model_connected": False, "detail": str(exc)}
     return {
-        "installation_discovery": comsol_java_environment.as_dict(),
+        "installation_discovery": discover_comsol_java().as_dict(),
         "bridge_process": process,
         "live_attachment": live,
         "identity_verified": bool(live.get("real_comsol") and live.get("model_connected")),
@@ -897,13 +989,13 @@ async def java_bridge_status() -> dict[str, Any]:
     return {
         **health,
         "process": java_bridge_process_manager.status(),
-        "environment": comsol_java_environment.as_dict(),
+        "environment": discover_comsol_java().as_dict(),
     }
 
 
 @app.get("/api/comsol/bridge/environment")
 async def java_bridge_environment() -> dict[str, Any]:
-    return comsol_java_environment.as_dict()
+    return discover_comsol_java().as_dict()
 
 
 @app.get("/api/imported-mph")

@@ -93,7 +93,7 @@ export interface Provider {
 }
 export interface ProviderConfig { enabled: boolean; base_url: string; model: string; api_key?: string }
 export type RetrievalMode = 'fast' | 'accurate' | 'deep'
-export interface ProviderSettings { providers: Record<string, ProviderConfig>; retrieval_mode: RetrievalMode | 'basic' | 'enhanced'; active_provider: string; extensions?: { literature_modeling?: { enabled: boolean; deepseek_enabled?: boolean } } }
+export interface ProviderSettings { providers: Record<string, ProviderConfig>; retrieval_mode: RetrievalMode | 'basic' | 'enhanced'; active_provider: string; comsol?: { root: string }; extensions?: { literature_modeling?: { enabled: boolean; deepseek_enabled?: boolean } } }
 export interface LiteratureModelCandidate {
   source_title: string; source_kind: 'text' | 'pdf' | 'arxiv' | 'pmc'; page_number: number | null
   excerpt: string; intent: ScientificIntent; status: 'review_required' | 'insufficient_evidence'

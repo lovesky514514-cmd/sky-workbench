@@ -1,5 +1,7 @@
 import type { AgentMode, EnvironmentItem, ExecutionEta, ImportedMph, ImportedMphPreview, JavaBridgeStatus, LiteratureModelCandidate, Plan, Project, Provider, ProviderAcceptanceResult, ProviderConfig, ProviderSettings, ProviderTestResult, RetrievalMode, RuntimeDomain, ScientificIntent, Session, TreeNode } from './types'
 import { responseError } from './safeUiError'
+import { openEventStream, type EventStreamOptions } from './eventStream'
+import { readMessageStream } from './messageStream'
 
 export interface DesktopBootstrap {
   desktop: boolean
@@ -20,6 +22,19 @@ export interface DesktopBootstrap {
   modelSetupRequired: boolean
   ollamaModelsRoot: string
   ollamaOwned: boolean
+}
+
+export interface LocalScriptRun {
+  run_id: string
+  engine: string
+  state: 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED' | 'CANCELED' | 'TIMED_OUT' | 'OUTPUT_LIMIT' | 'CLEANUP_UNVERIFIED'
+  output: string
+  elapsed_ms: number
+  figures: Array<{ name: string; mime: string; size: number; sha256: string }>
+  mathics_result: { status: 'success' | 'failed'; text: string; latex: string; mathml: string; messages: string[]; verification: 'not_requested' } | null
+  script_exit_success: boolean
+  model_state_verified: false
+  scientific_validation_passed: false
 }
 
 let desktop: DesktopBootstrap | null = null
@@ -90,38 +105,20 @@ function streamEvents(
   path: string,
   onMessage: (payload: Record<string, unknown>) => void,
   onError: (cause: unknown) => void,
+  options: EventStreamOptions = {},
 ): AbortController {
-  const controller = new AbortController()
-  void (async () => {
-    try {
-      const response = await fetch(endpoint(path), {
-        headers: { Accept: 'text/event-stream', ...(desktop?.sessionToken ? { 'X-Workbench-Token': desktop.sessionToken } : {}) },
-        signal: controller.signal,
-      })
-      if (!response.ok || !response.body) throw new Error(responseError(await response.text(), response.status))
-      const reader = response.body.getReader()
-      const decoder = new TextDecoder()
-      let buffer = ''
-      while (true) {
-        const { value, done } = await reader.read()
-        buffer += decoder.decode(value, { stream: !done })
-        const frames = buffer.split('\n\n')
-        buffer = frames.pop() ?? ''
-        for (const frame of frames) {
-          const line = frame.split('\n').find((item) => item.startsWith('data:'))
-          if (line) onMessage(JSON.parse(line.slice(5).trim()) as Record<string, unknown>)
-        }
-        if (done) break
-      }
-    } catch (cause) {
-      if (!(cause instanceof DOMException && cause.name === 'AbortError')) onError(cause)
-    }
-  })()
-  return controller
+  return openEventStream(endpoint(path), desktop?.sessionToken ?? '', onMessage, onError, options)
 }
-
 async function artifactObjectUrl(runId: string, filename: string): Promise<string> {
   const response = await fetch(endpoint(`/api/artifacts/${encodeURIComponent(runId)}/${encodeURIComponent(filename)}`), {
+    headers: desktop?.sessionToken ? { 'X-Workbench-Token': desktop.sessionToken } : {},
+  })
+  if (!response.ok) throw new Error(responseError(await response.text(), response.status))
+  return URL.createObjectURL(await response.blob())
+}
+
+async function localScriptFigureUrl(runId: string, filename: string): Promise<string> {
+  const response = await fetch(endpoint(`/api/script-runs/${encodeURIComponent(runId)}/figures/${encodeURIComponent(filename)}`), {
     headers: desktop?.sessionToken ? { 'X-Workbench-Token': desktop.sessionToken } : {},
   })
   if (!response.ok) throw new Error(responseError(await response.text(), response.status))
@@ -178,7 +175,7 @@ export const api = {
   retrySettingsMigration: () => request<Record<string, unknown>>('/api/settings/migration/retry', { method: 'POST' }),
   useDefaultSettings: () => request<Record<string, unknown>>('/api/settings/migration/defaults', { method: 'POST' }),
   clearStorage: (kind: 'temporary-cache' | 'semantic-index') => request<Record<string, unknown>>(`/api/storage/clear/${kind}`, { method: 'POST' }),
-  environment: () => request<{ items: EnvironmentItem[]; providers: Provider[]; knowledge: Record<string, unknown> }>('/api/environment'),
+  environment: () => request<{ items: EnvironmentItem[]; providers: Provider[]; knowledge: Record<string, unknown>; comsol_java_environment: { found: boolean; version: string } }>('/api/environment'),
   systemResources: () => request<Record<string, unknown>>('/api/system/resources'),
   capabilities: () => request<{ capabilities: Record<string, { status: string; reason: string }> }>('/api/capabilities'),
   probeCapabilities: () => request<Record<string, unknown>>('/api/capabilities/probe', { method: 'POST' }),
@@ -204,13 +201,22 @@ export const api = {
   legacyStatus: () => request<Record<string, unknown>>('/api/maintenance/legacy'),
   legacyAction: (action: string, path: string, confirmed = false) => request<Record<string, unknown>>('/api/maintenance/legacy', { method: 'POST', body: JSON.stringify({ action, path, confirmed }) }),
   modelsStatus: () => request<Record<string, unknown>>('/api/models/status'),
+  startInstallationScan: () => request<Record<string, unknown>>('/api/environment/installations/scan', { method: 'POST' }),
+  installationScanStatus: () => request<Record<string, unknown>>('/api/environment/installations/scan'),
+  simulationAdapters: () => request<{ adapters: Array<{ engine: string; installed: boolean; executable: string; readback: string; execute: string; detail: string; connector: string; probe: string }> }>('/api/simulation-adapters'),
+  probeSimulationAdapter: (engine: string) => request<{ engine: string; status: string; detail: string; elapsed_ms: number; readback: string; execute: string }>(`/api/simulation-adapters/${encodeURIComponent(engine.toLowerCase().replaceAll(' ', '_'))}/probe`, { method: 'POST' }),
+  localScriptAvailability: () => request<{ engines: Record<string, boolean> }>('/api/script-runs/availability'),
+  startLocalScript: (engine: string, source: string) => request<LocalScriptRun>('/api/script-runs', { method: 'POST', body: JSON.stringify({ engine, source, confirmed: true }) }),
+  localScriptStatus: (runId: string) => request<LocalScriptRun>(`/api/script-runs/${encodeURIComponent(runId)}`),
+  cancelLocalScript: (runId: string) => request<LocalScriptRun>(`/api/script-runs/${encodeURIComponent(runId)}/cancel`, { method: 'POST' }),
+  localScriptFigureUrl,
   startOllama: () => request<Record<string, unknown>>('/api/models/ollama/start', { method: 'POST' }),
   pullOllama: (model: string, confirmed = false) => request<Record<string, unknown>>('/api/models/ollama/pull', { method: 'POST', body: JSON.stringify({ model, confirmed }) }),
   cancelOllamaPull: () => request<Record<string, unknown>>('/api/models/ollama/pull/cancel', { method: 'POST' }),
   removeOllama: (model: string, confirmed = false) => request<Record<string, unknown>>('/api/models/ollama/remove', { method: 'POST', body: JSON.stringify({ model, confirmed }) }),
   updatePlan: (sessionId: string, plan: Plan) => request<Session>(`/api/sessions/${sessionId}/plan`, { method: 'PUT', body: JSON.stringify({ plan }) }),
   providers: () => request<{ providers: Provider[]; settings: ProviderSettings }>('/api/providers'),
-  saveProviders: (providers: Record<string, ProviderConfig>, retrievalMode: RetrievalMode, activeProvider: string) => request<{ providers: Provider[]; settings: ProviderSettings }>('/api/settings/providers', { method: 'PUT', body: JSON.stringify({ providers, retrieval_mode: retrievalMode, active_provider: activeProvider }) }),
+  saveProviders: (providers: Record<string, ProviderConfig>, retrievalMode: RetrievalMode, activeProvider: string, comsolRoot?: string) => request<{ providers: Provider[]; settings: ProviderSettings }>('/api/settings/providers', { method: 'PUT', body: JSON.stringify({ providers, retrieval_mode: retrievalMode, active_provider: activeProvider, comsol_root: comsolRoot }) }),
   testProvider: (provider: string) => request<ProviderTestResult>('/api/providers/test', { method: 'POST', body: JSON.stringify({ provider }) }),
   acceptProvider: (provider: string) => request<ProviderAcceptanceResult>('/api/providers/acceptance', { method: 'POST', body: JSON.stringify({ provider }) }),
   knowledgeStatus: () => request<Record<string, unknown>>('/api/knowledge/status'),
@@ -224,25 +230,6 @@ export const api = {
   streamMessage: async (sessionId: string, mode: AgentMode, content: string, onEvent: (event: Record<string, unknown>) => void, signal?: AbortSignal): Promise<Session> => {
     const response = await fetch(endpoint(`/api/sessions/${sessionId}/messages/stream`), { method: 'POST', headers: requestHeaders(), body: JSON.stringify({ mode, content }), signal })
     if (!response.ok || !response.body) throw new Error(responseError(await response.text(), response.status))
-    const reader = response.body.getReader()
-    const decoder = new TextDecoder()
-    let buffer = ''
-    let finalSession: Session | null = null
-    while (true) {
-      const { value, done } = await reader.read()
-      buffer += decoder.decode(value, { stream: !done })
-      const frames = buffer.split('\n\n')
-      buffer = frames.pop() ?? ''
-      for (const frame of frames) {
-        const line = frame.split('\n').find((item) => item.startsWith('data:'))
-        if (!line) continue
-        const event = JSON.parse(line.slice(5).trim()) as Record<string, unknown>
-        onEvent(event)
-        if (event.type === 'session') finalSession = event.session as Session
-        if (event.type === 'error') throw new Error(String(event.detail))
-      }
-      if (done) break
-    }
-    return finalSession ?? api.session(sessionId)
+    return readMessageStream(response, sessionId, onEvent)
   },
 }

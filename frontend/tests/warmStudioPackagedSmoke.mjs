@@ -99,9 +99,9 @@ try {
   await command('Runtime.enable')
   await command('Page.enable')
   if (!await waitFor('Boolean(document.querySelector(".warm-studio"))', 120000)) throw new Error('WarmStudio did not mount in packaged app')
-  storageBefore = JSON.parse(await evaluate('JSON.stringify({guide:localStorage.getItem("warm-studio-onboarding-v2"),legacy:localStorage.getItem("workbench-first-run-rc41"),locale:localStorage.getItem("comsol-workbench-locale")})'))
+  storageBefore = JSON.parse(await evaluate('JSON.stringify({guide:localStorage.getItem("warm-studio-onboarding-v3"),legacy:localStorage.getItem("workbench-first-run-rc41"),locale:localStorage.getItem("comsol-workbench-locale")})'))
   // A legacy completion flag must not suppress the new warm first-run guide.
-  await evaluate('localStorage.setItem("workbench-first-run-rc41","complete");localStorage.removeItem("warm-studio-onboarding-v2");localStorage.setItem("comsol-workbench-locale","en-US");true')
+  await evaluate('localStorage.setItem("workbench-first-run-rc41","complete");localStorage.removeItem("warm-studio-onboarding-v3");localStorage.setItem("comsol-workbench-locale","en-US");true')
   await command('Page.reload', { ignoreCache: true })
   const firstRunVisible = await waitFor('Boolean(document.querySelector(".warm-onboarding"))', 30000)
   if (!firstRunVisible) throw new Error('Warm onboarding did not appear at first launch')
@@ -109,7 +109,7 @@ try {
   writeFileSync(path.join(outputRoot, 'packaged-onboarding.png'), Buffer.from(onboardingScreenshot.data, 'base64'))
   await evaluate('document.querySelector(".warm-onboarding-header > button")?.click();true')
   if (!await waitFor('!document.querySelector(".warm-onboarding") && Boolean(document.querySelector(".warm-task-page"))', 120000)) throw new Error('Task page did not load after first-run dismissal')
-  const onboardingStored = await evaluate('localStorage.getItem("warm-studio-onboarding-v2")==="complete"')
+  const onboardingStored = await evaluate('localStorage.getItem("warm-studio-onboarding-v3")==="complete"')
   const bootstrap = JSON.parse(await evaluate('(async()=>JSON.stringify(await window.__TAURI_INTERNALS__.invoke("desktop_bootstrap")))()'))
   // React mounts before the owned sidecar has finished bootstrapping. Poll
   // health rather than turning normal startup latency into a false failure.
@@ -163,14 +163,14 @@ try {
   report = { passed: Boolean(firstRunVisible && onboardingStored && warmSettings && settingsSections >= 5 && task && honestEmpty && noFixture && languageClick && languageStored && languageRestored && runtimePid > 0 && (!useDefaultProfile || (recoveredSessions === 3 && recoveryBanner)) && (!quarantined || quarantineVisible)), health, firstRunVisible, onboardingStored, warmSettings, settingsSections, task, honestEmpty, noFixture, languageStored, languageRestored, recoveredSessions, recoveryBanner, quarantineVisible, recoveryStatus: recoveryHealth.database_recovery?.status, runtimePid, selectedModel: bootstrap.selectedModel, publicProfile: true, profile: seedCorrupt ? 'isolated_corrupt' : seedOldSchema ? 'isolated_old_schema' : useDefaultProfile ? 'default_recovered' : 'isolated' }
   // The smoke test must not consume a real user's first-run experience or
   // change their language preference on this shared WebView2 origin.
-  await evaluate(`(()=>{const prior=${JSON.stringify(storageBefore)};for(const [key,value] of [["warm-studio-onboarding-v2",prior.guide],["workbench-first-run-rc41",prior.legacy],["comsol-workbench-locale",prior.locale]]){if(value==null)localStorage.removeItem(key);else localStorage.setItem(key,value)}return true})()`)
+  await evaluate(`(()=>{const prior=${JSON.stringify(storageBefore)};for(const [key,value] of [["warm-studio-onboarding-v3",prior.guide],["workbench-first-run-rc41",prior.legacy],["comsol-workbench-locale",prior.locale]]){if(value==null)localStorage.removeItem(key);else localStorage.setItem(key,value)}return true})()`)
   storageBefore = null
   await evaluate('window.__TAURI_INTERNALS__.invoke("shutdown_desktop").then(()=>true).catch(()=>false)')
 } catch (cause) {
   report = { passed: false, reason: cause instanceof Error ? cause.message : String(cause), runtimePid }
 } finally {
   if (storageBefore && evaluateForCleanup) {
-    try { await evaluateForCleanup(`(()=>{const prior=${JSON.stringify(storageBefore)};for(const [key,value] of [["warm-studio-onboarding-v2",prior.guide],["workbench-first-run-rc41",prior.legacy],["comsol-workbench-locale",prior.locale]]){if(value==null)localStorage.removeItem(key);else localStorage.setItem(key,value)}return true})()`) } catch { /* The WebView may already have exited. */ }
+    try { await evaluateForCleanup(`(()=>{const prior=${JSON.stringify(storageBefore)};for(const [key,value] of [["warm-studio-onboarding-v3",prior.guide],["workbench-first-run-rc41",prior.legacy],["comsol-workbench-locale",prior.locale]]){if(value==null)localStorage.removeItem(key);else localStorage.setItem(key,value)}return true})()`) } catch { /* The WebView may already have exited. */ }
   }
   if (socket?.readyState === WebSocket.OPEN) socket.close()
   for (let attempt = 0; attempt < 40 && alive(child.pid); attempt += 1) await delay(250)

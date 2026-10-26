@@ -1,38 +1,27 @@
-<p align="center">
-  <img src="frontend/src/assets/brand/workbench-icon-256.png" width="96" alt="SKY Workbench logo">
-</p>
+<p align="center"><img src="frontend/src/assets/brand/workbench-icon-256.png" alt="SKY Workbench" width="96"></p>
 
-<h1 align="center">SKY Workbench</h1>
+# SKY Workbench 3.0
 
-<p align="center">A local-first scientific workflow assistant for planning, running, and reviewing COMSOL models.</p>
+面向 COMSOL 科学工作流的本地桌面助手：从自然语言计划、人工确认，到模型读回、求解证据与结果检查。命令执行成功、模型状态已验证、科学验证通过始终独立显示。
 
-<p align="center">本地优先的 COMSOL 科学工作流助手：从建模计划、受控执行到结果证据复核。</p>
+**本仓库发布源码，不提供 Windows 安装包或预编译 Runtime。** 用户需自行安装并合法使用 COMSOL；本仓库不包含 COMSOL 本体、API JAR、许可证、模型、私有知识库、API Key 或模型权重。SKY Workbench 是独立项目，与 COMSOL AB 无隶属或背书关系。
 
-SKY Workbench combines a React/TypeScript interface, a Rust/Tauri desktop shell, a Python scientific runtime, and a Java bridge to a separately installed COMSOL. It keeps command execution, model-state readback, and scientific validation as distinct results. A successful command alone is **not** a verified scientific result.
+## 从哪里开始
 
-> **Distribution status:** This repository contains the sanitized SKY Workbench V2.0 source. The Windows installer is provided only through approved internal channels; there is no public EXE download. This repository does not include COMSOL, a COMSOL license, proprietary knowledge-base documents, private models, credentials, or local-model weights.
+- [中文使用帮助](docs/USER_GUIDE_V3_CN.md)：首次引导、AI 提供商、建模、结果与代码工作区。
+- [故障排查](docs/TROUBLESHOOTING.md)：启动、WebView2、软件扫描、Bridge、Ollama 和云端 API。
+- [功能兼容范围](docs/PROVIDER_AND_SIMULATOR_COMPATIBILITY.md)：哪些软件只是被检测到，哪些路径已有执行与证据。
+- [从源码构建](BUILDING.md)：依赖、构建入口和当前不可复现的二进制边界。
+- [3.0 发行说明](RELEASE_NOTES_3.0.0.md)。
 
-## Start here
+React/TypeScript 实现界面，Tauri/Rust 管理桌面进程，Python 承担 Scientific Runtime，Java Bridge 贴近用户本机的 COMSOL API。主要目录是 `frontend/`、`backend/`、`java_bridge/`、`packaging/` 和 `scripts/`。
 
-- [Windows installation and first launch](docs/INSTALL_WINDOWS.md) — current internal-candidate instructions; public download is not yet available.
-- [User guide](docs/USER_GUIDE.md) — projects, plans, evidence, and safe interruption.
-- [Help and troubleshooting](docs/TROUBLESHOOTING.md) — environment checks, logs, recovery, and support information.
-- [Build from source](BUILDING.md) — exact toolchain boundary and unverified reproducibility limits.
+COMSOL 6.3 有历史真实执行证据；**这些历史结果不认证新构建，也不证明 6.2、6.4 或其他版本已通过科学验收**。MATLAB、Wolfram、Materials Studio 的安装检测或脚本握手，也不等于这些软件已有模型读回与科学认证。脚本工作区的输出默认未认证。
 
-Users must provide their own valid COMSOL 6.3 installation and license for real COMSOL execution. Local Ollama/model availability is detected, not assumed; missing capabilities are shown as unavailable. The desktop interface can open without COMSOL, but a real COMSOL run cannot be claimed in that state.
+桌面产品版本是 3.0.0；Scientific Runtime 保留独立的 `1.1.0-rc5.2` API 版本，两者的版本契约由源码测试检查。
 
-## Source layout
+## 许可与联系
 
-| Path | Purpose |
-| --- | --- |
-| `frontend/src` | Desktop interface and task views |
-| `frontend/src-tauri` | Tauri shell, owned-process lifecycle, and release resources |
-| `backend/app` | Scientific runtime, validation, and run evidence |
-| `java_bridge/src` | Bridge source used with the user's COMSOL installation |
-| `scripts`, `packaging` | Build and packaging inputs |
+项目拥有权利的第一方代码采用 [Apache-2.0](LICENSE)。历史 MIT 声明见 [HISTORICAL_LICENSES.md](docs/HISTORICAL_LICENSES.md)；自有图像素材的授权范围见 [ASSET_LICENSE.md](docs/ASSET_LICENSE.md)。第三方许可证、NOTICE 与需提供的源码位于 `frontend/src-tauri/resources/licenses/`，并保留原权利人的声明。COMSOL 集成范围见 [COMSOL_DISTRIBUTION_SCOPE.md](docs/COMSOL_DISTRIBUTION_SCOPE.md)。
 
-## Licensing and distribution
-
-First-party code is offered under [Apache-2.0](LICENSE) by SuKoYa. Licensable original artwork has separate [CC BY 4.0 provenance](docs/ASSET_LICENSE.md). Historical [MIT notices](docs/HISTORICAL_LICENSES.md) and third-party licenses/NOTICE files remain with their respective components in `frontend/src-tauri/resources/licenses` and must not be removed. [COMSOL integration scope](docs/COMSOL_DISTRIBUTION_SCOPE.md) describes the distribution boundary; this project is not an official COMSOL product or a substitute for a COMSOL license.
-
-The Windows installer remains an internal candidate and is not a public repository asset or Release download. For approved internal testing enquiries, contact [swbtest001@yeah.net](mailto:swbtest001@yeah.net). This source repository does not claim a byte-for-byte reproducible build of the internal installer.
+维护者：SuKoYa · [swbtest001@yeah.net](mailto:swbtest001@yeah.net)
