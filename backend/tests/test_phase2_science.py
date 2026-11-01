@@ -108,7 +108,7 @@ def test_enhanced_retrieval_returns_rich_citation(monkeypatch) -> None:
         KnowledgeChunk("doc-b", "b.md", "b.md", "Mechanics", None, "Load", "b-1", "cantilever beam stress", "Project Knowledge", "2025-01-01T00:00:00+00:00"),
     ]
     retriever._build_index()
-    results = retriever.search("aluminum heat temperature", 2)
+    results = retriever.search("aluminum heat temperature", 2, filters={"project_id": "workbench"})
     assert results[0]["retrieval_mode"] == "hybrid"
     assert results[0]["citation"]["page"] == 7
     assert results[0]["citation"]["section"] == "Results"
@@ -125,8 +125,10 @@ def test_plan_edit_is_persisted_and_revalidated(tmp_path) -> None:
     updated = asyncio.run(runtime.update_plan(session["id"], plan.model_dump(mode="json")))
     assert updated["state"] == AgentState.PLAN_READY
     assert updated["plan"]["parameters"]["width"]["value"] == 12
-    assert updated["plan"]["runnable"] is True
-    assert updated["plan"]["precheck_summary"]["passed"] is True
+    # Editing explicit dimensions does not authorize the remaining material assumptions.
+    assert updated["plan"]["runnable"] is False
+    assert updated["plan"]["precheck_summary"]["passed"] is False
+    assert "thermal_conductivity" in updated["plan"]["completion"]["parameters"]
     assert updated["plan"]["precheck_summary"]["command_success"] is False
     assert updated["plan"]["precheck_summary"]["model_state_verified"] is False
     assert updated["plan"]["precheck_summary"]["scientific_validation_success"] is False

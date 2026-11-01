@@ -17,6 +17,8 @@ $javaSource = Join-Path $workbenchRoot 'java_bridge'
 $javaTarget = Join-Path $tauriRoot 'resources\java_bridge'
 $semanticSource = Join-Path $workbenchRoot 'scripts\semantic_runtime_worker.py'
 $semanticTarget = Join-Path $tauriRoot 'resources\semantic_runtime'
+$publicKnowledgeSource = Join-Path $workbenchRoot 'knowledge\public'
+$publicKnowledgeTarget = Join-Path $tauriRoot 'resources\public_knowledge'
 $binaryTarget = Join-Path $tauriRoot 'binaries\scientific-runtime-x86_64-pc-windows-msvc.exe'
 $runtimeArtifact = Join-Path $workbenchRoot 'packaging\dist\scientific-runtime.exe'
 
@@ -86,7 +88,7 @@ if ($unexpectedKb.Count -ne 0) {
 }
 $profilePayload = [ordered]@{
   profile = 'public'
-  version = '3.0.0'
+  version = '3.1.0'
   runtime_version = '1.1.0-rc5.2'
   proprietary_kb_included = $false
   policy = 'public-safe-no-comsol-derived-kb'
@@ -95,6 +97,11 @@ $profilePayload = [ordered]@{
 
 Copy-Item -LiteralPath (Join-Path $javaSource 'src') -Destination $javaTarget -Recurse -Force
 Copy-Item -LiteralPath $semanticSource -Destination (Join-Path $semanticTarget 'semantic_runtime_worker.py') -Force
+# Public notes have a separate, bounded resource path; private manuals stay excluded.
+New-Item -ItemType Directory -Force -Path $publicKnowledgeTarget | Out-Null
+foreach ($publicName in @('manifest.json', 'units.json')) {
+  Copy-Item -LiteralPath (Join-Path $publicKnowledgeSource $publicName) -Destination (Join-Path $publicKnowledgeTarget $publicName) -Force
+}
 # A staged sidecar must match the exact hash checked before compilation.
 if ($FrozenSidecarPath) {
   if ((Test-Path -LiteralPath $binaryTarget -PathType Leaf) -and
@@ -114,6 +121,8 @@ if ($FrozenSidecarPath) {
   }
   & $python -m PyInstaller --version 2>$null
   if ($LASTEXITCODE -ne 0) { throw 'PyInstaller is required in the independent candidate .venv; install packaging/requirements-build.txt.' }
+  & $python (Join-Path $workbenchRoot 'scripts\verify_build_inputs.py')
+  if ($LASTEXITCODE -ne 0) { throw 'Locked build inputs failed verification. Restore the hash-locked environment and native input bundle.' }
   & $python -m PyInstaller --noconfirm --clean --distpath (Join-Path $workbenchRoot 'packaging\dist') --workpath (Join-Path $workbenchRoot 'packaging\build') (Join-Path $workbenchRoot 'packaging\scientific-runtime.spec')
   if ($LASTEXITCODE -ne 0) { throw 'Scientific Runtime PyInstaller build failed.' }
   if (-not (Test-Path -LiteralPath $runtimeArtifact -PathType Leaf) -or (Get-Item -LiteralPath $runtimeArtifact).Length -eq 0) {

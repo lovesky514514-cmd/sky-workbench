@@ -14,3 +14,8 @@
 *.crate binary
 *.gz binary
 frontend/src-tauri/resources/licenses/** -text
+# Hash-bound build inputs retain their recorded byte representation.
+packaging/tls/codex-rejected-cas.pem -text
+packaging/requirements-win-py312.lock -text
+frontend/package-lock.json -text
+frontend/src-tauri/Cargo.lock -text

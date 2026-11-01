@@ -21,6 +21,12 @@ def _requirements(build: str, science: str, report: str = ''):
 
 
 REQUIRED_CHECKS = MappingProxyType({
+    'tds_2d_transient_closed': _requirements(
+        'geometry interface diffusion initial_profile sealed_boundaries parameter_readback transient_study',
+        'finite_fields requested_time analytical_profile mass_conservation physical_range mesh_agreement time_agreement'),
+    'heat_transfer_3d_cooling': _requirements(
+        'geometry_size six_faces heat_interface material_properties initial_temperature all_faces_flux transient_study parameter_readback',
+        'solver_completed finite_fields temperature_bounds monotonic_cooling requested_time_reached energy_balance small_biot_reference mesh_agreement time_agreement independent_resolves energy_components'),
     'heat_transfer_2d_stationary': _requirements('', '',
         'geometry_tree material_tree physics_tree boundary_tree mesh_tree stationary_study solver_convergence left_boundary_temperature right_boundary_temperature temperature_range analytical_solution'),
     'tds_2d_stationary_diffusion': _requirements(

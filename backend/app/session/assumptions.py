@@ -64,6 +64,8 @@ class AssumptionLedger:
         affected_nodes: list[str],
         safe_default: bool = False,
         domain_sensitive: bool = False,
+        scope_authorized: bool = False,
+        connection: Any = None,
     ) -> dict[str, Any]:
         if not all(str(value).strip() for value in (session_id, run_id, attempt_id, plan_node_id, reason, source)):
             raise ValueError("assumption identity, node, reason and source are required")
@@ -72,7 +74,7 @@ class AssumptionLedger:
         nodes = list(dict.fromkeys(str(node) for node in affected_nodes if str(node).strip()))
         if not nodes:
             raise ValueError("an assumption must identify affected PlanGraph nodes")
-        executable = bool(user_confirmed or (safe_default and not domain_sensitive))
+        executable = bool(user_confirmed or scope_authorized or (safe_default and not domain_sensitive))
         decision = AssumptionDecision.CONTINUE if executable else AssumptionDecision.ASK_HUMAN
         record = {
             "assumption_id": str(uuid.uuid4()), "session_id": session_id,
@@ -83,7 +85,7 @@ class AssumptionLedger:
             "domain_sensitive": bool(domain_sensitive), "safe_default": bool(safe_default),
             "created_at": _now(), "superseded_by": None,
         }
-        with self.store._lock, self.store._connect() as db:
+        def insert(db):
             db.execute(
                 """INSERT INTO assumption_ledger(
                    assumption_id,session_id,run_id,attempt_id,plan_node_id,choice_json,
@@ -97,7 +99,13 @@ class AssumptionLedger:
                     int(executable), int(domain_sensitive), int(safe_default), record["created_at"], None,
                 ),
             )
-        self.store.append_event(session_id, "assumption.recorded", record)
+        if connection is not None:
+            insert(connection)
+            self.store._append_event(connection, session_id, "assumption.recorded", record)
+        else:
+            with self.store._lock, self.store._connect() as db:
+                insert(db)
+                self.store._append_event(db, session_id, "assumption.recorded", record)
         return record
 
     def active(self, session_id: str) -> list[dict[str, Any]]:

@@ -137,6 +137,7 @@ def test_arxiv_response_must_match_exact_requested_identity():
 
 
 def test_cloud_toggle_is_off_by_default_and_key_is_never_persisted(monkeypatch, tmp_path):
+    monkeypatch.setenv('COMSOL_WORKBENCH_SESSION_TOKEN','cloud-fixture')
     from app import main
     from app.config import SettingsStore
 
@@ -147,7 +148,7 @@ def test_cloud_toggle_is_off_by_default_and_key_is_never_persisted(monkeypatch, 
     assert store.load()["extensions"]["literature_modeling"]["deepseek_enabled"] is False
 
     async def exercise():
-        async with httpx.AsyncClient(transport=httpx.ASGITransport(app=main.app), base_url="http://127.0.0.1") as client:
+        async with httpx.AsyncClient(transport=httpx.ASGITransport(app=main.app), base_url="http://127.0.0.1",headers={'X-Workbench-Token':'cloud-fixture'}) as client:
             await client.put("/api/extensions/literature-modeling", json={"enabled": True})
             response = await client.put("/api/extensions/literature-modeling/deepseek", json={"enabled": True})
             assert response.status_code == 200

@@ -88,7 +88,8 @@ def test_provider_invalid_plan_gets_one_repair_then_visible_deterministic_envelo
     payload, provider_name, model = asyncio.run(planner.plan(BENCHMARK_A, []))
     plan = ScientificPlan.model_validate(payload)
     assert provider_name == 'deterministic-safety-envelope' and model == 'none'
-    assert plan.runnable and plan.boundary_conditions and plan.expected_outputs
+    assert not plan.runnable and plan.boundary_conditions and plan.expected_outputs
+    assert plan.completion and set(plan.completion.parameters) == {'thermal_conductivity'}
     assert any('Provider output was rejected' in warning for warning in plan.warnings)
     assert provider.calls == 2
 

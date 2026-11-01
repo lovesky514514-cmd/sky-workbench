@@ -34,10 +34,10 @@ test('onboarding lists only measured optional scientific engines', async () => {
   const { detectedScientificEngines } = await import('../src/installationStatus.ts')
   assert.deepEqual(detectedScientificEngines({ adapters: [
     { engine: 'MATLAB', installed: false },
-    { engine: 'Wolfram', installed: true, executable: 'private-path' },
+    { engine: 'LAMMPS', installed: true, executable: 'private-path' },
     { engine: 'Materials Studio', installed: true },
     { engine: 'unknown', installed: true },
-  ] }), ['Wolfram', 'Materials Studio'])
+  ] }), ['LAMMPS', 'Materials Studio'])
   assert.deepEqual(detectedScientificEngines({ adapters: null }), [])
 })
 
@@ -57,7 +57,7 @@ test('onboarding and Settings expose the measured optional-engine scan and API s
   const progress = source('../src/components/InstallationScanProgress.tsx')
   assert.match(app, /comsol_java_environment/)
   assert.match(studio, /comsolHomeStatus/)
-  for (const name of ['matlab', 'wolfram', 'materials_studio']) assert.match(progress, new RegExp(name))
+  for (const name of ['matlab', 'lammps', 'vasp', 'materials_studio']) assert.match(progress, new RegExp(name))
   assert.match(onboarding, /onOpenProviderSettings/)
   assert.match(settings, /initialSection/)
   assert.match(settings, /ProviderConnectionSettings/)

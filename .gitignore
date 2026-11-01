@@ -3,6 +3,8 @@
 .env.*
 *.key
 *.pem
+# Public TLS data required by the pinned interpreter, not a private key.
+!packaging/tls/codex-rejected-cas.pem
 *.p12
 *.pfx
 workspace/

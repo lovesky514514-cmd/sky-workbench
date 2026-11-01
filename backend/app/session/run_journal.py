@@ -46,6 +46,10 @@ class RunJournalMixin:
         digest = hashlib.sha256(json.dumps(plan, sort_keys=True, ensure_ascii=False).encode('utf-8')).hexdigest()
         with self._lock, self._connect() as db:
             db.execute('BEGIN IMMEDIATE')
+            if 'plan_id' in plan:
+                from app.scientific.execution_contract import verify_binding
+
+                verify_binding(db, session_id, plan)
             if db.execute('SELECT 1 FROM comsol_owner').fetchone():
                 raise RuntimeError('COMSOL_OWNER_BUSY: active or orphaned owner; no concurrent model mutation')
             db.execute('INSERT INTO comsol_owner VALUES(1,?)', (run_id,))

@@ -18,7 +18,7 @@ from app.scientific.schemas import (
 
 
 REQUIRED_HEAT_PARAMETERS = ("width", "height", "left_temperature", "right_temperature")
-REQUIRED_EXECUTION_PARAMETERS = (*REQUIRED_HEAT_PARAMETERS, "thermal_conductivity", "density", "heat_capacity")
+REQUIRED_EXECUTION_PARAMETERS = (*REQUIRED_HEAT_PARAMETERS, "thermal_conductivity")
 SOURCE_BACKED_STATUSES = {
     ParameterStatus.BENCHMARK_DEFINED,
     ParameterStatus.VERIFIED,
@@ -235,6 +235,8 @@ class ScientificPlanQualityValidator:
                 if name in requested or name not in plan.parameters:
                     continue
                 parameter = plan.parameters[name]
+                if parameter.assumption and (parameter.user_confirmed or parameter.use_authorized):
+                    continue
                 checks.append(
                     _check(
                         "Fidelity",
@@ -319,11 +321,17 @@ plan_quality_validator = ScientificPlanQualityValidator()
 
 
 def _is_heat_plan(plan: ScientificPlan) -> bool:
+    if plan.modeling_brief is not None and plan.workflow_id is None:
+        return False
     haystack = " ".join([plan.research_goal, *plan.physics]).lower()
     return plan.workflow_id == "heat_transfer_2d_stationary" or (plan.workflow_id is None and any(term in haystack for term in ("heat transfer", "heat conduction", "热传导", "温度分布", "温度场")))
 
 
 def _is_tds_plan(plan: ScientificPlan) -> bool:
+    if plan.workflow_id=='tds_2d_transient_closed':
+        return False
+    if plan.modeling_brief is not None and plan.workflow_id is None:
+        return False
     haystack = " ".join([plan.research_goal, *plan.physics]).lower()
     return plan.workflow_id == "tds_2d_stationary_diffusion" or (plan.workflow_id is None and any(term in haystack for term in ("diluted species", "稀物质传递", "溶质扩散")))
 

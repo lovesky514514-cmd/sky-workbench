@@ -96,13 +96,13 @@ def main(request_path: Path) -> int:
     height, height_unit = parameter(plan, "height")
     young, young_unit = parameter(plan, "youngs_modulus")
     poisson, poisson_unit = parameter(plan, "poissons_ratio")
-    density, density_unit = parameter(plan, "density")
+    density, density_unit = parameter(plan, "density") if "density" in plan["parameters"] else (None, None)
     traction, traction_unit = parameter(plan, "traction")
     if {length_unit, width_unit, height_unit} != {"m"}:
         raise ValueError("Solid benchmark geometry must use metres")
-    if young_unit != "Pa" or traction_unit != "Pa" or poisson_unit not in {"1", ""} or density_unit != "kg/m^3":
+    if young_unit != "Pa" or traction_unit != "Pa" or poisson_unit not in {"1", ""} or density is not None and density_unit != "kg/m^3":
         raise ValueError("Solid benchmark requires E/traction in Pa, dimensionless nu and density in kg/m^3")
-    if min(length, width, height, young, density, traction) <= 0 or not 0 <= poisson < 0.5:
+    if min(length, width, height, young, traction) <= 0 or density is not None and density <= 0 or not 0 <= poisson < 0.5:
         raise ValueError("Solid benchmark parameters are outside the supported physical range")
 
     timestamp = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
@@ -125,15 +125,21 @@ def main(request_path: Path) -> int:
 
         def configure_parameters() -> None:
             params = java.param()
-            for name, expression in {
+            expressions = {
                 "L": f"{length:.16g}[m]", "W": f"{width:.16g}[m]", "H": f"{height:.16g}[m]",
                 "E_bar": f"{young:.16g}[Pa]", "nu_bar": f"{poisson:.16g}",
-                "rho_bar": f"{density:.16g}[kg/m^3]", "traction_bar": f"{traction:.16g}[Pa]",
-            }.items():
+                "traction_bar": f"{traction:.16g}[Pa]",
+            }
+            if density is not None:
+                expressions["rho_bar"] = f"{density:.16g}[kg/m^3]"
+            for name, expression in expressions.items():
                 params.set(name, expression)
 
         timed(performance, "parameter_write_ms", configure_parameters)
-        parameter_readback = {name: str(java.param().get(name)) for name in ("L", "W", "H", "E_bar", "nu_bar", "rho_bar", "traction_bar")}
+        parameter_names = ["L", "W", "H", "E_bar", "nu_bar", "traction_bar"]
+        if density is not None:
+            parameter_names.append("rho_bar")
+        parameter_readback = {name: str(java.param().get(name)) for name in parameter_names}
 
         emit("Build", "Creating the 3D uniaxial bar")
         component = java.component().create("comp1", True)
@@ -157,8 +163,11 @@ def main(request_path: Path) -> int:
         elastic.set("E", "E_bar")
         elastic.set("nu_mat", "userdef")
         elastic.set("nu", "nu_bar")
-        elastic.set("rho_mat", "userdef")
-        elastic.set("rho", "rho_bar")
+        # This executor solves static equilibrium without gravity or inertia.
+        # Preserve a supplied density; otherwise leave the unused property unset.
+        if density is not None:
+            elastic.set("rho_mat", "userdef")
+            elastic.set("rho", "rho_bar")
         fixed = solid.feature().create("fix1", "Fixed", 2)
         fixed.selection().set(left)
         load = solid.feature().create("bndl1", "BoundaryLoad", 2)
@@ -188,6 +197,7 @@ def main(request_path: Path) -> int:
             "elastic_type": str(elastic.getType()), "E_mode": read(elastic, "E_mat"), "E": read(elastic, "E"),
             "nu_mode": read(elastic, "nu_mat"), "nu": read(elastic, "nu"),
             "rho_mode": read(elastic, "rho_mat"), "rho": read(elastic, "rho"),
+            "density_input_policy": "provided" if density is not None else "not_used_by_static_equilibrium",
             "fixed": {"type": str(fixed.getType()), "selection": [int(value) for value in fixed.selection().entities()]},
             "load": {"type": str(load.getType()), "selection": [int(value) for value in load.selection().entities()], "force_type": read(load, "forceType"), "force_source": read(load, "force_src"), "force": [str(value) for value in load.getStringArray("force")], "F": [str(value) for value in load.getStringArray("F")], "FperArea": [str(value) for value in load.getStringArray("FperArea")]},
             "study_features": [str(value) for value in study.feature().tags()],
@@ -200,7 +210,7 @@ def main(request_path: Path) -> int:
             "elastic_model": build_readback["elastic_type"] == "LinearElasticModel",
             "youngs_modulus": build_readback["E_mode"] == "userdef" and build_readback["E"] == "E_bar",
             "poissons_ratio": build_readback["nu_mode"] == "userdef" and build_readback["nu"] == "nu_bar",
-            "density": build_readback["rho_mode"] == "userdef" and build_readback["rho"] == "rho_bar",
+            "density": (build_readback["rho_mode"] == "userdef" and build_readback["rho"] == "rho_bar") if density is not None else build_readback["study_features"] == ["stat"] and "rho_bar" not in parameter_readback,
             "fixed_face": build_readback["fixed"]["type"] == "Fixed" and build_readback["fixed"]["selection"] == left,
             "loaded_face": build_readback["load"]["type"] == "BoundaryLoad" and build_readback["load"]["selection"] == right,
             "traction": build_readback["load"]["force_type"] == "ForceArea" and build_readback["load"]["FperArea"] == ["traction_bar", "0", "0"],
@@ -291,7 +301,7 @@ def main(request_path: Path) -> int:
             "validation": validation, "build_readback": build_readback, "performance": performance,
             "model_state": {
                 "geometry": [f"3D block {length:g} × {width:g} × {height:g} m"],
-                "materials": ["Isotropic linear elastic benchmark material (user-defined E, nu, rho)"],
+                "materials": ["Isotropic linear elastic material (user-defined E, nu" + (", rho)" if density is not None else "; density unused by this static model)")],
                 "physics": ["Solid Mechanics (solid)", "Linear Elastic Material (lemm1)"],
                 "parameters": plan["parameters"], "selections": [f"Left face {left}", f"Right face {right}"],
                 "boundary_conditions": [f"Left fixed {left}", f"Right traction {traction:g} Pa {right}"],

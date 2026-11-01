@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "policy": "Exact native inputs retained from the audited 3.0 baseline; no fallback to host DLLs",
+  "files": {
+    "libffi-8.dll": "17acedb4d86f630438bba70f349f982a9a387c068c8f0d72f2dd1e73b2c92c49",
+    "libcrypto-3-x64.dll": "44a1c07ce88eb12a77fbcb38050b63a80bc61ff4efb55758136d1a3c7aa8e2bb",
+    "libssl-3-x64.dll": "ebf246e9a5fd0fa7b4b2da9fcd838af7b057ac133461dded035bd18379426f23"
+  },
+  "ssl_companion": {
+    "filename": "codex-rejected-cas.pem",
+    "sha256": "c916ce1b14ed8ca69e9b5c9fab22799a900dd610d6d4ec9b1347f4fd48e53718",
+    "ssl_source_sha256": "88c619ce59e1c92f2234c10700836c5c7198a070cdab21cfebb4a023e700205f",
+    "reason": "Required data for the build interpreter's SSLContext implementation; preserve its certificate policy"
+  },
+  "upstream": {
+    "libffi": {"version": "3.4.4", "license": "MIT", "url": "https://github.com/libffi/libffi/tree/v3.4.4"},
+    "openssl": {"version": "3.5.9", "license": "Apache-2.0", "url": "https://github.com/openssl/openssl/tree/openssl-3.5.9"}
+  }
+}

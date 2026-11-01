@@ -52,8 +52,8 @@ export function SettingsGeneral(props: Props) {
       <div className="warm-settings-row">
         <div>
           <strong>{copy('自动发现本机软件', 'Detect installed software')}</strong>
-          <span>{copy('依次检查 COMSOL、MATLAB、Wolfram、Materials Studio 和 Ollama 的安装入口；不读取用户文档。',
-            'Checks COMSOL, MATLAB, Wolfram, Materials Studio and Ollama installation entries in order; does not read user documents.')}</span>
+          <span>{copy('依次检查 COMSOL、MATLAB、LAMMPS、VASP、Materials Studio 和 Ollama 的安装入口；不读取用户文档。',
+            'Checks COMSOL, MATLAB, LAMMPS, VASP, Materials Studio and Ollama installation entries in order; does not read user documents.')}</span>
         </div>
         <button type="button" onClick={props.onRescan} disabled={scan.state === 'running'}>
           {copy('重新扫描', 'Scan again')}

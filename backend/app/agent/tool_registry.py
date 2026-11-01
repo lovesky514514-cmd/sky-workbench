@@ -145,6 +145,14 @@ async def run_heat_worker(
     return await run_comsol_worker(arguments, on_event, "heat_worker.py")
 
 
+async def run_cooling_worker(arguments, on_event):
+    return await run_comsol_worker(arguments, on_event, "cooling_worker.py")
+
+
+async def run_transient_diffusion_worker(arguments, on_event):
+    return await run_comsol_worker(arguments, on_event, 'transient_diffusion_worker.py')
+
+
 async def run_tds_worker(
     arguments: dict[str, Any],
     on_event: Callable[[dict[str, Any]], Awaitable[None]],
@@ -186,6 +194,10 @@ async def run_comsol_worker(
     worker_name: str,
 ) -> dict[str, Any]:
     run_id = str(arguments["run_id"])
+    from app.scientific.schemas import ScientificPlan
+    from app.scientific.solver_gate import require_solver_inputs
+
+    require_solver_inputs(ScientificPlan.model_validate(arguments['plan']))
     attempt_id = str(arguments.get('attempt_id') or 'legacy-' + str(time.time_ns()))
     if not all(re.fullmatch(r'[A-Za-z0-9-]{1,100}', value) for value in (run_id, attempt_id)):
         raise ValueError('Invalid run/attempt identity')
@@ -254,6 +266,12 @@ async def run_comsol_worker(
 
 
 tool_registry = ToolRegistry()
+tool_registry.register(RegisteredTool(name="comsol.heat_transfer_3d_cooling",
+    description="Build and numerically check a 3D constant-property air-cooling model.",
+    risk="project-write",executor=run_cooling_worker,alternative="Report failure; preserve the reviewed draft"))
+tool_registry.register(RegisteredTool(name='comsol.tds_2d_transient_closed',
+    description='Solve sealed transient diffusion and verify actual fields and mass conservation.',
+    risk='project-write',executor=run_transient_diffusion_worker,alternative='Preserve the typed draft and report validation failure'))
 tool_registry.register(
     RegisteredTool(
         name="comsol.heat_transfer_2d",

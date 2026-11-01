@@ -16,6 +16,8 @@ from app.config import settings_store
 from app.knowledge.compiled_store import DEFAULT_NAMESPACE, CompiledKnowledgeStore, compiled_store
 from app.knowledge.embedding_providers import retrieval_model_registry
 from app.knowledge.semantic_runtime import EMBEDDING_NAMESPACE, semantic_runtime
+from app.knowledge.contracts import evidence_anchor, metadata_matches, validate_filters
+from app.knowledge.sources import SourceKnowledgeStore, source_store
 
 
 RRF_K = 60
@@ -27,27 +29,8 @@ MODE_ALIASES = {
     "deep": "deep",
     "deep_research": "deep",
 }
-DOMAIN_ALIASES = {
-    "java api": "model component geom feature create selection set getType Java API",
-    "heat transfer": "Heat Transfer in Solids thermal insulation temperature heat flux",
-    "thermal insulation": "Thermal Insulation no heat flux boundary",
-    "solid mechanics": "Solid Mechanics solid stress strain boundary load fixed constraint",
-    "transport of diluted species": "Transport of Diluted Species concentration flux diffusion",
-    "tds": "Transport of Diluted Species concentration diffusion",
-    "solver": "solver convergence stationary time dependent segregated fully coupled",
-    "mesh": "mesh element quality refinement physics controlled mesh",
-    "validation": "validation convergence mesh independence verification result",
-    "troubleshooting": "troubleshooting error warning failed convergence license",
-    "version": "version release notes legacy current applies to versions",
-    "绝热": "Thermal Insulation no heat flux boundary",
-    "传热": "Heat Transfer in Solids temperature heat flux",
-    "固体力学": "Solid Mechanics stress strain boundary load",
-    "稀物质": "Transport of Diluted Species concentration diffusion",
-    "网格": "mesh element quality refinement",
-    "求解器": "solver convergence stationary time dependent",
-    "验证": "validation verification convergence mesh independence",
-    "故障": "troubleshooting error warning failed convergence",
-}
+from app.knowledge.domains import DOMAIN_ALIASES
+
 
 
 @dataclass(slots=True)
@@ -93,9 +76,11 @@ class RetrievalTrace:
 class ScientificRAGService:
     """Route Fast/Accurate/Deep retrieval without changing legacy project ingestion."""
 
-    def __init__(self, legacy: Any, store: CompiledKnowledgeStore = compiled_store) -> None:
+    def __init__(self, legacy: Any, store: CompiledKnowledgeStore = compiled_store,
+                 sources: SourceKnowledgeStore | None = None) -> None:
         self.legacy = legacy
         self.store = store
+        self.sources = sources if sources is not None else source_store if store is compiled_store else SourceKnowledgeStore(None)
 
     def status(self) -> dict[str, Any]:
         compiled = self.store.status()
@@ -104,9 +89,10 @@ class ScientificRAGService:
         mode = self.active_mode()
         compiled_ready = bool(compiled["database_ready"])
         project_chunks = int(legacy.get("basic_chunks", 0))
+        public_sources = self.sources.status()
         # An absent private KB and an empty project index provide no retrieval
         # evidence. Keep project-only fallback distinct from complete absence.
-        availability = "Ready" if compiled_ready else "Warning" if project_chunks else "Unavailable"
+        availability = "Ready" if compiled_ready or public_sources["units"] else "Warning" if project_chunks else "Unavailable"
         return {
             "status": availability,
             "active_mode": mode,
@@ -120,6 +106,7 @@ class ScientificRAGService:
             "reranker_backend": models["active_reranker"],
             "models": models,
             "compiled_kb": compiled,
+            "versioned_sources": public_sources,
             "legacy_project_index": legacy,
             "readonly": True,
             "detail": (
@@ -174,8 +161,9 @@ class ScientificRAGService:
         *,
         mode: str | None = None,
         filters: dict[str, Any] | None = None,
+        project_id: str | None = None,
     ) -> list[dict[str, Any]]:
-        return self.search_detailed(query, limit=limit, mode=mode, filters=filters)["results"]
+        return self.search_detailed(query, limit=limit, mode=mode, filters=filters, project_id=project_id)["results"]
 
     def search_detailed(
         self,
@@ -186,17 +174,20 @@ class ScientificRAGService:
         filters: dict[str, Any] | None = None,
         use_neural: bool | None = None,
         use_reranker: bool | None = None,
+        project_id: str | None = None,
     ) -> dict[str, Any]:
         started = time.perf_counter()
         normalized_mode = MODE_ALIASES.get(str(mode or self.active_mode()).lower(), "accurate")
         queries = decompose_query(query) if normalized_mode == "deep" else [expand_scientific_query(query)]
-        effective_filters = filters or route_metadata_filters(query)
+        effective_filters = validate_filters(route_metadata_filters(query) if filters is None else filters)
+        if project_id is not None:
+            effective_filters["project_id"] = project_id
         trace = RetrievalTrace(mode=normalized_mode, queries=queries, filters=effective_filters)
         compiled_status = self.store.status()
         if not compiled_status["database_ready"]:
             trace.fallback_used = True
             trace.warnings.append("compiled_kb_index_unavailable")
-            legacy_results = self.legacy.search(query, limit)
+            legacy_results = self._secondary_search(query, limit, effective_filters)
             for item in legacy_results:
                 item["retrieval_mode"] = f"{normalized_mode}:legacy-fallback"
                 item["retrieval_path"] = {
@@ -208,7 +199,7 @@ class ScientificRAGService:
                     "claim_verification": "unverified",
                 }
             trace.latency_ms = (time.perf_counter() - started) * 1000
-            return {"query": query, "mode": normalized_mode, "results": legacy_results, "trace": trace.as_dict()}
+            return self._response(query, normalized_mode, legacy_results, trace)
 
         models = retrieval_model_registry.status()
         fallback = models["fallback_embedding"]
@@ -288,6 +279,8 @@ class ScientificRAGService:
             unit = units.get(unit_id)
             if unit is None:
                 continue
+            if not metadata_matches(unit.get("metadata", {}), effective_filters) or not evidence_anchor(query, unit.get("content", "")):
+                continue
             result = build_evidence(unit, score, methods.get(unit_id, []), normalized_mode, query)
             results.append(result)
             if len(results) >= limit:
@@ -296,7 +289,7 @@ class ScientificRAGService:
         # Preserve access to user/project evidence without displacing the audited
         # hot layer.  It is appended only when the compiled layer has spare slots.
         if len(results) < limit:
-            for item in self.legacy.search(query, limit - len(results)):
+            for item in self._secondary_search(query, limit - len(results), effective_filters):
                 item["retrieval_mode"] = f"{normalized_mode}:project-secondary"
                 item["retrieval_path"] = {
                     "bm25": True,
@@ -308,7 +301,28 @@ class ScientificRAGService:
                 }
                 results.append(item)
         trace.latency_ms = (time.perf_counter() - started) * 1000
-        return {"query": query, "mode": normalized_mode, "results": results, "trace": trace.as_dict()}
+        return self._response(query, normalized_mode, results, trace)
+
+    def _secondary_search(self, query: str, limit: int, filters: dict) -> list[dict]:
+        results = self.sources.search(query, limit, filters=filters)
+        try:
+            legacy = self.legacy.search(query, limit, filters=filters)
+        except TypeError:
+            # An older adapter that cannot enforce constraints cannot serve a filtered query.
+            legacy = [] if filters else self.legacy.search(query, limit)
+        seen = {item.get("citation", {}).get("chunk_id") for item in results}
+        for item in legacy:
+            key = item.get("citation", {}).get("chunk_id")
+            if key not in seen:
+                results.append(item)
+                seen.add(key)
+        return results[:limit]
+
+    @staticmethod
+    def _response(query: str, mode: str, results: list[dict], trace: RetrievalTrace) -> dict:
+        return {"query": query, "mode": mode, "results": results, "trace": trace.as_dict(),
+                "evidence_status": "EVIDENCE_FOUND" if results else "NO_EVIDENCE",
+                "reason": None if results else "No source satisfies the query anchors and metadata constraints"}
 
 
 class IndexTaskManager:
@@ -416,7 +430,7 @@ def build_evidence(
         "year": None,
     }
     overlap = claim_overlap(query, f"{unit.get('title', '')} {content}")
-    verified = bool(document_id and citation["file_name"] and page_status in {"precise", "page_unknown"} and overlap > 0)
+    locatable = bool(document_id and citation["file_name"] and page_status in {"precise", "page_unknown"})
     retrieval_method = "+".join(methods + ["rrf"])
     evidence = {
         "unit_id": unit["unit_id"],
@@ -436,7 +450,9 @@ def build_evidence(
         "section": citation["section"],
         "score": round(score, 8),
         "retrieval_method": retrieval_method,
-        "claim_verification": "supported" if verified else "unverified",
+        "claim_verification": "unverified",
+        "source_locatable": locatable,
+        **unit.get("metadata", {}),
         "query_overlap": overlap,
     }
     return {
@@ -466,6 +482,14 @@ def route_metadata_filters(query: str) -> dict[str, Any]:
     """Apply conservative metadata filters only for explicit domain requests."""
 
     lower = query.lower()
+    for token, engine in (("materials studio", "Materials Studio"), ("mathics3", "Mathics3"),
+                          ("lammps", "LAMMPS"), ("matlab", "MATLAB"), ("vasp", "VASP"), ("comsol", "COMSOL")):
+        if token in lower:
+            result = {"engine": engine}
+            version = re.search(r"\b(?:version\s*|comsol\s*)(\d+\.\d+)\b", lower)
+            if version:
+                result["engine_version"] = version.group(1)
+            return result
     if "java api" in lower or "java® api" in lower:
         return {"feature_type": "Java API"}
     if any(term in lower for term in ("release notes", "changed behavior", "version-specific", "version specific")):

@@ -19,13 +19,15 @@ from pathlib import Path
 from typing import Callable
 
 from app.comsol.owned_process import OwnedProcess
+from app.execution.owned_task import OwnedTask
+from app.engines.capabilities import CapabilityRegistry
 
 
 MAX_SOURCE = 200_000
 MAX_OUTPUT = 65_536
 MAX_FIGURE = 20_000_000
 RUN_SECONDS = 120
-EXTENSIONS = {"Python": "py", "MATLAB": "m", "Wolfram": "wl", "Mathics3": "wl"}
+EXTENSIONS = {"Python": "py", "MATLAB": "m", "Mathics3": "wl"}
 SECRET_NAME = re.compile(r"(?:KEY|TOKEN|SECRET|PASSWORD|CREDENTIAL|LICENSE|AUTH)", re.I)
 
 
@@ -74,8 +76,6 @@ def command_for(engine: str, executable: str, filename: str) -> list[str]:
     """Use argument arrays and fixed, workspace-relative filenames; no shell."""
     if engine == "Python" and filename == "main.py":
         return [executable, "-I", filename]
-    if engine == "Wolfram" and filename == "main.wl" and "wolframscript" in Path(executable).name.lower():
-        return [executable, "-file", filename, "-local"]
     if engine == "MATLAB" and filename == "main.m":
         return [executable, "-batch", "run('main.m')"]
     if engine == "Mathics3" and filename == "main.wl":
@@ -88,7 +88,7 @@ def executable_for(engine: str) -> str | None:
         return _mathics_interpreter()
     if engine == "Python":
         return shutil.which("python.exe") or shutil.which("python")
-    if engine not in ("MATLAB", "Wolfram"):
+    if engine != "MATLAB":
         return None
     from app.simulation_adapters import capabilities
 
@@ -132,6 +132,7 @@ class ScriptRunManager:
     def __init__(self, root: Path, resolver: Callable[[str], str | None] = executable_for):
         self.root = root
         self.resolver = resolver
+        self.capabilities = CapabilityRegistry(root.parent / "engine_tasks")
         self.runs: dict[str, ScriptRun] = {}
         self._start_lock = asyncio.Lock()
 
@@ -155,6 +156,11 @@ class ScriptRunManager:
             executable = await asyncio.to_thread(self.resolver, engine)
             if not executable:
                 raise FileNotFoundError("Local script engine unavailable")
+            if engine == "MATLAB":
+                try:
+                    self.capabilities.require(engine, "script", executable)
+                except ValueError as exc:
+                    raise RuntimeError("Test the installed MATLAB connector before running a script") from exc
             self.root.mkdir(parents=True, exist_ok=True)
             self._prune()
             workspace = tempfile.TemporaryDirectory(prefix="script-", dir=self.root)
@@ -167,27 +173,18 @@ class ScriptRunManager:
         started = time.perf_counter()
         path = Path(run.workspace.name)
         filename = f"main.{EXTENSIONS[run.engine]}"
+        lifecycle = OwnedTask(command_for(run.engine, executable, filename), cwd=str(path), env=child_environment())
         try:
             (path / filename).write_text(source, encoding="utf-8")
             if run.state == "CANCELED":
                 return
             run.state = "RUNNING"
-            run.owned = await OwnedProcess.spawn(
-                command_for(run.engine, executable, filename), cwd=str(path), env=child_environment()
-            )
+            run.owned = await lifecycle.start()
             output = bytearray()
 
-            async def collect() -> None:
-                assert run.owned is not None
-                while chunk := await run.owned.process.stdout.read(4096):
-                    output.extend(chunk)
-                    if len(output) > MAX_OUTPUT:
-                        raise OverflowError("Output exceeded the local display limit")
-                await run.owned.process.wait()
-
             try:
-                await asyncio.wait_for(collect(), RUN_SECONDS)
-                run.state = "COMPLETED" if run.owned.process.returncode == 0 else "FAILED"
+                code = await lifecycle.consume(RUN_SECONDS, output.extend, byte_limit=MAX_OUTPUT)
+                run.state = "COMPLETED" if code == 0 else "FAILED"
             except asyncio.TimeoutError:
                 run.state = "TIMED_OUT"
             except OverflowError:
@@ -221,7 +218,7 @@ class ScriptRunManager:
             run.output = "The local script engine could not start or write its workspace."
         finally:
             if run.owned is not None:
-                cleanup = await run.owned.terminate()
+                cleanup = await lifecycle.close()
                 if not cleanup.get("reaped"):
                     run.state = "CLEANUP_UNVERIFIED"
             run.elapsed_ms = round((time.perf_counter() - started) * 1000)

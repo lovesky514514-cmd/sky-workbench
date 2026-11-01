@@ -3,6 +3,8 @@ import { api, type DesktopBootstrap } from './api'
 import { BrandIcon } from './components/BrandIcon'
 import { Inspector, inspectorTabs } from './components/Inspector'
 import { PlanCard } from './components/PlanCard'
+import { PlanCompletionReview } from './components/PlanCompletionReview'
+import type { CompletionSubmission } from './planCompletion'
 import { IntentConfirmation } from './components/IntentConfirmation'
 import { TaskHistoryMessage } from './components/TaskHistoryMessage'
 import { WarmSettings } from './components/WarmSettings'
@@ -545,7 +547,15 @@ function App() {
     </article>}
   </div>
   // Full plan disclosure precedes the warm interface's explicit RUN consent.
-  const planReview = activePlan ? <PlanCard plan={activePlan} editable onSave={savePlan} /> : null
+  const completePlan = async (submission: CompletionSubmission) => {
+    if (!session) return
+    const ticket = selectionRef.current
+    const next = await api.completePlan(session.id, submission)
+    if (!isCurrentSelection(ticket, selectionRef.current)) return
+    sessionRef.current = next; setSession(next)
+    setSessions((current) => current.map((item) => item.id === next.id ? next : item))
+  }
+  const planReview = activePlan ? <PlanCard locale={locale} plan={activePlan} editable onSave={savePlan} /> : null
   const intentConfirmation = pendingIntent
     ? <IntentConfirmation locale={locale} intent={pendingIntent}
       onContinue={() => void send()}
@@ -645,6 +655,7 @@ function App() {
       literatureEnabled={Boolean(providerSettings?.extensions?.literature_modeling?.enabled)}
       mode={mode} prompt={prompt} busy={busy} askStreaming={Boolean(streaming)} warning={warning}
       pendingIntent={Boolean(pendingIntent)} taskHistory={taskHistory} planReview={planReview}
+      planCompletionReview={activePlan && <PlanCompletionReview key={activePlan.completion?.reviewed_digest} plan={activePlan} zh={locale === 'zh-CN'} onComplete={completePlan} />}
       intentConfirmation={intentConfirmation} timeline={timelineItems}
       technicalInspector={technicalInspector}
       onNewSession={() => newSession()} onSelectSession={(id) => { void selectSession(id) }} onArchiveSession={(id) => void archiveSession(id)}
@@ -694,7 +705,7 @@ function App() {
         <BrandIcon size={96} className="about-icon" label="SKY Workbench" />
         <span className="eyebrow">V3.0</span>
         <h2>SKY Workbench</h2>
-        <p><b>v3.0.0</b><br />{t('Build signature')}: <b>{t('Unsigned')}</b></p>
+        <p><b>v3.1.0</b><br />{t('Build signature')}: <b>{t('Unsigned')}</b></p>
         <p>{t('Independent third-party scientific modeling workbench. Not affiliated with, endorsed by, or sponsored by COMSOL AB.')}</p>
         <p>{t('COMSOL® is a trademark of COMSOL AB. Official COMSOL software and a valid license are required for real model execution.')}</p>
         <p>{t('Local and cloud AI are optional. No model is downloaded or substituted silently.')}</p>

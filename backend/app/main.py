@@ -20,7 +20,7 @@ from fastapi.staticfiles import StaticFiles
 from httpx import HTTPError
 from pydantic import BaseModel, Field
 
-from app import __version__
+from app import APPLICATION_VERSION, __version__
 from app.adapter.rc42_contract import project_session, project_event_batch, safe_error
 from app.app_paths import app_paths
 from app.agent.runtime import agent_runtime
@@ -64,23 +64,27 @@ from app.models import (
 from app.providers.manager import provider_manager
 from app.simulation_adapters import capabilities as simulation_capabilities, probe_engine
 from app.script_workspace import ScriptRunManager
+from app.engines.manager import EngineTaskManager
+from app.engines.models import EngineTaskRequest
 from app.services.projects import project_service
 from app.services.legacy_migration import detect_legacy, handle_legacy
 from app.services.model_manager import local_model_manager
 from app.services.imported_mph import imported_mph_store
 from app.services.literature_modeling import extract_text_candidate, extract_pdf_candidate, extract_pdf_candidate_deepseek, extract_text_candidate_deepseek, MAX_PDF_BYTES
 from app.services.literature_sources import fetch_recent_source
-from app.session.store import session_store
+from app.session.store import PlanRevisionConflict, session_store
 from app.session.execution_eta import estimate_remaining_time
 from app.session.state_grounding import rebuild_context_snapshot
 from app.skills.library import SkillLibrary
 from app.scientific.modeling_engine import modeling_engine
 from app.scientific.resource_guard import assess_risk, hardware_profile
 from app.scientific.schemas import ScientificPlan
+from app.knowledge.sources import source_store
 from app.validators.execution_verdict import verify_artifact_integrity
 
 
 script_runs = ScriptRunManager(WORKSPACE_ROOT / "script_runs")
+engine_tasks = EngineTaskManager(WORKSPACE_ROOT / "engine_tasks")
 
 
 class ScriptRunRequest(BaseModel):
@@ -89,16 +93,42 @@ class ScriptRunRequest(BaseModel):
     confirmed: bool = False
 
 
+class PlanCompletionRequest(BaseModel):
+    proposal_id: str
+    values: dict[str, float | str] = Field(default_factory=dict)
+    mode: str = Field(default="review", pattern="^(manual|review|auto)$")
+    reviewed_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+    expected_revision: int = Field(ge=1)
+    selected_parameters: list[str] | None = None
+    decisions: dict[str, list[str]] = Field(default_factory=dict)
+    question_answers: dict[str, str] = Field(default_factory=dict)
+
+
+class EngineConfigurationRequest(BaseModel):
+    engine: str
+    executable: str = Field(max_length=1000)
+
+
+class KnowledgeUnitsRequest(BaseModel):
+    units: list[dict[str, Any]] = Field(min_length=1, max_length=1000)
+
+
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     ensure_workspace()
     session_store.initialize()
+    try:
+        app.state.public_knowledge = source_store.load_bundled()
+    except (OSError, ValueError):
+        app.state.public_knowledge = {"status": "INVALID", "units": 0}
     app.state.run_reconciliation = await agent_runtime.reconcile()
+    engine_tasks.recover()
     app.state.kb_integrity = verify_knowledge_base(app_paths.kb_dir)
     try:
         yield
     finally:
         await script_runs.shutdown()
+        await engine_tasks.shutdown()
         await agent_runtime.shutdown()
         semantic_runtime.shutdown()
         if java_bridge_process_manager.status().get("running") or java_bridge_process_manager.status().get('state') == 'starting':
@@ -117,6 +147,13 @@ async def require_desktop_session_token(request: Request, call_next):
     """Protect every desktop Runtime API call from unrelated local web pages."""
 
     expected = os.getenv("COMSOL_WORKBENCH_SESSION_TOKEN", "")
+    # Public discovery/preview remains read-only. State changes require the
+    # desktop credential even when a developer starts the server without one.
+    previews = {'/api/engine-tasks/preview', '/api/intents/compile'}
+    public_read = request.url.path=='/api/health' and request.method in {'GET','HEAD'}
+    if (not expected and request.url.path.startswith('/api/') and request.method!='OPTIONS'
+            and not public_read and request.url.path not in previews):
+        return JSONResponse(status_code=403, content={'detail': 'Desktop session authentication is required'})
     if expected and request.url.path.startswith("/api/") and request.method != "OPTIONS":
         supplied = request.headers.get("X-Workbench-Token", "")
         if not hmac.compare_digest(supplied, expected):
@@ -148,11 +185,13 @@ async def health() -> dict[str, Any]:
     return {
         "status": "ok",
         "version": __version__,
+        "application_version": APPLICATION_VERSION,
         "frontend_built": FRONTEND_DIST.exists(),
         "desktop_mode": app_paths.desktop_mode,
         "kb_integrity": integrity,
         "settings_migration": settings_store.migration_status(),
         "database_recovery": session_store.recovery_status,
+        "public_knowledge": getattr(app.state, "public_knowledge", {"status": "NOT_LOADED"}),
     }
 
 
@@ -362,6 +401,103 @@ async def probe_simulation_adapter(engine: str) -> dict[str, Any]:
 async def script_run_availability() -> dict[str, Any]:
     """An available interpreter is not a scientific connector or model readback."""
     return {"engines": await asyncio.to_thread(script_runs.availability)}
+
+
+@app.get("/api/engine-tasks/configuration")
+async def engine_configuration() -> dict[str, Any]:
+    return {"executables": engine_tasks.configuration()}
+
+
+@app.put("/api/engine-tasks/configuration")
+async def save_engine_configuration(request: EngineConfigurationRequest) -> dict[str, Any]:
+    require_engine_session()
+    try:
+        return {"executables": engine_tasks.configure(request.engine, request.executable)}
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+def require_engine_session() -> None:
+    # Reuse the desktop token boundary already used by explicit script execution.
+    if not os.getenv("COMSOL_WORKBENCH_SESSION_TOKEN"):
+        raise HTTPException(status_code=403, detail="Desktop session authentication is required")
+
+
+def active_engine_project() -> str:
+    project = next((item for item in project_service.projects() if item.get("active")), None)
+    if project is None or project.get("read_only"):
+        raise HTTPException(status_code=409, detail="Select a writable project first")
+    return str(project["id"])
+
+
+def scoped_engine_record(run_id: str) -> dict[str, Any]:
+    record = engine_tasks.status(run_id, include_result=False)
+    if record["project_id"] != active_engine_project():
+        raise KeyError(run_id)
+    return record
+
+
+@app.post("/api/engine-tasks/preview")
+async def preview_engine_task(request: EngineTaskRequest) -> dict[str, Any]:
+    try:
+        return engine_tasks.preview(request)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@app.post("/api/engine-tasks/connect")
+async def connect_engine_task(request: EngineConfigurationRequest) -> dict[str, Any]:
+    require_engine_session()
+    active_engine_project()
+    try:
+        return await engine_tasks.connect(request.engine)
+    except (ValueError, OSError, TimeoutError, OverflowError) as exc:
+        raise HTTPException(status_code=409, detail="Connector handshake did not pass; review its local installation") from exc
+
+
+@app.get("/api/engine-tasks")
+async def list_engine_tasks(project_id: str = "scratch") -> dict[str, Any]:
+    return {"runs": engine_tasks.list_runs(active_engine_project())}
+
+
+@app.post("/api/engine-tasks")
+async def start_engine_task(request: EngineTaskRequest) -> dict[str, Any]:
+    require_engine_session()
+    try:
+        request = request.model_copy(update={"project_id": active_engine_project()})
+        return await engine_tasks.start(request)
+    except (ValueError, OSError) as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+
+@app.get("/api/engine-tasks/{run_id}")
+async def engine_task_status(run_id: str) -> dict[str, Any]:
+    try:
+        scoped_engine_record(run_id)
+        return engine_tasks.status(run_id)
+    except (KeyError, ValueError) as exc:
+        raise HTTPException(status_code=404, detail="Engine task not found") from exc
+
+
+@app.post("/api/engine-tasks/{run_id}/cancel")
+async def cancel_engine_task(run_id: str) -> dict[str, Any]:
+    try:
+        require_engine_session()
+        scoped_engine_record(run_id)
+        return await engine_tasks.cancel(run_id)
+    except (KeyError, ValueError) as exc:
+        raise HTTPException(status_code=404, detail="Engine task not found") from exc
+
+
+@app.get("/api/engine-tasks/{run_id}/artifacts/{name}")
+async def engine_task_artifact(run_id: str, name: str) -> Response:
+    try:
+        scoped_engine_record(run_id)
+        data = engine_tasks.artifact(run_id, name)
+    except (KeyError, ValueError, OSError) as exc:
+        raise HTTPException(status_code=404, detail="Artifact unavailable or changed") from exc
+    return Response(data, media_type="application/octet-stream",
+                    headers={"Content-Disposition": f'attachment; filename="{name}"', "Cache-Control": "no-store"})
 
 
 @app.post("/api/script-runs")
@@ -778,8 +914,32 @@ async def update_plan(session_id: str, request: PlanUpdateRequest) -> dict[str, 
         return await agent_runtime.update_plan(session_id, request.plan)
     except KeyError as exc:
         raise HTTPException(status_code=404, detail="Session not found") from exc
+    except PlanRevisionConflict as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@app.post("/api/sessions/{session_id}/plan/completion")
+async def complete_plan(
+    session_id: str, request: PlanCompletionRequest
+) -> dict[str, Any]:
+    try:
+        return await agent_runtime.complete_plan(
+            session_id,
+            request.proposal_id,
+            request.values,
+            request.mode,
+            reviewed_digest=request.reviewed_digest,
+            expected_revision=request.expected_revision,
+            selected_parameters=request.selected_parameters,
+            decisions=request.decisions,
+            question_answers=request.question_answers,
+        )
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Session not found") from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
 
 
 @app.get("/api/knowledge/status")
@@ -793,12 +953,25 @@ async def knowledge_status() -> dict[str, Any]:
 
 @app.post("/api/knowledge/search")
 async def knowledge_search(request: KnowledgeSearchRequest) -> dict[str, Any]:
-    return retriever.search_detailed(
-        request.query,
-        limit=request.limit,
-        mode=request.mode,
-        filters=request.filters,
-    )
+    try:
+        return retriever.search_detailed(
+            request.query,
+            limit=request.limit,
+            mode=request.mode,
+            filters=request.filters,
+            project_id=active_engine_project(),
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@app.post("/api/knowledge/units")
+async def import_knowledge_units(request: KnowledgeUnitsRequest) -> dict[str, Any]:
+    require_engine_session()
+    try:
+        return source_store.import_units(request.units, project_id=active_engine_project())
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
 @app.post("/api/knowledge/refresh")

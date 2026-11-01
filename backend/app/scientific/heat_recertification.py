@@ -79,7 +79,7 @@ def _kelvin(expression: Any) -> float:
 
 
 def normalize_heat_core(raw: dict[str, Any], left: dict[str, Any],
-                        right: dict[str, Any]) -> dict[str, Any]:
+                        right: dict[str, Any], *, property_symbols: tuple[str, ...] = ('k', 'rho', 'Cp')) -> dict[str, Any]:
     """Convert direct Java Model API readback to the provider's core schema."""
     if raw.get('model_state_verified') is not True or raw.get('geometry_kind') != 'Rectangle':
         raise ValueError('Real COMSOL Heat core readback is unavailable')
@@ -95,6 +95,8 @@ def normalize_heat_core(raw: dict[str, Any], left: dict[str, Any],
         ('rho', 'rho_expression', 'kg/m^3'),
         ('Cp', 'Cp_expression', 'J/(kg*K)'),
     ):
+        if symbol not in property_symbols:
+            continue
         expression = raw.get(key)
         match = re.fullmatch(
             r'\s*(\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)\s*\[' + re.escape(unit) + r'\]\s*',

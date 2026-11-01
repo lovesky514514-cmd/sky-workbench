@@ -1,0 +1,13 @@
+{
+  "product_name": "SKY Workbench",
+  "version": "3.1.0",
+  "platform": "Windows x64",
+  "filename": "SKY_Workbench_3.1.0_x64_setup.exe",
+  "bytes": 265868710,
+  "sha256": "79be594c688b335159669b0b2902f3c8b729729411e10aae2b192ceb6b249fad",
+  "runtime_sha256": "cb7d424ddfba96581dd9b26a77338bf33467213abdef845ff3b15065961f3ecb",
+  "code_signed": false,
+  "availability": "maintainer",
+  "contact": "swbtest001@yeah.net",
+  "updated": "2026-11-01"
+}

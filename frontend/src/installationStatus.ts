@@ -44,7 +44,7 @@ export function verifiedProviderReady(providers: ProviderReadiness[], activeProv
 }
 
 export function detectedScientificEngines(scan: Record<string, unknown>): string[] {
-  const supported = new Set(['MATLAB', 'Wolfram', 'Materials Studio'])
+  const supported = new Set(['MATLAB', 'LAMMPS', 'VASP', 'Materials Studio'])
   if (!Array.isArray(scan.adapters)) return []
   return scan.adapters.flatMap((value: unknown) => {
     if (!value || typeof value !== 'object') return []

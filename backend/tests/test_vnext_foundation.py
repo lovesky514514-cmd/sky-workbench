@@ -75,6 +75,7 @@ def test_missing_evidence_never_retries_a_successful_solve(tmp_path: Path, monke
     store = SessionStore(tmp_path / 'runtime.db'); store.initialize()
     session = store.create('vnext'); store.set_state(session['id'], AgentState.PRECHECK)
     plan = ScientificPlan.model_validate(extract_heat_transfer_plan('2D stationary heat-transfer 10 mm x 5 mm aluminum left 373 K right 293 K insulated'))
+    store.commit_plan_revision(session['id'],plan.model_dump(mode='json'),0)
     asyncio.run(AgentRuntime(sessions=store, tools=Tools())._execute_run(session['id'], plan))
     view = store.get(session['id'])
     assert calls == 1 and view['state'] == 'FAILED'

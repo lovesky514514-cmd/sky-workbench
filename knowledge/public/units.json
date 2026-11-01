@@ -1,0 +1,122 @@
+[
+  {
+    "unit_id": "SKY-PUBLIC-001",
+    "title": "COMSOL connection and validation",
+    "content": "COMSOL 连接成功、模型树读回和科学验证分别记录。Connection, model readback and scientific validation require separate evidence for each run.",
+    "metadata": {
+      "engine": "COMSOL",
+      "module": "bridge",
+      "version_independent": true,
+      "license_class": "public_redistributable",
+      "source_url": "https://github.com/MPh-py/MPh",
+      "source_revision": "SKY-3.1.0-authored-summary",
+      "verification_status": "UNVERIFIED",
+      "project_id": null
+    }
+  },
+  {
+    "unit_id": "SKY-PUBLIC-002",
+    "title": "MATLAB PDE Toolbox thermal boundary",
+    "content": "MATLAB 的传热有限元任务需要 PDE Toolbox。热边界应按几何位置核对，并与解析解比较。Thermal boundary selection and analytical temperature checks are independent of process exit.",
+    "metadata": {
+      "engine": "MATLAB",
+      "module": "pde",
+      "version_independent": true,
+      "license_class": "public_redistributable",
+      "source_url": "https://www.mathworks.com/help/pde/",
+      "source_revision": "SKY-3.1.0-authored-summary",
+      "verification_status": "UNVERIFIED",
+      "project_id": null
+    }
+  },
+  {
+    "unit_id": "SKY-PUBLIC-003",
+    "title": "VASP electronic and ionic convergence",
+    "content": "VASP 电子自洽收敛与离子优化收敛是不同判据。NSW 为零的单点计算无需离子优化收敛，但仍需电子自洽证据。Electronic convergence and ionic convergence are separate checks.",
+    "metadata": {
+      "engine": "VASP",
+      "module": "scf",
+      "version_independent": true,
+      "license_class": "public_redistributable",
+      "source_url": "https://vasp.at/wiki/index.php/NSW",
+      "source_revision": "SKY-3.1.0-authored-summary",
+      "verification_status": "UNVERIFIED",
+      "project_id": null
+    }
+  },
+  {
+    "unit_id": "SKY-PUBLIC-004",
+    "title": "Materials Studio module selection",
+    "content": "Materials Studio 的 Forcite、CASTEP 和 DMol3 属于不同计算模块。模块、输入模型、力场或电子结构设置应分别确认。Forcite molecular simulation and CASTEP or DMol3 electronic structure require separate module contracts.",
+    "metadata": {
+      "engine": "Materials Studio",
+      "module": "modules",
+      "version_independent": true,
+      "license_class": "public_redistributable",
+      "source_url": "https://www.3ds.com/products/biovia/materials-studio",
+      "source_revision": "SKY-3.1.0-authored-summary",
+      "verification_status": "UNVERIFIED",
+      "project_id": null
+    }
+  },
+  {
+    "unit_id": "SKY-PUBLIC-005",
+    "title": "LAMMPS compute msd and diffusion",
+    "content": "LAMMPS compute msd 使用包含周期穿越的位移计算均方位移。MSD 对时间的线性拟合需要先判断扩散区间。Mean squared displacement uses unwrapped coordinates; a linear fit alone does not validate a diffusion coefficient.",
+    "metadata": {
+      "engine": "LAMMPS",
+      "module": "trajectory",
+      "version_independent": true,
+      "license_class": "public_redistributable",
+      "source_url": "https://docs.lammps.org/compute_msd.html",
+      "source_revision": "SKY-3.1.0-authored-summary",
+      "verification_status": "UNVERIFIED",
+      "project_id": null
+    }
+  },
+  {
+    "unit_id": "SKY-PUBLIC-006",
+    "title": "LAMMPS thermo output completion",
+    "content": "LAMMPS thermo 的输出频率不等于采样充分性。运行开始和结束也会输出热力学记录，完成检查应核对请求的最终步数。Thermodynamic output and completed timesteps do not establish equilibration.",
+    "metadata": {
+      "engine": "LAMMPS",
+      "module": "outputs",
+      "version_independent": true,
+      "license_class": "public_redistributable",
+      "source_url": "https://docs.lammps.org/thermo.html",
+      "source_revision": "SKY-3.1.0-authored-summary",
+      "verification_status": "UNVERIFIED",
+      "project_id": null
+    }
+  },
+  {
+    "unit_id": "SKY-PUBLIC-007",
+    "title": "Mathics3 symbolic calculation",
+    "content": "Mathics3 可用于符号表达式计算；运算返回值、数值检查与科学结论分别记录。Mathics3 symbolic calculation does not imply complete Mathematica compatibility.",
+    "metadata": {
+      "engine": "Mathics3",
+      "module": "symbolic",
+      "version_independent": true,
+      "license_class": "public_redistributable",
+      "source_url": "https://github.com/Mathics3/mathics-core",
+      "source_revision": "SKY-3.1.0-authored-summary",
+      "verification_status": "UNVERIFIED",
+      "project_id": null
+    }
+  },
+  {
+    "unit_id": "SKY-PUBLIC-008",
+    "title": "Scientific assumptions and source evidence",
+    "content": "来源可定位、参数使用授权和科学验证是不同状态。缺少参数时可提出带适用范围的候选假设；假设不会因此成为已验证事实。Source location, assumption authorization and scientific validation remain distinct.",
+    "metadata": {
+      "engine": "shared",
+      "module": "evidence",
+      "version_independent": true,
+      "license_class": "public_redistributable",
+      "source_url": "https://github.com/lovesky514514-cmd/sky-workbench",
+      "source_revision": "SKY-3.1.0-authored-summary",
+      "verification_status": "UNVERIFIED",
+      "project_id": null
+    }
+  }
+]

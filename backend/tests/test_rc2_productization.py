@@ -3,11 +3,15 @@ from __future__ import annotations
 import importlib.util
 from pathlib import Path
 
+import pytest
+
 from app.config import SettingsStore
 
 
 def _launcher_module():
     path = Path(__file__).resolve().parents[2] / "scripts" / "rc2_launcher.py"
+    if not path.is_file():
+        pytest.skip("Historical RC launcher/setup is not distributed in SKY 3.1; current packaging tests run separately")
     spec = importlib.util.spec_from_file_location("rc2_launcher_test", path)
     assert spec and spec.loader
     module = importlib.util.module_from_spec(spec)

@@ -33,7 +33,7 @@ def test_external_engine_executable_never_enables_execution(monkeypatch):
     })())
     monkeypatch.setattr(simulation_adapters.shutil, "which", lambda name: str(Path("C:/fake") / name))
     records = simulation_adapters.capabilities()
-    assert {item["engine"] for item in records} == {"COMSOL", "MATLAB", "Wolfram", "Materials Studio"}
+    assert {item["engine"] for item in records} == {"COMSOL", "MATLAB", "LAMMPS", "VASP", "Materials Studio"}
     for item in records[1:]:
         assert item["installed"] is True
         assert item["readback"] == "UNVERIFIED"

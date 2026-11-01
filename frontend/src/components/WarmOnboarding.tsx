@@ -116,8 +116,8 @@ export function WarmOnboarding(props: Props) {
           <span className="warm-onboarding-kicker">01 / 04 · {copy('欢迎', 'WELCOME')}</span>
           <h1>{copy('从科学问题开始。', 'Begin with a scientific question.')}</h1>
           <p className="warm-onboarding-lead">{copy('在同一工作区中制定计划、审查模型、运行求解，并查看可追溯的证据。', 'Plan, inspect the model, run a solve and review traceable evidence in one workspace.')}</p>
-          <div className="warm-onboarding-sequence"><div><b>01</b><strong>{copy('描述问题', 'Describe')}</strong><span>{copy('几何、材料、边界条件和期望结果', 'Geometry, materials, boundaries and desired result')}</span></div><div><b>02</b><strong>{copy('审查计划', 'Review')}</strong><span>{copy('运行前确认假设和模型对象', 'Confirm assumptions and model objects before RUN')}</span></div><div><b>03</b><strong>{copy('验证证据', 'Verify')}</strong><span>{copy('成功命令不等于科学验证通过', 'Command success is not scientific validation')}</span></div></div>
-          <p className="warm-onboarding-honesty">{copy('这是独立工作台；真实求解仍需要有效的 COMSOL 安装与许可证。', 'This is an independent workbench; real solves still require a valid COMSOL installation and license.')}</p>
+          <div className="warm-onboarding-sequence"><div><b>01</b><strong>{copy('描述问题', 'Describe')}</strong><span>{copy('先说目标和已知条件，缺项可由 AI 建议', 'Start with goals and known facts; AI can suggest missing inputs')}</span></div><div><b>02</b><strong>{copy('审查计划', 'Review')}</strong><span>{copy('运行前确认假设和模型对象', 'Confirm assumptions and model objects before RUN')}</span></div><div><b>03</b><strong>{copy('验证证据', 'Verify')}</strong><span>{copy('成功命令不等于科学验证通过', 'Command success is not scientific validation')}</span></div></div>
+          <p className="warm-onboarding-honesty">{copy('按有限元、分子动力学、量子计算和数学计算组织任务；各引擎需要对应的本机环境与许可。', 'Tasks cover finite elements, molecular dynamics, quantum and mathematics; engines require their corresponding local environments and licenses.')}</p>
         </section>}
         {step === 1 && <section className="warm-onboarding-page">
           <span className="warm-onboarding-kicker">02 / 04 · {copy('运行环境', 'ENVIRONMENT')}</span>

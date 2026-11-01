@@ -4,13 +4,15 @@
 
 | 现象 | 检查方式 |
 | --- | --- |
-| 启动时提示缺少 WebView2 | 给当前 Windows 用户安装 Microsoft WebView2 Runtime，重新启动程序；源码仓库不附带它。 |
+| 启动时提示缺少 WebView2 | 给当前 Windows 用户安装 Microsoft WebView2 Runtime，重新启动程序；源码仓库不附带它；最终安装包包含适用的 WebView2 安装资源。 |
 | 设置打不开或 Runtime 未连接 | 查看 Runtime 健康状态与日志，使用界面提供的重启入口；不要把旧缓存状态当作当前配置。 |
 | 扫描未找到 COMSOL | 在「设置 → 常规」指定真实安装根目录后重新扫描，检查当前用户的安装与许可。发现版本不等于 Bridge 已连接。 |
 | 找到了 COMSOL，但模型仍不可用 | 查看 Java Bridge 状态与错误；确认对应版本的 API、许可和真实模型读回。不要用 6.3 历史结果认证其他版本。 |
 | Ollama 出现 HTTP 400 或模型不可用 | 确认服务正在运行、模型已实际安装，且设置中的模型 ID 与服务返回一致；也可显式选择云端提供商。不会静默切换模型。 |
 | 云端 API 连接失败 | 核对提供商、端点、模型 ID、网络和账户权限；点击「测试连接」会发出真实请求，可能产生费用。不要把 Key 写进任务文本或故障报告。 |
 | 建模被阻断或结果未认证 | 打开计划与证据页，核对缺少的参数、边界选择、读回、求解和科学检查。人工批准与命令成功都不能替代科学验证。 |
-| MATLAB、Wolfram、Materials Studio 没有模型画面 | 当前软件标签提供检测、编辑或有限脚本路径；没有可靠模型读回时不会伪造窗口同步。详见[兼容范围](PROVIDER_AND_SIMULATOR_COMPATIBILITY.md)。 |
+| MATLAB、VASP、Materials Studio 没有模型画面 | 当前软件标签提供检测、编辑或有限脚本路径；没有可靠模型读回时不会伪造窗口同步。详见[兼容范围](PROVIDER_AND_SIMULATOR_COMPATIBILITY.md)。 |
 
 仍无法解决时，将**脱敏**的错误类别、软件版本和复现步骤发送至 [swbtest001@yeah.net](mailto:swbtest001@yeah.net)。不要发送密钥、许可证、私人 MPH 或知识库。
+
+3.1 的缺参草案可以继续生成候选建议；执行仍需审核、单位检查、预检与显式 RUN。缺少参数与缺少执行器是不同问题，详见[使用帮助](USER_GUIDE_V3_CN.md)。

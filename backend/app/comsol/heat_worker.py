@@ -91,8 +91,10 @@ def main(request_path: Path) -> int:
     left_temperature, _ = parameter(plan, "left_temperature")
     right_temperature, _ = parameter(plan, "right_temperature")
     conductivity, _ = parameter(plan, "thermal_conductivity")
-    density, _ = parameter(plan, "density")
-    heat_capacity, _ = parameter(plan, "heat_capacity")
+    material_inputs = {"k": (conductivity, "W/(m*K)")}
+    for name, symbol, unit in (("density", "rho", "kg/m^3"), ("heat_capacity", "Cp", "J/(kg*K)")):
+        if name in plan["parameters"]:
+            material_inputs[symbol] = (parameter(plan, name)[0], unit)
     if height_unit != length_unit:
         raise ValueError("Width and height must use one geometry unit in version 0.1")
     if length_unit not in {"mm", "cm", "m"}:
@@ -133,12 +135,10 @@ def main(request_path: Path) -> int:
         emit("Build", "Assigning Heat Transfer in Solids and material properties")
         physics = java_model.component("comp1").physics().create("ht", "HeatTransfer", "geom1")
         solid = physics.feature().get("solid1")
-        solid.set("k_mat", "userdef")
-        solid.set("k", f"{conductivity:g}[W/(m*K)]")
-        solid.set("rho_mat", "userdef")
-        solid.set("rho", f"{density:g}[kg/m^3]")
-        solid.set("Cp_mat", "userdef")
-        solid.set("Cp", f"{heat_capacity:g}[J/(kg*K)]")
+        # Only k is required by source-free stationary conduction in a fixed solid.
+        for symbol, (value, unit) in material_inputs.items():
+            solid.set(f"{symbol}_mat", "userdef")
+            solid.set(symbol, f"{value:g}[{unit}]")
         material = java_model.material().create("mat1")
         material.label("Aluminum - user-defined values" if any("Aluminum" in name for name in plan.get("materials", [])) else "User-defined thermal material")
         emit("Build", "Physics and material assigned", "success")
@@ -293,10 +293,10 @@ def main(request_path: Path) -> int:
                 'geometry_edges': int(geometry.getNEdges()),
                 'material_tag': 'mat1', 'material_name': str(material.label()),
                 'material_origin': 'user', 'material_properties': [
-                    {'symbol': 'k', 'value': readback_literal(str(solid.getString('k')), 'W/(m*K)'), 'unit': 'W/(m*K)'},
-                    {'symbol': 'rho', 'value': readback_literal(str(solid.getString('rho')), 'kg/m^3'), 'unit': 'kg/m^3'},
-                    {'symbol': 'Cp', 'value': readback_literal(str(solid.getString('Cp')), 'J/(kg*K)'), 'unit': 'J/(kg*K)'},
+                    {'symbol': symbol, 'value': readback_literal(str(solid.getString(symbol)), unit), 'unit': unit}
+                    for symbol, (_value, unit) in material_inputs.items()
                 ],
+                'unused_stationary_properties': [symbol for symbol in ('rho', 'Cp') if symbol not in material_inputs],
                 'physics_tag': 'comp1:ht', 'physics_type': str(physics.getType()),
                 'study_tag': 'std1', 'study_type': 'stationary', 'solver_tag': 'sol1',
                 'mesh_tag': 'comp1:mesh1',
@@ -328,7 +328,7 @@ def main(request_path: Path) -> int:
             "build_readback_issue": build_readback_issue,
             "model_state": {
                 "geometry": [f"Rectangle {width:g} x {height:g} {length_unit}"],
-                "materials": ["Aluminum (user-defined, source verification required)"],
+                "materials": [str(material.label())],
                 "physics": ["Heat Transfer in Solids (ht)"],
                 "parameters": plan["parameters"],
                 "boundary_conditions": [

@@ -6,6 +6,8 @@ import { VerifiedArtifactViewer } from './components/VerifiedArtifactViewer'
 import { ImportedMphWorkspace } from './components/ImportedMphWorkspace'
 import { LiteratureModelingWorkspace } from './components/LiteratureModelingWorkspace'
 import { ScientificSoftwareWorkspace, type SoftwareEngine } from './components/ScientificSoftwareWorkspace'
+import { EngineTaskWorkspace } from './components/EngineTaskWorkspace'
+import { scientificDomains } from './scientificDomains'
 import { WarmPlanOverview } from './components/WarmPlanOverview'
 import { translate, type Locale } from './i18n'
 import { safeUiError } from './safeUiError'
@@ -43,6 +45,7 @@ interface WarmStudioProps {
   pendingIntent: boolean
   taskHistory: ReactNode
   planReview: ReactNode
+  planCompletionReview?: ReactNode
   intentConfirmation: ReactNode
   technicalInspector: ReactNode
   timeline: TimelineItem[]
@@ -100,7 +103,8 @@ export function WarmStudio(props: WarmStudioProps) {
   // A script workspace belongs to the task that opened it. Switching tasks
   // returns to the COMSOL view before any older draft is rendered.
   const [softwareOwner, setSoftwareOwner] = useState<string | null>(null)
-  const [softwareEngine, setSoftwareEngine] = useState<SoftwareEngine>('Wolfram')
+  const [softwareEngine, setSoftwareEngine] = useState<SoftwareEngine>('Mathics3')
+  const [domainId, setDomainId] = useState<string>('continuum')
   // Turning an extension off while its page is open must not leave a blank
   // workspace. The backend gate also rejects new extraction requests.
   useEffect(() => { if (!props.literatureEnabled && homeSection === 'literature') setHomeSection('new') }, [props.literatureEnabled, homeSection])
@@ -307,6 +311,7 @@ export function WarmStudio(props: WarmStudioProps) {
           </div>
           {props.pendingIntent && <div className="warm-plan-review" role="region" aria-label={t('Intent confirmation')}>{props.intentConfirmation}</div>}
           {props.plan && <div className="warm-plan-summary">
+            {props.planCompletionReview}
             <WarmPlanOverview plan={props.plan} locale={props.locale} />
             <details className="warm-full-plan">
               <summary>{t('Open complete ScientificPlan and checks')}</summary>{props.planReview}
@@ -341,17 +346,30 @@ export function WarmStudio(props: WarmStudioProps) {
         </div>
       </section>}
 
+      {page === 'model' && <nav className="scientific-domain-nav" aria-label={props.locale === 'zh-CN' ? '科学任务领域' : 'Scientific domains'}>
+        {scientificDomains.map((domain) => <button type="button" key={domain.id} className={domainId === domain.id ? 'is-active' : ''}
+          onClick={() => { setDomainId(domain.id); const engine = domain.engines[0];
+            if (engine === 'COMSOL') setSoftwareOwner(null)
+            else { setSoftwareEngine(engine); setSoftwareOwner(props.session?.id ?? '') }
+          }}>{props.locale === 'zh-CN' ? domain.zh : domain.en}</button>)}
+      </nav>}
       {page === 'model' && <div className="warm-model-sources" aria-label={t('Model source')}>
-        <button type="button" className={!softwareModel ? 'is-active' : ''} onClick={() => setSoftwareOwner(null)}>
+        {domainId === 'continuum' && <button type="button" className={!softwareModel ? 'is-active' : ''} onClick={() => setSoftwareOwner(null)}>
           {props.locale === 'zh-CN' ? 'COMSOL 模型' : 'COMSOL model'}
-        </button>
-        {(['Python', 'Mathics3', 'Wolfram', 'MATLAB', 'Materials Studio'] as SoftwareEngine[]).map((engine) =>
+        </button>}
+        {(['MATLAB', 'LAMMPS', 'VASP', 'Materials Studio', 'Mathics3', 'Python'] as SoftwareEngine[])
+          .filter((engine) => (scientificDomains.find((domain) => domain.id === domainId)?.engines as readonly string[] | undefined)?.includes(engine)).map((engine) =>
           <button type="button" key={engine} className={softwareModel && softwareEngine === engine ? 'is-active' : ''}
             onClick={() => { setSoftwareOwner(props.session?.id ?? ''); setSoftwareEngine(engine) }}>{engine}</button>)}
       </div>}
-      {softwareModel && <ScientificSoftwareWorkspace key={`${props.session?.id ?? 'no-session'}:${softwareEngine}`}
-        engine={softwareEngine} sessionId={props.session?.id ?? null}
-        locale={props.locale} onOpenSettings={props.onOpenSettings} />}
+      {page === 'model' && domainId === 'quantum' && softwareEngine === 'Materials Studio' && softwareModel &&
+        <p className="engine-scope-note">{props.locale === 'zh-CN' ? 'Materials Studio 当前仅接入 Forcite 单点能；量子模块 CASTEP / DMol³ 尚未完成接入与实机验证。' : 'Materials Studio currently exposes Forcite single-point energy. CASTEP / DMol³ quantum modules are not connected or live-validated.'}</p>}
+      {softwareModel && (softwareEngine === 'LAMMPS' || softwareEngine === 'VASP' || softwareEngine === 'Materials Studio'
+        ? <EngineTaskWorkspace key={`${props.session?.project_id ?? 'scratch'}:${softwareEngine}`} engine={softwareEngine}
+            projectId={props.session?.project_id ?? 'scratch'} locale={props.locale} />
+        : <ScientificSoftwareWorkspace key={`${props.session?.id ?? 'no-session'}:${softwareEngine}`}
+            engine={softwareEngine} sessionId={props.session?.id ?? null}
+            locale={props.locale} onOpenSettings={props.onOpenSettings} />)}
 
       {/* COMSOL images come from the current run's integrity-checked artifact.
           A model readback alone does not create pixels or certify science. */}

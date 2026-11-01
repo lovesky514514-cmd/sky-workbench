@@ -17,10 +17,11 @@ def test_http_stream_upload_and_separate_listing(monkeypatch, tmp_path):
     from app import main
 
     monkeypatch.setattr(main, "imported_mph_store", ImportedMphStore(tmp_path / "models"))
+    monkeypatch.setenv('COMSOL_WORKBENCH_SESSION_TOKEN','import-fixture')
 
     async def exercise():
         transport = httpx.ASGITransport(app=main.app)
-        async with httpx.AsyncClient(transport=transport, base_url="http://127.0.0.1") as client:
+        async with httpx.AsyncClient(transport=transport, base_url="http://127.0.0.1",headers={'X-Workbench-Token':'import-fixture'}) as client:
             response = await client.post("/api/imported-mph", content=b"test-mph", headers={"X-Workbench-Filename": "my%20model.mph"})
             assert response.status_code == 201
             item = response.json()

@@ -16,12 +16,13 @@ class DiscoveryTests(unittest.TestCase):
     def test_optional_engines_report_only_measured_presence(self):
         observed = []
         comsol = ComsolJavaEnvironment(True, "ready", "test", version="COMSOL 6.4")
-        with patch("app.simulation_adapters._find_executable", side_effect=["", "wolframscript.exe", ""]):
+        with patch("app.simulation_adapters._find_executable", side_effect=["", "lmp.exe", "", ""]):
             records = adapter_capabilities(comsol, lambda engine, state: observed.append((engine, state)))
         self.assertEqual([(item["engine"], item["installed"]) for item in records],
-                         [("COMSOL", True), ("MATLAB", False), ("Wolfram", True), ("Materials Studio", False)])
+                         [("COMSOL", True), ("MATLAB", False), ("LAMMPS", True), ("VASP", False), ("Materials Studio", False)])
         self.assertEqual(observed, [("MATLAB", "running"), ("MATLAB", "unavailable"),
-                                    ("Wolfram", "running"), ("Wolfram", "detected"),
+                                    ("LAMMPS", "running"), ("LAMMPS", "detected"),
+                                    ("VASP", "running"), ("VASP", "unavailable"),
                                     ("Materials Studio", "running"), ("Materials Studio", "unavailable")])
         self.assertTrue(all(item["execute"] != "VERIFIED" for item in records))
     def test_scan_reports_inspected_candidates_not_invented_disk_percent(self):
@@ -79,7 +80,7 @@ class InstallationScanTests(unittest.TestCase):
             return {"state": "Not Installed"}
 
         def adapters(comsol, progress):
-            for engine in ("MATLAB", "Wolfram", "Materials Studio"):
+            for engine in ("MATLAB", "LAMMPS", "VASP", "Materials Studio"):
                 progress(engine, "running")
                 progress(engine, "unavailable")
             return [{"engine": "COMSOL", "installed": True, "execute": "UNVERIFIED"}]
@@ -97,8 +98,8 @@ class InstallationScanTests(unittest.TestCase):
         result = scan.status()
         self.assertEqual(result["state"], "completed")
         self.assertEqual((result["checked"], result["total"]), (2, 2))
-        self.assertEqual([step["id"] for step in result["steps"]], ["comsol", "matlab", "wolfram", "materials_studio", "ollama_executable", "ollama_service"])
-        self.assertEqual([step["state"] for step in result["steps"]], ["detected", "unavailable", "unavailable", "unavailable", "unavailable", "unavailable"])
+        self.assertEqual([step["id"] for step in result["steps"]], ["comsol", "matlab", "lammps", "vasp", "materials_studio", "ollama_executable", "ollama_service"])
+        self.assertEqual([step["state"] for step in result["steps"]], ["detected"] + ["unavailable"] * 6)
         self.assertEqual(result["adapters"][0]["engine"], "COMSOL")
         self.assertNotIn("executable", result["adapters"][0])
         self.assertNotIn("verified", str(result["steps"]).lower())
@@ -130,7 +131,7 @@ class InstallationScanTests(unittest.TestCase):
             return callback(*args)
 
         def adapters(comsol, progress):
-            for engine in ("MATLAB", "Wolfram", "Materials Studio"):
+            for engine in ("MATLAB", "LAMMPS", "VASP", "Materials Studio"):
                 progress(engine, "running")
                 progress(engine, "unavailable")
             return [{"engine": "COMSOL", "installed": True, "execute": "UNVERIFIED", "executable": "private path"}]

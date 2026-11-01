@@ -6,7 +6,7 @@ import hashlib
 import importlib.util
 import json
 import re
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Iterable
@@ -42,6 +42,17 @@ class KnowledgeChunk:
     authors: tuple[str, ...] = ()
     doi: str | None = None
     year: int | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
+
+    def __post_init__(self):
+        from app.knowledge.contracts import normalized_metadata
+
+        identity = dict(self.metadata)
+        identity.setdefault("engine", "COMSOL" if "COMSOL" in self.source_type else "unknown")
+        identity.setdefault("source_url", self.file)
+        if self.source_type in {"Project Knowledge", "Scientific Literature", "Past Runs"}:
+            identity.setdefault("project_id", "workbench")
+        object.__setattr__(self, "metadata", normalized_metadata(self.text, **identity))
 
     def as_dict(self) -> dict[str, Any]:
         payload = asdict(self)

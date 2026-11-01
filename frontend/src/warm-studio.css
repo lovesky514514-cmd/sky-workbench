@@ -774,6 +774,41 @@
 .warm-script-side figure img{display:block;width:100%;max-height:200px;object-fit:contain;background:#e8e8df}
 .warm-script-side figcaption{margin-top:7px;overflow-wrap:anywhere;color:var(--warm-muted);font-size:12px}
 .warm-script-side .warm-script-empty{padding:20px 0;text-align:center}
+
+/* Scientific tasks emphasize parameters and collected results. */
+.scientific-domain-nav{display:flex;flex-wrap:wrap;gap:10px;margin:22px 0 10px}
+.scientific-domain-nav button{padding:10px 16px;border:1px solid var(--warm-border);border-radius:8px;background:var(--warm-surface);color:var(--warm-text);cursor:pointer}
+.scientific-domain-nav .is-active{background:var(--warm-text);color:var(--warm-surface)}
+.engine-task-layout{display:grid;grid-template-columns:minmax(240px,310px) minmax(0,1fr);gap:24px;margin-top:22px}
+.engine-task-form,.engine-task-output,.scientific-task-form,.plan-completion{padding:22px;border:1px solid var(--warm-border);border-radius:10px;background:var(--warm-surface);min-width:0}
+.engine-task-form label,.scientific-task-form label{display:flex;flex-direction:column;gap:7px;margin:12px 0}
+.engine-task-form input,.engine-task-form select,.engine-task-form textarea,.scientific-task-form input,.scientific-task-form select,.plan-completion input,.plan-completion select{padding:9px;border:1px solid var(--warm-border);border-radius:6px;background:var(--warm-bg);color:var(--warm-text);min-width:0;max-width:100%}
+.engine-task-form button,.scientific-task-form button,.plan-completion button{padding:10px 14px;margin:8px 8px 8px 0;border:1px solid var(--warm-border);border-radius:7px;background:var(--warm-surface);color:var(--warm-text);cursor:pointer}
+.engine-task-form button:disabled,.plan-completion button:disabled{opacity:.5;cursor:default}
+.engine-task-form p,.engine-task-output p,.scientific-task-form p,.plan-completion p,.engine-scope-note{font-size:13px;line-height:1.6;color:var(--warm-muted);overflow-wrap:anywhere}
+.engine-task-form .warm-script-consent{flex-direction:row;align-items:flex-start}
+.engine-task-output pre{white-space:pre-wrap;overflow-wrap:anywhere;max-height:360px;overflow:auto;font-size:12px}
+.engine-task-output details{margin:18px 0}
+.engine-structure,.engine-chart{margin:20px 0;padding:14px;border:1px solid var(--warm-border);border-radius:8px}
+.engine-structure svg,.engine-chart svg{width:100%;max-height:400px;background:var(--warm-bg)}
+.engine-chart text{font-size:11px;fill:var(--warm-muted)}
+.engine-empty{padding:55px 20px;min-height:300px;text-align:center}
+.engine-energy{font-size:25px!important}
+.advanced-code-panel{margin:18px;border:1px solid var(--warm-border);border-radius:8px}
+.advanced-code-panel summary{padding:12px;cursor:pointer}
+.advanced-code-panel .code-workbench-editor{min-height:360px}
+.advanced-code-panel header,.advanced-code-panel footer{padding:12px;font-size:12px}
+.math-primary-result,.model-primary-result{padding:24px;margin:0}
+.model-primary-result img{width:100%;max-height:600px;object-fit:contain}
+.completion-value{display:grid;grid-template-columns:minmax(120px,1fr) minmax(80px,130px) minmax(70px,1fr);align-items:center;gap:12px;margin:15px 0}
+.completion-value small{grid-column:1/-1;color:var(--warm-muted)}
+.engine-task-output li,.plan-completion li,.knowledge-search-panel{overflow-wrap:anywhere}
+.knowledge-search-panel label{display:flex;flex-direction:column;gap:6px;margin:12px 0}
+.knowledge-search-panel input,.knowledge-search-panel select,.knowledge-search-panel textarea{min-width:0;max-width:100%;padding:8px}
+.knowledge-search-panel article{margin:14px 0;padding:12px;border:1px solid var(--warm-border);border-radius:8px}
+.knowledge-search-panel small{display:block;margin-top:8px}
+.plan-completion{margin:20px 0;background:var(--warm-bg)}
+@media(max-width:900px){.engine-task-layout{grid-template-columns:1fr}.completion-value{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.completion-value small{grid-column:1/-1}}
 .warm-viewport-empty{
   display:flex;
   flex:1;
@@ -1209,3 +1244,9 @@
 }
 
 }
+.modeling-brief { margin: 16px 0; padding: 16px; border: 1px solid var(--warm-border, #d5dce2); border-radius: 12px; }
+.modeling-brief ul { padding-left: 20px; }
+.modeling-brief li { margin: 6px 0; overflow-wrap: anywhere; }
+.plan-completion fieldset { margin: 12px 0; border: 1px solid var(--warm-border, #d5dce2); border-radius: 8px; }
+.plan-completion fieldset label { display: block; margin: 10px 0; }
+.plan-completion fieldset small { display: block; margin-left: 24px; }

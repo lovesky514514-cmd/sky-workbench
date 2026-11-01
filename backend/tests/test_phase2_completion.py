@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import json
 import sys
+
+import pytest
 from pathlib import Path
 
 from app.memory.store import MemoryAdmissionPolicy, MemoryCandidate, MemoryStore, MemoryType, ValidationStatus
@@ -11,9 +13,9 @@ from app.session.store import SessionStore
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "scripts"))
-import rc3_launcher  # noqa: E402
-import rc3_setup  # noqa: E402
-import run_phase2_model_benchmark as model_benchmark  # noqa: E402
+
+
+
 
 
 def _store(tmp_path: Path) -> MemoryStore:
@@ -75,14 +77,15 @@ def test_framework_only_3d_case_cannot_claim_validation() -> None:
 
 
 def test_framework_schema_examples_are_non_certifying() -> None:
-    path = ROOT / "phase2_completion" / "benchmark_framework" / "THREE_D_MULTIPHYSICS_BENCHMARK_SCHEMA.json"
+    path = ROOT / "vnext" / "3d" / "minimal_3d_contracts.json"
     payload = json.loads(path.read_text(encoding="utf-8"))
-    assert payload["scientific_claims"] == "PROHIBITED_UNTIL_REAL_EVIDENCE"
-    assert all(case["status"] == "FRAMEWORK_ONLY_UNVERIFIED" for case in payload["cases"])
-    assert all(case["scientific_validation_passed"] is False for case in payload["cases"])
+    assert payload["support_status"] == "PREPARATION_ONLY_UNVERIFIED"
+    assert payload["cases"] and all(case["execution_claim"] is False for case in payload["cases"])
+    assert all(case["required_readback"] for case in payload["cases"])
 
 
 def test_benchmark_scorer_detects_silent_false_pass() -> None:
+    model_benchmark = pytest.importorskip("run_phase2_model_benchmark", reason="Historical release helper is not distributed in SKY 3.1; current release checks run separately")
     expected = {
         "decision": "NONMODEL_ESCALATION",
         "workflow_id": "heat_transfer_2d_stationary",
@@ -108,6 +111,7 @@ def test_benchmark_scorer_detects_silent_false_pass() -> None:
 
 
 def test_rc3_preflight_has_explicit_status(monkeypatch, tmp_path: Path) -> None:
+    rc3_launcher = pytest.importorskip("rc3_launcher", reason="Historical release helper is not distributed in SKY 3.1; current release checks run separately")
     root = tmp_path / "product"
     for relative in (
         "Workbench.exe",
@@ -142,6 +146,7 @@ def test_rc3_preflight_has_explicit_status(monkeypatch, tmp_path: Path) -> None:
 
 
 def test_rc3_setup_rejects_manifest_path_escape(tmp_path: Path) -> None:
+    rc3_setup = pytest.importorskip("rc3_setup", reason="Historical release helper is not distributed in SKY 3.1; current release checks run separately")
     source = tmp_path / "payload"
     source.mkdir()
     outside = tmp_path / "outside.txt"

@@ -8,6 +8,7 @@ import json
 from typing import Any
 
 import httpx
+from app.providers.deepseek import DEFAULT_MODEL as DEEPSEEK_MODEL
 from pypdf import PdfReader
 
 from app.agent.intent_compiler import compile_intent
@@ -118,7 +119,7 @@ async def extract_text_candidate_deepseek(
             response = await client.post(
                 "https://api.deepseek.com/chat/completions",
                 headers={"Authorization": f"Bearer {api_key}"},
-                json={"model": "deepseek-chat", "temperature": 0, "stream": False,
+                json={"model": DEEPSEEK_MODEL, "temperature": 0, "stream": False, "thinking":{"type":"disabled"},
                       "max_tokens": 128, "response_format": {"type": "json_object"},
                       "messages": [{"role": "system", "content": prompt},
                                    {"role": "user", "content": json.dumps(snippets, ensure_ascii=False)}]},

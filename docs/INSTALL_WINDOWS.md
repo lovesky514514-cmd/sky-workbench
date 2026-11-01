@@ -1,7 +1,7 @@
-# Windows 使用与安装边界
+# Windows 3.1 安装与源码边界
 
-SKY Workbench 3.0 当前公开的是**源码**，没有官方公开下载的 3.0 Setup.exe。请勿把旧版安装包改名为 3.0，也不要把非官方二进制当作本仓库的发布资产。
+桌面产品版本为 3.1.0。最终安装包名为 `SKY_Workbench_3.1.0_x64_setup.exe`，文件身份见[验证记录](VALIDATION_3.1.md)，获取说明见[官网版本页](https://lovesky514514-cmd.github.io/scientific-workbench-beta/releases/3.1/#get-version)。本源码仓库不托管 exe 或预编译科学 Runtime。
 
-从源码构建请看 [BUILDING.md](../BUILDING.md)。运行桌面程序需要当前 Windows 用户可用的 WebView2 Runtime；科学执行另需用户安装并合法授权 COMSOL。本仓库不提供 COMSOL 安装程序、API JAR、许可证或破解组件，也不提供 Ollama 模型权重。
+安装完成页可创建桌面快捷方式，开始菜单和桌面入口名为 SKY Workbench，主窗口标题为 SKY Workbench 3.1。新配置可默认选择 DeepSeek；已有设置不会被该默认配置钩子覆盖。当前安装包尚未代码签名。目标电脑的实际安装、升级、重启、卸载及交互体验需分别验证。
 
-首次启动时检查环境扫描和明确的 `Unavailable` / `Degraded` 状态，再创建任务。检测到软件只表示发现安装入口；Bridge 连接、模型读回、求解与科学验证各需自己的证据。遇到问题参见[故障排查](TROUBLESHOOTING.md)。分享诊断前请脱敏 API Key、模型与个人路径。卸载程序不应被当作删除用户工作区的办法。
+COMSOL 和其他求解器需用户自行合法安装并授权；安装包不包含厂商 JAR、模型权重、私有项目、知识库或 API Key。从源码构建见 [BUILDING.md](../BUILDING.md)，AI 与求解器范围见[兼容说明](PROVIDER_AND_SIMULATOR_COMPATIBILITY.md)。

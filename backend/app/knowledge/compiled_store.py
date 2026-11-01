@@ -22,6 +22,7 @@ from typing import Any
 import numpy as np
 
 from app.config import COMPILED_KB_ROOT, COMSOL_PDF_ROOT, WORKSPACE_ROOT
+from app.knowledge.contracts import normalized_metadata, validate_filters
 
 
 MAIN_MARKDOWN_FILES = (
@@ -514,6 +515,13 @@ class CompiledKnowledgeStore:
             item["applies_to_versions"] = _decode_json(item.pop("applies_to_versions_json"), [])
             item["source_document_ids"] = _decode_json(item.pop("source_document_ids_json"), [])
             item["documents"] = documents
+            first_source = next(iter(item["sources"]), {})
+            item["metadata"] = normalized_metadata(item["content"], engine="COMSOL", module=item.get("module") or "unknown",
+                source_url=str(first_source.get("file_name") or first_source.get("document_id") or "unknown:source"),
+                license_class="user_local_only", applies_to_versions=item["applies_to_versions"],
+                document_version=item.get("document_version") or "", version_status=item.get("version_status") or "unspecified",
+                type=item.get("type") or "reference", physics=item.get("physics") or "unknown",
+                interface=item.get("interface") or "unknown", feature_type=item.get("feature_type") or "unknown")
             result[str(item["unit_id"])] = item
         return result
 
@@ -830,10 +838,18 @@ def fts_query(query: str) -> str:
 
 
 def _metadata_where(filters: dict[str, Any] | None, prefix: str = "u") -> tuple[str, list[Any]]:
+    filters = validate_filters(filters)
     if not filters:
         return "", []
     clauses: list[str] = []
     values: list[Any] = []
+    for key, actual in (("engine", "COMSOL"), ("license_class", "user_local_only"), ("verification_status", "UNVERIFIED")):
+        expected = filters.get(key)
+        if expected and actual not in (expected if isinstance(expected, list) else [expected]):
+            return " AND 0=1", []
+    if filters.get("engine_version"):
+        clauses.append(f"({prefix}.document_version=? OR EXISTS (SELECT 1 FROM json_each({prefix}.applies_to_versions_json) WHERE value=?))")
+        values.extend([str(filters["engine_version"])] * 2)
     for key in ("type", "module", "physics", "interface", "feature_type", "document_version", "version_status"):
         raw = filters.get(key)
         if raw in (None, "", []):

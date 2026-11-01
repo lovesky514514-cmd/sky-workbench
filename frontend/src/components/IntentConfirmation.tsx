@@ -45,8 +45,8 @@ export function IntentConfirmation({ locale, intent, onContinue, onModify, onRes
     <footer>
       <button onClick={onModify}>{zh ? '修改' : 'Modify'}</button>
       <button onClick={onReset}>{zh ? '重新描述' : 'Describe again'}</button>
-      <button className="button primary" disabled={blocked} onClick={onContinue}>
-        {zh ? '正确，继续' : 'Correct, continue'}
+      <button className="button primary" onClick={onContinue}>
+        {blocked ? (zh ? '继续生成草案与补全建议' : 'Continue with draft and suggestions') : (zh ? '正确，继续' : 'Correct, continue')}
       </button>
     </footer>
   </section>

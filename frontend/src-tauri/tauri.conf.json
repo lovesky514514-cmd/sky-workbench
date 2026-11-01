@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "SKY Workbench",
-  "version": "3.0.0",
+  "version": "3.1.0",
   "identifier": "io.scientificworkbench.comsol",
   "build": {
     "beforeDevCommand": "npm run dev",
@@ -64,7 +64,9 @@
       "resources/java_bridge/src/main/java/workbench/bridge/ComsolBridgeServer.java",
       "resources/semantic_runtime/.gitkeep",
       "resources/semantic_runtime/semantic_runtime_worker.py",
-      "resources/licenses/**/*"
+      "resources/licenses/**/*",
+      "resources/public_knowledge/manifest.json",
+      "resources/public_knowledge/units.json"
     ],
     "windows": {
       "webviewInstallMode": {

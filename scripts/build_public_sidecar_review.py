@@ -16,7 +16,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-EPOCH = "1792368000"
+EPOCH = "1793404800"
 
 
 def source_digest() -> tuple[str, int]:
@@ -24,13 +24,18 @@ def source_digest() -> tuple[str, int]:
     roots = (
         ROOT / "backend" / "app",
         ROOT / "backend" / "desktop_runtime.py",
+        ROOT / "backend" / "mathics_worker.py",
+        ROOT / "scripts" / "build_public_sidecar_review.py",
         ROOT / "frontend" / "dist",
         ROOT / "java_bridge" / "src",
         ROOT / "vnext" / "3d" / "minimal_3d_contracts.json",
         ROOT / "frontend" / "src-tauri" / "resources" / "licenses",
         ROOT / "packaging" / "scientific-runtime.spec",
-        ROOT.parent / "libffi-3.4.4-source.tar.gz",
-        ROOT.parent / "libffi-build" / ".libs" / "libffi-8.dll",
+        ROOT / "packaging" / "native-inputs.json",
+        ROOT / "packaging" / "native",
+        ROOT / "packaging" / "tls",
+        ROOT / "packaging" / "requirements-win-py312.lock",
+        ROOT / "knowledge" / "public",
     )
     files = sorted(
         (path for entry in roots for path in (entry.rglob("*") if entry.is_dir() else (entry,))

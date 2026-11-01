@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import ctypes
+import math
 import os
 import platform
 import shutil
@@ -17,6 +18,22 @@ from app.scientific.schemas import ScientificPlan
 
 
 GIB = 1024**3
+
+# The physics list also contains descriptions and constitutive laws. Count the
+# interfaces actually constructed by a registered executor, not prose labels.
+WORKFLOW_INTERFACES = {
+    "heat_transfer_2d_stationary": 1,
+    "heat_transfer_3d_cooling": 1,
+    "tds_2d_stationary_diffusion": 1,
+    "tds_2d_transient_closed": 1,
+    "solid_mechanics_uniaxial_bar": 1,
+    "electrochem_primary_current": 1,
+    "heat_tds_temperature_coupling": 2,
+}
+WORKFLOW_DIMENSIONS = {
+    workflow: 3 if workflow in {"heat_transfer_3d_cooling", "solid_mechanics_uniaxial_bar"} else 2
+    for workflow in WORKFLOW_INTERFACES
+}
 
 
 class RiskLevel(StrEnum):
@@ -175,7 +192,10 @@ def hardware_profile(workspace: Path, process_ids: dict[str, int] | None = None)
 
 
 def _estimate_complexity(plan: ScientificPlan) -> dict[str, Any]:
-    dimension = max((feature.dimension for feature in plan.geometry_features), default=2)
+    dimension = max(
+        WORKFLOW_DIMENSIONS.get(plan.workflow_id, 2),
+        max((feature.dimension for feature in plan.geometry_features), default=2),
+    )
     mesh_level = plan.mesh_definition.level if plan.mesh_definition else "normal"
     mesh_factor = {"coarse": 0.5, "normal": 1.0, "fine": 4.0, "custom": 2.0}[mesh_level]
     feature_factor = max(1, len(plan.geometry_features) or len(plan.geometry))
@@ -184,17 +204,32 @@ def _estimate_complexity(plan: ScientificPlan) -> dict[str, Any]:
         (len(study.times) for study in plan.study_definitions if study.kind == "time_dependent"),
         default=1,
     )
-    physics_count = max(1, len(plan.physics))
+    if plan.workflow_id == "heat_transfer_3d_cooling":
+        # Cooling uses typed parameters rather than study_definitions. These
+        # are requested samples; adaptive solver steps can be more numerous.
+        try:
+            duration = float(plan.parameters["duration"].value)
+            interval = float(plan.parameters["output_interval"].value)
+            if math.isfinite(duration) and math.isfinite(interval) and duration > 0 and interval > 0:
+                transient_steps = max(transient_steps, math.ceil(duration / interval) + 1)
+        except (KeyError, TypeError, ValueError, OverflowError):
+            pass
+    physics_count = WORKFLOW_INTERFACES.get(plan.workflow_id, max(1, len(plan.physics)))
+    coupled_interfaces = {name for edge in plan.couplings for name in (edge.source, edge.target)}
+    physics_count = max(physics_count, len(coupled_interfaces))
     base_dof = 45_000 if dimension == 2 else 850_000
     estimated_dof = int(base_dof * mesh_factor * feature_factor * physics_count)
     peak_bytes = int(0.8 * GIB + estimated_dof * 280 * min(study_cases, 8))
     return {
         "geometry_dimension": dimension,
+        "geometry_dimension_source": "registered_executor" if plan.workflow_id in WORKFLOW_DIMENSIONS else "declared_geometry",
         "mesh_level": mesh_level,
         "feature_count": feature_factor,
         "physics_count": physics_count,
+        "physics_count_source": "registered_executor" if plan.workflow_id in WORKFLOW_INTERFACES else "declared_physics",
         "sweep_case_count": study_cases,
         "transient_step_count": transient_steps,
+        "transient_step_count_source": "requested_samples_not_adaptive_solver_steps",
         "estimated_dof": estimated_dof,
         "estimated_peak_memory_bytes": peak_bytes,
         "estimated_peak_memory_gb": round(peak_bytes / GIB, 3),

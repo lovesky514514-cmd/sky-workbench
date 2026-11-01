@@ -8,6 +8,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 from app.scientific.quantity import find_quantity, geometry_quantities as parse_geometry_quantities
+from app.scientific.request_schema import RequestBrief
 
 
 class IntentParameter(BaseModel):
@@ -49,6 +50,7 @@ class ScientificIntent(BaseModel):
     canonical_query: str
     original_text: str
     geometry_quantities: list[dict] = Field(default_factory=list)
+    modeling_brief: RequestBrief | None = None
 
 
 HEAT_ALIASES = ("热传导", "传热", "heat transfer", "heat-transfer", "heat transfer in solids")
@@ -58,7 +60,7 @@ ELECTROCHEM_ALIASES = ("电化学", "一次电流分布", "electrochemistry", "p
 BATTERY_ALIASES = ("电池", "锂离子", "锌离子", "battery", "lithium-ion", "lithium ion", "zinc-ion", "zinc ion")
 
 
-def compile_intent(text: str) -> ScientificIntent:
+def _compile_legacy_intent(text: str) -> ScientificIntent:
     original = text.strip()
     lower = original.lower()
     language: Literal["zh-CN", "en-US"] = "zh-CN" if re.search(r"[\u3400-\u9fff]", original) else "en-US"
@@ -275,3 +277,56 @@ def compile_intent(text: str) -> ScientificIntent:
         canonical_query=json.dumps(canonical, ensure_ascii=False, separators=(",", ":")),
         original_text=original,
     )
+
+
+def compile_intent(text: str) -> ScientificIntent:
+    """Enrich the accepted intent contract with a general, reviewable model brief."""
+    import json
+    from app.scientific.domain_catalog import CONCEPTS
+    from app.scientific.request_analysis import analyze_request
+
+    intent = _compile_legacy_intent(text)
+    brief = analyze_request(text)
+    intent.modeling_brief = brief
+    if not intent.physics:
+        intent.physics = list(
+            dict.fromkeys(c.physics for c in CONCEPTS if c.key in brief.concepts)
+        )
+        if intent.physics:
+            intent.goal = " / ".join(brief.requested_outputs)
+            intent.unknowns = [q.question for q in brief.questions]
+            intent.confidence = "needs_confirmation"
+    if not intent.materials:
+        intent.materials = [
+            str(f.value) for f in brief.facts if f.key.startswith("material:")
+        ]
+    for fact in brief.facts:
+        if fact.normalized and fact.key not in intent.parameters:
+            intent.parameters[fact.key] = IntentParameter(
+                name=fact.key,
+                symbol=fact.key,
+                value=fact.value,
+                unit=fact.unit,
+                original=fact.original,
+                resolved=True,
+                quantity=fact.quantity,
+            )
+    if not intent.outputs:
+        intent.outputs = brief.requested_outputs
+    intent.validation_issues = list(
+        dict.fromkeys(
+            [
+                *intent.validation_issues,
+                *brief.conflicts,
+                *[f"{f.key}: {f.issue}: {f.original}" for f in brief.facts if f.issue],
+            ]
+        )
+    )
+    intent.canonical_query = json.dumps(
+        {
+            **json.loads(intent.canonical_query),
+            "modeling_brief": brief.model_dump(mode="json"),
+        },
+        ensure_ascii=False,
+    )
+    return intent

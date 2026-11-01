@@ -5,6 +5,7 @@ import { translate, type Locale } from '../i18n'
 import { validationDisplay } from '../ExecutionVerdictBadge'
 import { LiveComsolView } from './LiveComsolView'
 import type { ModelReadback } from '../bridgeReadback'
+import { KnowledgeSearchPanel } from './KnowledgeSearchPanel'
 
 export const inspectorTabs: Array<[InspectorTab, string]> = [['environment', 'Environment'], ['live', 'Live COMSOL'], ['overview', 'Overview'], ['geometry', 'Geometry'], ['materials', 'Materials'], ['physics', 'Physics'], ['boundaries', 'Boundary Conditions'], ['mesh', 'Mesh'], ['solver', 'Solver'], ['parameters', 'Parameters'], ['validation', 'Validation'], ['sources', 'Sources']]
 
@@ -41,7 +42,7 @@ export function Inspector({
   onStopBridge, onPauseRun, onCorrectRun, onResumeRun,
 }: InspectorProps) {
   const t = (source: string) => translate(locale, source)
-  if (tab === 'environment') return <EnvironmentView locale={locale} items={items} providers={providers} knowledge={knowledge} indexTask={indexTask} semanticIndexTask={semanticIndexTask} resources={resources} capabilities={capabilities} onRefresh={onRefresh} onStartIndex={onStartIndex} onStartSemanticIndex={onStartSemanticIndex} />
+  if (tab === 'environment') return <EnvironmentView key={session?.project_id ?? 'workbench'} locale={locale} items={items} providers={providers} knowledge={knowledge} indexTask={indexTask} semanticIndexTask={semanticIndexTask} resources={resources} capabilities={capabilities} onRefresh={onRefresh} onStartIndex={onStartIndex} onStartSemanticIndex={onStartSemanticIndex} />
   if (tab === 'live') return <LiveComsolView locale={locale} bridge={bridge} readback={bridgeReadback} loading={bridgeLoading} events={bridgeEvents} onRefresh={onRefreshBridge} onStart={onStartBridge} onStop={onStopBridge} />
   const model = session?.model
   const plan = session?.plan
@@ -100,6 +101,7 @@ function EnvironmentView({ locale, items, providers, knowledge, indexTask, seman
     <div className="inspector-section-title"><span>{t('Capability Matrix')}</span></div>
     <div className="rag-backend-list">{Object.entries(capabilities).map(([name, capability]) => <StatusFact key={name} label={name} value={capability.reason} status={capability.status} />)}</div>
     <div className="inspector-section-title"><span>{t('AI Providers')}</span></div><div className="provider-list">{providers.map((provider) => <div key={provider.name}><span>{provider.label}</span><em className={`status-text ${provider.status.toLowerCase().replaceAll(' ', '-')}`}>{t(provider.status)}</em><small>{provider.model || provider.detail}</small></div>)}</div>
+    <details><summary>{locale === 'zh-CN' ? '科学资料检索与项目条目' : 'Scientific sources and project notes'}</summary><KnowledgeSearchPanel zh={locale === 'zh-CN'} /></details>
     <div className="inspector-section-title rag-index-heading"><span>{t('Scientific RAG')}</span><span className="rag-index-actions"><button onClick={onStartIndex} disabled={taskState === 'running'}>{taskState === 'running' ? t('Indexing…') : t('Build fallback index')}</button><button onClick={onStartSemanticIndex} disabled={semanticTaskState === 'running'}>{semanticTaskState === 'running' ? t('Indexing…') : t('Build semantic index')}</button></span></div>
     <div className="metric-grid rag-metrics"><div><strong>{String(compiled.semantic_embedding_rows ?? 0)} / {String(knowledge.compiled_units ?? 0)}</strong><span>{t('neural Units indexed')}</span></div><div><strong>{String(knowledge.active_mode ?? 'accurate')}</strong><span>{t('retrieval mode')}</span></div></div>
     <div className="rag-backend-list"><StatusFact label={t('Embedding')} value={String(embedding.model ?? 'unavailable')} status={String(embedding.status ?? 'unavailable')} /><StatusFact label={t('Emergency dense')} value={String(fallback.model ?? 'local-hash-384')} status={String(fallback.status ?? 'unavailable')} /><StatusFact label={t('Reranker')} value={String(reranker.model ?? 'unavailable')} status={String(reranker.status ?? 'unavailable')} /><StatusFact label={t('Fallback index')} value={taskResult.indexed != null ? `${String(taskResult.indexed)} indexed · ${String(taskResult.skipped ?? 0)} skipped` : `${String(knowledge.indexed_units ?? 0)} / ${String(knowledge.compiled_units ?? 0)}`} status={taskState} /><StatusFact label={t('Semantic index')} value={semanticTaskResult.indexed != null ? `${String(semanticTaskResult.indexed)} indexed · ${String(semanticTaskResult.skipped ?? 0)} skipped` : `${String(compiled.semantic_embedding_rows ?? 0)} / ${String(knowledge.compiled_units ?? 0)}`} status={semanticTaskState} /></div>

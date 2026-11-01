@@ -34,6 +34,9 @@ export interface ScientificParameter {
   assumption: boolean; verified: boolean; status: ParameterStatus
   original_value?: number | string | null; original_unit?: string | null
   normalized_value?: number | string | null; normalized_unit?: string | null
+  user_confirmed?: boolean; rationale?: string; applicability?: string
+  use_authorized?: boolean; authorization?: 'none' | 'reviewed' | 'manual' | 'scope'
+  quantity?: Record<string, unknown>
 }
 export interface ValidationCheck { category: string; name: string; status: 'passed' | 'failed' | 'warning'; message: string; observed?: unknown; expected?: unknown }
 export interface ExecutionVerdict { readonly schema_version: number; readonly run_id: string; readonly workflow_id: string; readonly command_success: boolean; readonly model_state_verified: boolean; readonly scientific_validation_success: boolean; readonly evidence_contract_passed: boolean; readonly completed: boolean; readonly issues: readonly string[] }
@@ -55,6 +58,22 @@ export interface Plan {
   runnable: boolean; source: string; ai_provider: string; ai_model: string
   quality_status: PlanQualityStatus; quality_report?: PlanQualityReport | null
   precheck_summary?: ValidationReport | null; created_at: string; updated_at: string
+  revision?: number; planning_status?: 'DRAFT_NEEDS_INPUT' | 'READY' | 'UNSUPPORTED'
+  completion?: {
+    proposal_id: string; reviewed_digest: string; source?: 'ai' | 'example'; parameters: Record<string, ScientificParameter>; decisions: Record<string, string[]>
+    remaining_missing: string[]; reason: string; applicability: string
+    questions?: Array<{ key: string; question: string; required: boolean; options: Array<{ id: string; label: string; consequence: string }> }>
+  } | null
+  modeling_brief?: {
+    domains: string[]; equations: string[]; requested_outputs: string[]; exclusions: string[]; conflicts: string[]
+    facts: Array<{ key: string; value: number | string; unit: string; original: string; normalized: boolean; issue?: string | null; entity_id?: string | null; role?: string; span?: [number, number]; utf16_span?: [number, number] }>
+    entities?: Array<{ id: string; label: string; kind: string; material?: string | null }>
+    relations?: Array<{ kind: string; entity_ids: string[]; condition: string }>
+    request_sha256?: string; span_indexing?: 'unicode_codepoints'
+    symbolic_inputs: Array<{ symbol: string; unit: string; purpose: string }>
+    engine_candidates: Array<{ engine: string; role: string; execution_status: string }>
+    next_steps: string[]; inference_method: string; model_outline: Record<string, unknown>
+  } | null
 }
 
 export interface Message {

@@ -5,6 +5,7 @@ import sys
 import subprocess
 import os
 import time
+from pathlib import Path
 from copy import deepcopy
 from types import SimpleNamespace
 
@@ -72,6 +73,7 @@ def test_cancel_beats_failure_retry_and_late_success(tmp_path, monkeypatch, phas
     store.set_state(sid, AgentState.PRECHECK)
     plan = ScientificPlan.model_validate(extract_heat_transfer_plan('2D stationary Heat Transfer 10 mm x 5 mm aluminum left 373 K right 293 K insulated'))
     runtime = AgentRuntime(sessions=store, tools=Tools())
+    store.commit_plan_revision(sid,plan.model_dump(mode='json'),0)
     asyncio.run(runtime._execute_run(sid, plan))
     assert len(calls) == 1
     view = store.get(sid)
@@ -119,7 +121,8 @@ async def inject():
     os._exit(27)
 asyncio.run(inject())
 '''
-    result = subprocess.run([sys.executable, '-B', '-c', code, str(store.path), sid, phase, fault, str(artifact)], timeout=10, capture_output=True)
+    result = subprocess.run([sys.executable, '-B', '-c', code, str(store.path), sid, phase, fault, str(artifact)],
+                            cwd=Path(__file__).resolve().parents[1], timeout=10, capture_output=True)
     assert result.returncode == 27, result.stderr.decode(errors='replace')
     attempt = store.get_run('run-1')['attempt_id']
     start = time.perf_counter()
@@ -320,7 +323,8 @@ def test_attempt_workspaces_never_overwrite(tmp_path, monkeypatch):
     async def exercise():
         results = []
         for attempt in ('first', 'second'):
-            results.append(await registry.execute('controlled', {'run_id': 'same-run', 'attempt_id': attempt}, event, retries=0))
+            results.append(await registry.execute('controlled', {'run_id': 'same-run', 'attempt_id': attempt,
+                'plan':extract_heat_transfer_plan('2D stationary Heat Transfer 10 mm x 5 mm aluminum left 373 K right 293 K insulated')}, event, retries=0))
         assert requests[0]['workspace'] != requests[1]['workspace']
         assert Path(results[0]['artifacts']['model']).read_bytes() == b'first'
         assert Path(results[1]['artifacts']['model']).read_bytes() == b'second'
@@ -420,6 +424,7 @@ def test_retry_callback_keeps_original_attempt_identity(tmp_path, monkeypatch):
     monkeypatch.setattr(cards, 'WORKSPACE_ROOT', tmp_path)
     store.set_state(sid, AgentState.PRECHECK)
     plan = ScientificPlan.model_validate(extract_heat_transfer_plan('2D stationary Heat Transfer 10 mm x 5 mm aluminum left 373 K right 293 K insulated'))
+    store.commit_plan_revision(sid,plan.model_dump(mode='json'),0)
     asyncio.run(AgentRuntime(sessions=store, tools=Tools())._execute_run(sid, plan))
     assert len(calls) == 2 and calls[0]['attempt_id'] != calls[1]['attempt_id']
     assert store.get(sid)['state'] == 'COMPLETED'
@@ -474,6 +479,7 @@ def test_precheck_rejection_does_not_publish_execution_failure(tmp_path, monkeyp
                                                         model_state_verified=False, scientific_validation_success=False, checks=[])
     monkeypatch.setattr(module.validator_registry, 'get', lambda _: Validator())
     plan = ScientificPlan.model_validate(extract_heat_transfer_plan('2D stationary Heat Transfer 10 mm x 5 mm aluminum left 373 K right 293 K insulated'))
+    store.commit_plan_revision(sid,plan.model_dump(mode='json'),0)
     asyncio.run(AgentRuntime(sessions=store)._execute_run(sid, plan))
     view = store.get(sid)
     assert view['state'] == 'VALIDATION_FAILED'

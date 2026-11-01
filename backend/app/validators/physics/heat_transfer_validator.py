@@ -35,7 +35,7 @@ class HeatTransferValidator(BaseValidator):
         command_success = bool(execution.get("command_success", execution.get("success", True)))
         tree_checks = [
             ("geometry_tree", "Geometry", model.get("geometry", []), "rectangle"),
-            ("material_tree", "Material", model.get("materials", []), "aluminum"),
+            ("material_tree", "Material", model.get("materials", []), "aluminum" if any("aluminum" in name.lower() for name in plan.materials) else "thermal material"),
             ("physics_tree", "Physics", model.get("physics", []), "heat transfer"),
             ("boundary_tree", "Boundary", model.get("boundary_conditions", []), "left:"),
             ("mesh_tree", "Mesh", model.get("mesh", []), "mesh"),

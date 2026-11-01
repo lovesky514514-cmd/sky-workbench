@@ -13,6 +13,7 @@ import httpx
 
 from app.config import SettingsStore, settings_store
 from app.providers import cloud_protocols
+from app.providers.deepseek import chat_payload as deepseek_payload
 from app.scientific.schemas import ScientificPlan
 from app.services.model_manager import ollama_executable
 
@@ -437,15 +438,31 @@ class ProviderManager:
                     raise ValueError("Ollama returned no text")
                 return content
             payload = {"model": model, "messages": messages, "temperature": temperature}
-            if json_mode:
+            if name == "deepseek":
+                payload = deepseek_payload(model, messages, temperature, json_mode=json_mode, schema=json_schema)
+            elif json_mode:
                 payload["response_format"] = (
                     {"type": "json_schema", "json_schema": {"name": "workbench_output", "strict": True, "schema": json_schema}}
                     if json_schema
                     else {"type": "json_object"}
                 )
-            response = await client.post(f"{base_url}/chat/completions", headers=self._headers(name), json=payload)
-            response.raise_for_status()
-            content = response.json()["choices"][0]["message"]["content"]
+            for attempt in range(2 if name == "deepseek" and json_mode else 1):
+                response = await client.post(f"{base_url}/chat/completions", headers=self._headers(name), json=payload)
+                response.raise_for_status()
+                choice = response.json()["choices"][0]
+                content = choice.get("message", {}).get("content")
+                incomplete = choice.get("finish_reason") == "length" or (
+                    choice.get("finish_reason") == "stop" and isinstance(content, str) and not content.strip()
+                )
+                if name == "deepseek" and json_mode and attempt == 0 and incomplete:
+                    # Discard the incomplete JSON and retry once with the same
+                    # model/endpoint, reserving the token budget for the answer.
+                    payload = {**payload, "reasoning_effort": "none"}
+                    continue
+                break
+            if choice.get("finish_reason") not in (None, "stop"):
+                raise ValueError("Provider response did not finish normally")
+            content = choice["message"]["content"]
             if not isinstance(content, str) or not content.strip():
                 raise ValueError("Provider returned no text")
             return content
@@ -473,7 +490,9 @@ class ProviderManager:
                             if isinstance(content, str):
                                 yield content
                 return
-            async with client.stream("POST", f"{status.base_url}/chat/completions", headers=self._headers(status.name), json={"model": status.model, "messages": messages, "temperature": temperature, "stream": True}) as response:
+            payload = (deepseek_payload(status.model, messages, temperature, stream=True) if status.name == "deepseek"
+                       else {"model": status.model, "messages": messages, "temperature": temperature, "stream": True})
+            async with client.stream("POST", f"{status.base_url}/chat/completions", headers=self._headers(status.name), json=payload) as response:
                 response.raise_for_status()
                 async for line in response.aiter_lines():
                     if not line.startswith("data:"):
@@ -482,6 +501,9 @@ class ProviderManager:
                     if not data or data == "[DONE]":
                         continue
                     payload = json.loads(data)
+                    reason = payload.get("choices", [{}])[0].get("finish_reason")
+                    if reason not in (None, "stop"):
+                        raise ValueError("Provider stream did not finish normally")
                     content = payload.get("choices", [{}])[0].get("delta", {}).get("content")
                     if isinstance(content, str):
                         yield content

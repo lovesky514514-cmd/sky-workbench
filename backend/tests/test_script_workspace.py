@@ -11,7 +11,8 @@ from app.script_workspace import ScriptRun, ScriptRunManager, child_environment,
 
 def test_command_contract_never_embeds_user_code_or_uses_cloud():
     assert command_for("Python", "python", "main.py") == ["python", "-I", "main.py"]
-    assert command_for("Wolfram", "wolframscript", "main.wl") == ["wolframscript", "-file", "main.wl", "-local"]
+    with pytest.raises(ValueError):
+        command_for("Wolfram", "wolframscript", "main.wl")
     assert command_for("MATLAB", "matlab", "main.m") == ["matlab", "-batch", "run('main.m')"]
     assert command_for("Mathics3", "python", "main.wl") == ["python", "-I", str(mathics_worker_path()), "main.wl"]
     with pytest.raises(ValueError):

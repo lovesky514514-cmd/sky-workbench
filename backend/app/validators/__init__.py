@@ -7,12 +7,16 @@ from app.validators.physics.electrochem_validator import ElectrochemistryValidat
 from app.validators.physics.battery_validator import BatteryValidator
 from app.validators.physics.multiphysics_validator import MultiphysicsValidator
 from app.validators.base_validator import BaseValidator
+from app.validators.physics.cooling_validator import CoolingValidator
+from app.validators.physics.transient_diffusion_validator import TransientDiffusionValidator
 from app.validators.plan_quality_validator import ScientificPlanQualityValidator, plan_quality_validator
 
 
 class ValidatorRegistry:
     def __init__(self) -> None:
         self._validators: dict[str, BaseValidator] = {
+            "heat_transfer_3d_cooling": CoolingValidator(),
+            'tds_2d_transient_closed': TransientDiffusionValidator(),
             "heat_transfer_2d_stationary": HeatTransferValidator(),
             "tds_2d_stationary_diffusion": TDSBenchmarkValidator(),
             "solid_mechanics_uniaxial_bar": SolidMechanicsValidator(),

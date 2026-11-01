@@ -30,7 +30,7 @@ from app.simulation_adapters import capabilities as adapter_capabilities
 class InstallationScan:
     """A read-only scan whose visible stages follow completed real checks."""
 
-    _step_ids = ("comsol", "matlab", "wolfram", "materials_studio", "ollama_executable", "ollama_service")
+    _step_ids = ("comsol", "matlab", "lammps", "vasp", "materials_studio", "ollama_executable", "ollama_service")
 
     def __init__(self) -> None:
         self._task: asyncio.Task[None] | None = None
@@ -71,7 +71,7 @@ class InstallationScan:
             self._step("comsol", "detected" if comsol.found else "unavailable")
             # Optional-engine discovery is read-only. Its callbacks advance
             # each visible step only when that bounded check actually runs.
-            step_names = {"MATLAB": "matlab", "Wolfram": "wolfram", "Materials Studio": "materials_studio"}
+            step_names = {"MATLAB": "matlab", "LAMMPS": "lammps", "VASP": "vasp", "Materials Studio": "materials_studio"}
             def optional_progress(engine: str, state: str) -> None:
                 self._step(step_names[engine], state)
             adapters = await asyncio.to_thread(adapter_capabilities, comsol, optional_progress)

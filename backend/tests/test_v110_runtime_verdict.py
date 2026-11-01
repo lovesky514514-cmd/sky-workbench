@@ -56,6 +56,9 @@ def test_runtime_event_message_timeline_card_agree(tmp_path, monkeypatch, workfl
     plan = ScientificPlan.model_validate(extract_heat_transfer_plan('2D stationary Heat Transfer 10 mm x 5 mm aluminum left 373 K right 293 K insulated'))
     plan.workflow_id = workflow
     runtime = AgentRuntime(sessions=store, tools=Tools())
+    # This test isolates publication; physical preflight has its own adversarial tests.
+    monkeypatch.setattr(runtime,'_validate_plan',lambda _: Validator().precheck(plan))
+    store.commit_plan_revision(session['id'],plan.model_dump(mode='json'),0)
     monkeypatch.setattr(runtime, '_verify_java_bridge', bridge)
     asyncio.run(runtime._execute_run(session['id'], plan))
     view = store.get(session['id'])

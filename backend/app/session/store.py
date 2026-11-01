@@ -19,9 +19,14 @@ from app.session.reviews import REVIEW_SCHEMA, ReviewStoreMixin
 from app.session.state_grounding import STATE_GROUNDING_SCHEMA
 from app.session.assumptions import ASSUMPTION_SCHEMA
 from app.memory.store import MEMORY_SCHEMA
+from app.scientific.execution_contract import BINDING_SCHEMA, verify_binding, write_binding
 
 
 MAX_TIMELINE_ITEMS = 250
+
+
+class PlanRevisionConflict(ValueError):
+    pass
 
 def utc_now() -> str:
     return datetime.now(UTC).isoformat()
@@ -131,6 +136,7 @@ class SessionStore(ReviewStoreMixin, RunJournalMixin):
             db.executescript(STATE_GROUNDING_SCHEMA)
             db.executescript(ASSUMPTION_SCHEMA)
             db.executescript(MEMORY_SCHEMA)
+            db.executescript(BINDING_SCHEMA)
 
     def create(self, project_id: str, title: str | None = None) -> dict[str, Any]:
         session_id = str(uuid.uuid4())
@@ -319,6 +325,59 @@ class SessionStore(ReviewStoreMixin, RunJournalMixin):
                 (json.dumps(plan, ensure_ascii=False), utc_now(), session_id),
             )
         self.append_event(session_id, "plan.updated", plan)
+
+    @staticmethod
+    def _append_event(db, session_id: str, event_type: str, payload: dict[str, Any]) -> None:
+        db.execute("""INSERT INTO events(session_id,event_id,event_type,payload_json,created_at)
+                      VALUES(?,?,?,?,?)""",
+                   (session_id, str(uuid.uuid4()), event_type,
+                    json.dumps(payload, ensure_ascii=False, allow_nan=False), utc_now()))
+
+    def commit_plan_revision(self, session_id: str, plan: dict[str, Any], expected_revision: int,
+                             *, approvals: list[dict[str, Any]] | None = None,
+                             rejected_fields: list[str] | None = None) -> None:
+        from app.session.assumptions import AssumptionLedger
+
+        ledger = AssumptionLedger(self)
+        # Plan, approval ledger and invalidation events share one transaction.
+        with self._lock, self._connect() as db:
+            db.execute("BEGIN IMMEDIATE")
+            row = db.execute("SELECT plan_json FROM sessions WHERE id=?", (session_id,)).fetchone()
+            if row is None:
+                raise KeyError(session_id)
+            previous = json.loads(row[0]) if row[0] else {}
+            if int(previous.get("revision", 0)) != expected_revision:
+                raise PlanRevisionConflict("Plan changed; reload the current revision before saving")
+            db.execute("UPDATE sessions SET plan_json=?,updated_at=? WHERE id=?",
+                       (json.dumps(plan, ensure_ascii=False, allow_nan=False), utc_now(), session_id))
+            write_binding(db, session_id, plan)
+            if '__execution_inputs_changed__' in (rejected_fields or []):
+                db.execute('UPDATE assumption_ledger SET executable=0,superseded_by=? '
+                           'WHERE session_id=? AND superseded_by IS NULL',
+                           (f'revision:{plan["revision"]}', session_id))
+                self._append_event(db, session_id, 'approval.invalidated', {
+                    'reason': 'Execution inputs changed', 'revision': plan['revision']})
+            for approval in approvals or []:
+                ledger.record(connection=db, **approval)
+            self._append_event(db, session_id, "plan.updated", plan)
+            self._append_event(db, session_id, "plan.validated", {
+                "plan_id": plan["plan_id"], "valid": plan["runnable"], "report": plan.get("precheck_summary"),
+            })
+            if previous:
+                self._append_event(db, session_id, "plan.dependencies_invalidated", {
+                    "plan_id": plan["plan_id"], "revision": plan["revision"],
+                    "nodes": ["build", "solve", "validate", "export"],
+                })
+                self._append_event(db, session_id, "evidence.invalidated", {
+                    "reason": "ScientificPlan changed; previous results are historical evidence only",
+                    "revision": plan["revision"],
+                })
+            if rejected_fields:
+                self._append_event(db, session_id, "plan.field_rejected", {"parameters": rejected_fields})
+
+    def assert_plan_binding(self, session_id: str, plan: dict[str, Any]) -> None:
+        with self._lock, self._connect() as db:
+            verify_binding(db, session_id, plan)
 
     def set_model(self, session_id: str, model: dict[str, Any]) -> None:
         with self._lock, self._connect() as db:

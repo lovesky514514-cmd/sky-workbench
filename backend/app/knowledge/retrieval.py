@@ -12,6 +12,7 @@ import numpy as np
 
 from app.config import settings_store
 from app.knowledge.ingestion import KnowledgeChunk, knowledge_ingestor
+from app.knowledge.contracts import evidence_anchor, metadata_matches, validate_filters
 
 
 TOKEN_RE = re.compile(r"[A-Za-z][A-Za-z0-9_.+-]*|[\u4e00-\u9fff]+")
@@ -54,9 +55,10 @@ class HybridRetriever:
             self._build_index()
         return self.status()
 
-    def search(self, query: str, limit: int = 5) -> list[dict[str, Any]]:
+    def search(self, query: str, limit: int = 5, *, filters: dict[str, Any] | None = None) -> list[dict[str, Any]]:
         self._ensure_index()
         chunks = self._chunks or []
+        constraints = validate_filters(filters)
         query_tokens = tokenize(expand_query(query))
         if not chunks or not query_tokens:
             return []
@@ -72,6 +74,9 @@ class HybridRetriever:
         else:
             ranked = [(score + scientific_bonus(query, chunks[index].text), index) for index, score in enumerate(bm25) if score > 0]
             mode = "bm25"
+        ranked = [(score, index) for score, index in ranked
+                  if metadata_matches(chunks[index].metadata, constraints)
+                  and evidence_anchor(query, chunks[index].text)]
         selected = select_diverse(ranked, chunks, limit)
         return [self._result(chunks[index], score, mode) for score, index in selected]
 
@@ -138,7 +143,8 @@ class HybridRetriever:
             "doi": chunk.doi,
             "year": chunk.year,
         }
-        return {"text": chunk.text[:1600], "score": round(score, 4), "retrieval_mode": mode, "citation": citation}
+        return {"text": chunk.text[:1600], "score": round(score, 4), "retrieval_mode": mode, "citation": citation,
+                "metadata": chunk.metadata, "evidence": {**chunk.metadata, "claim_verification": "unverified"}}
 
 
 def tokenize(text: str) -> list[str]:
@@ -195,35 +201,7 @@ BasicRetriever = HybridRetriever
 legacy_retriever = HybridRetriever()
 
 
-def expand_query(query: str) -> str:
-    """Add narrow scientific aliases without changing the user's visible query."""
-
-    lower = query.lower()
-    additions: list[str] = []
-    if "thermal insulation" in lower or "绝热" in query or "不散热" in query:
-        additions.append("zero normal heat flux thermally insulated temperature gradient")
-    if "heat transfer in solids" in lower:
-        additions.append("conductive heat flux boundary")
-    if (("铝" in query and "热导" in query) or ("aluminum" in lower and "thermal conductivity" in lower)):
-        additions.append("aluminum thermal_conductivity thermal conductivity W m K assumption alloy-specific verify")
-    return " ".join((query, *additions))
-
-
-def scientific_bonus(query: str, text: str) -> float:
-    """Prefer passages that define a queried named scientific feature over index/table mentions."""
-
-    lower_query = query.lower()
-    lower_text = text.lower()
-    bonus = 0.0
-    if "thermal insulation" in lower_query or "绝热" in query or "不散热" in query:
-        if "thermal insulation" in lower_text:
-            bonus += 0.25
-        if "no heat flux across the boundary" in lower_text:
-            bonus += 0.55
-    if (("铝" in query and "热导" in query) or ("aluminum" in lower_query and "thermal conductivity" in lower_query)):
-        if "thermal_conductivity" in lower_text and "assumption" in lower_text:
-            bonus += 0.5
-    return bonus
+from app.knowledge.domains import expand_query, scientific_bonus
 
 
 # Import after the legacy implementation is fully defined so the next-stage

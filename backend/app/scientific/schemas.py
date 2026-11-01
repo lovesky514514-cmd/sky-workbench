@@ -7,7 +7,8 @@ from datetime import UTC, datetime
 from enum import StrEnum
 from typing import Any, Literal
 
-from pydantic import AliasChoices, BaseModel, Field, field_validator, model_validator
+from pydantic import AliasChoices, BaseModel, Field, computed_field, field_validator, model_validator
+from app.scientific.request_schema import PlanningQuestion, RequestBrief
 
 
 def now_iso() -> str:
@@ -73,6 +74,11 @@ class ScientificParameter(BaseModel):
     normalized_value: float | int | str | None = None
     normalized_unit: str | None = None
     quantity: dict[str, Any] = Field(default_factory=dict)
+    user_confirmed: bool = False
+    use_authorized: bool = False
+    authorization: Literal["none", "reviewed", "manual", "scope"] = "none"
+    rationale: str = ""
+    applicability: str = ""
 
     @field_validator("value", mode="before")
     @classmethod
@@ -214,6 +220,41 @@ class BatteryCellDefinition(BaseModel):
     module_status: Literal["MODULE_MISSING", "UNVERIFIED", "EXPERIMENTAL", "VERIFIED"] = "UNVERIFIED"
 
 
+class PlanCompletion(BaseModel):
+    proposal_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    source: Literal["ai", "example"] = "ai"
+    parameters: dict[str, ScientificParameter] = Field(default_factory=dict)
+    decisions: dict[str, list[str]] = Field(default_factory=dict)
+    remaining_missing: list[str] = Field(default_factory=list)
+    reason: str = ""
+    applicability: str = "Exploratory model only; confirm suitability for the research question."
+    questions: list[PlanningQuestion] = Field(default_factory=list)
+    @computed_field
+    @property
+    def reviewed_digest(self) -> str:
+        import hashlib
+        import json
+
+        # The server recomputes this token; a submitted digest cannot redefine a proposal.
+        content = self.model_dump(mode="json", exclude={"reviewed_digest"})
+        return hashlib.sha256(json.dumps(
+            content, sort_keys=True, ensure_ascii=False, separators=(",", ":"), allow_nan=False,
+        ).encode("utf-8")).hexdigest()
+
+
+class CoolingModel(BaseModel):
+    property_law: Literal['constant', 'linear_temperature'] = 'constant'
+    mesh_levels: tuple[int, int, int] = (6, 5, 4)
+    relative_tolerance: float = Field(default=1e-5, gt=0, le=1e-4)
+
+    @field_validator('mesh_levels')
+    @classmethod
+    def distinct_refinements(cls, values):
+        if not 1<=values[2]<values[1]<values[0]<=9:
+            raise ValueError('Use three distinct, progressively finer COMSOL mesh levels')
+        return values
+
+
 class ScientificPlan(BaseModel):
     # Preserve the accepted wire version; v0.6 fields are optional extensions.
     schema_version: str = "2.0"
@@ -261,6 +302,11 @@ class ScientificPlan(BaseModel):
     battery_cell: BatteryCellDefinition | None = None
     created_at: str = Field(default_factory=now_iso)
     updated_at: str = Field(default_factory=now_iso)
+    revision: int = Field(default=1, ge=1)
+    planning_status: Literal["DRAFT_NEEDS_INPUT", "READY", "UNSUPPORTED"] = "DRAFT_NEEDS_INPUT"
+    completion: PlanCompletion | None = None
+    modeling_brief: RequestBrief | None = None
+    cooling_model: CoolingModel = Field(default_factory=CoolingModel)
 
     @field_validator("parameters", mode="before")
     @classmethod

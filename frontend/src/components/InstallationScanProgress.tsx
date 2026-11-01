@@ -27,7 +27,8 @@ export function InstallationScanProgress({ locale, scan }: Props) {
   const labels: Record<string, string> = {
     comsol: copy('检查 COMSOL 安装', 'Check COMSOL installation'),
     matlab: copy('查找 MATLAB', 'Find MATLAB'),
-    wolfram: copy('查找 Wolfram / Mathematica', 'Find Wolfram / Mathematica'),
+    lammps: copy('查找 LAMMPS', 'Find LAMMPS'),
+    vasp: copy('查找 VASP', 'Find VASP'),
     materials_studio: copy('查找 Materials Studio', 'Find Materials Studio'),
     ollama_executable: copy('查找 Ollama 程序', 'Find Ollama application'),
     ollama_service: copy('连接 Ollama 本地服务', 'Connect to Ollama service'),

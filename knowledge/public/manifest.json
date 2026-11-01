@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "version": "3.1.0",
+  "units": 8,
+  "license": "Apache-2.0",
+  "content_origin": "SKY-authored reference notes; external links are references only",
+  "vendor_manuals_included": false,
+  "files": {
+    "units.json": "6e3bdf1a7e2ee87187f2d077e7cc8b01da8cc9418f42b9c7b7165c886bece200"
+  }
+}

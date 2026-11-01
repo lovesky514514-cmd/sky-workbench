@@ -19,6 +19,8 @@ from typing import Callable
 
 from app.comsol.discovery import ComsolJavaEnvironment, discover_comsol_java
 from app.comsol.owned_process import OwnedProcess
+from app.config import WORKSPACE_ROOT
+from app.engines.capabilities import CapabilityRegistry, executable_hash
 
 
 PROBE_MARKER = "SWB_ENGINE_PROBE_OK"
@@ -51,31 +53,27 @@ def capabilities(
         "REQUIRES_VERSION_SPECIFIC_SCIENTIFIC_VALIDATION" if comsol.found else "UNAVAILABLE",
         comsol.compatibility if comsol.found else "COMSOL Model API installation not detected",
     )]
-    # MATLAB and Wolfram provide a bounded, explicit local handshake. Their
-    # executable presence alone must not imply an active license or solver.
+    # Executable discovery never implies a license or a verified calculation.
     for engine, names, connector in (
         ("MATLAB", ("matlab.exe", "matlab"), "matlab_batch"),
-        ("Wolfram", ("wolframscript.exe", "wolframscript", "WolframKernel.exe", "MathKernel.exe"), "wolframscript_local"),
-        ("Materials Studio", ("MaterialsStudio.exe",), "none"),
+        ("LAMMPS", ("lmp.exe", "lmp", "lmp_serial.exe", "lmp_serial"), "lammps_local"),
+        ("VASP", ("vasp_std", "vasp_std.exe"), "vasp_local"),
+        ("Materials Studio", ("RunMatScript.bat", "RunMatScript.exe", "MaterialsStudio.exe"), "materialsscript_local"),
     ):
         if on_optional is not None:
             on_optional(engine, "running")
         executable = _find_executable(engine, names)
-        probe_available = bool(executable) and connector != "none" and (
-            engine != "Wolfram" or "wolframscript" in Path(executable).name.lower()
-        )
+        probe_available = bool(executable) and engine == "MATLAB"
         detail = (
             "Materials Studio detected; select its installed version and licensed MaterialsScript interface before connection"
             if engine == "Materials Studio" and executable else
-            "Wolfram kernel detected, but WolframScript is required for the isolated local handshake"
-            if engine == "Wolfram" and executable and not probe_available else
             "Executable detected; license, model readback and execution remain unverified"
             if executable else "No executable detected in PATH or common installation directories"
         )
         result.append(AdapterCapability(
             engine, bool(executable), executable, "UNVERIFIED", "UNAVAILABLE",
             detail,
-            connector if probe_available else "none",
+            connector,
             "AVAILABLE_ON_REQUEST" if probe_available else "UNAVAILABLE",
         ))
         if on_optional is not None:
@@ -85,6 +83,10 @@ def capabilities(
 
 def _find_executable(engine: str, names: tuple[str, ...]) -> str:
     """Search PATH first, then vendor folders only; never crawl user files."""
+    configured = os.environ.get({"MATLAB": "SKY_MATLAB_EXECUTABLE", "LAMMPS": "SKY_LAMMPS_EXECUTABLE",
+                                 "VASP": "SKY_VASP_EXECUTABLE", "Materials Studio": "SKY_MS_EXECUTABLE"}[engine])
+    if configured and Path(configured).is_file():
+        return str(Path(configured).resolve())
     for name in names:
         if found := shutil.which(name):
             return str(Path(found))
@@ -92,8 +94,9 @@ def _find_executable(engine: str, names: tuple[str, ...]) -> str:
              if (value := os.environ.get(key))]
     patterns = {
         "MATLAB": ("MATLAB/R*/bin/matlab.exe",),
-        "Wolfram": ("Wolfram Research/WolframScript/wolframscript.exe",),
-        "Materials Studio": ("BIOVIA/Materials Studio*/MaterialsStudio.exe",),
+        "LAMMPS": ("LAMMPS*/bin/lmp.exe",),
+        "VASP": (),
+        "Materials Studio": ("BIOVIA/Materials Studio*/etc/Scripting/RunMatScript.bat", "BIOVIA/Materials Studio*/MaterialsStudio.exe"),
     }[engine]
     for root in roots:
         for pattern in patterns:
@@ -107,9 +110,6 @@ def probe_command(engine: str, executable: str) -> list[str]:
     """Never place a user prompt or user path into an engine command."""
     if engine == "MATLAB":
         return [executable, "-batch", f"disp('{PROBE_MARKER}')"]
-    if engine == "Wolfram" and "wolframscript" in Path(executable).name.lower():
-        # -local is mandatory: WolframScript must not fall back to the cloud.
-        return [executable, "-local", "-code", f'Print["{PROBE_MARKER}"]']
     raise ValueError("No safe local handshake is defined for this engine")
 
 
@@ -127,7 +127,9 @@ async def _handshake(command: list[str]) -> tuple[str, int]:
     started = time.perf_counter()
     with tempfile.TemporaryDirectory(prefix="swb-engine-probe-") as workspace:
         try:
-            owned = await OwnedProcess.spawn(command, cwd=workspace)
+            from app.script_workspace import child_environment
+
+            owned = await OwnedProcess.spawn(command, cwd=workspace, env=child_environment())
         except (OSError, RuntimeError):
             return "START_FAILED", round((time.perf_counter() - started) * 1000)
         try:
@@ -143,9 +145,9 @@ async def _handshake(command: list[str]) -> tuple[str, int]:
     return status, round((time.perf_counter() - started) * 1000)
 
 
-async def probe_engine(engine: str) -> dict[str, object]:
+async def probe_engine(engine: str, *, registry: CapabilityRegistry | None = None) -> dict[str, object]:
     """Run only an explicit local handshake; never upgrade scientific flags."""
-    names = {"matlab": "MATLAB", "wolfram": "Wolfram", "materials_studio": "Materials Studio", "comsol": "COMSOL"}
+    names = {"matlab": "MATLAB", "lammps": "LAMMPS", "vasp": "VASP", "materials_studio": "Materials Studio", "comsol": "COMSOL"}
     selected = names.get(engine.lower())
     if selected is None:
         raise ValueError("Unknown scientific engine")
@@ -154,7 +156,19 @@ async def probe_engine(engine: str) -> dict[str, object]:
     if selected == "COMSOL":
         status = "USE_EXISTING_JAVA_BRIDGE" if record["installed"] else "UNAVAILABLE"
     elif record["probe"] == "AVAILABLE_ON_REQUEST":
-        status, elapsed = await _handshake(probe_command(selected, str(record["executable"])))
+        executable = str(record["executable"])
+        try:
+            before = await asyncio.to_thread(executable_hash, executable)
+            status, elapsed = await _handshake(probe_command(selected, executable))
+            # A successful marker belongs only to the exact binary that was tested.
+            if status == "HANDSHAKE_PASSED":
+                if before != await asyncio.to_thread(executable_hash, executable):
+                    status = "EXECUTABLE_CHANGED"
+                else:
+                    connections = registry or CapabilityRegistry(WORKSPACE_ROOT / "engine_tasks")
+                    await asyncio.to_thread(connections.connected, selected, executable)
+        except OSError:
+            status = "EXECUTABLE_UNAVAILABLE"
     elif record["installed"]:
         status = "CONNECTOR_UNAVAILABLE"
     return {

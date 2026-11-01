@@ -4,21 +4,23 @@ import type { Locale } from '../i18n'
 import { supportedFigureBytes } from '../localFigure'
 import type { ScriptLanguage } from './CodeWorkbenchEditor'
 import { MathicsFormula } from './MathicsFormula'
+import { ScientificTaskForm } from './ScientificTaskForm'
 
 const CodeWorkbenchEditor = lazy(() => import('./CodeWorkbenchEditor')
   .then((module) => ({ default: module.CodeWorkbenchEditor })))
 
-export type SoftwareEngine = 'Python' | 'MATLAB' | 'Wolfram' | 'Mathics3' | 'Materials Studio'
+export type SoftwareEngine = 'Python' | 'MATLAB' | 'Mathics3' | 'Materials Studio' | 'LAMMPS' | 'VASP'
+type ScriptEngine = 'Python' | 'MATLAB' | 'Mathics3'
 
 type Adapter = { engine: string; installed: boolean; probe: string; readback: string; execute: string }
 type Preview = { name: string; url: string } | null
-type Props = { engine: SoftwareEngine; sessionId: string | null; locale: Locale; onOpenSettings: () => void }
+type Props = { engine: ScriptEngine; sessionId: string | null; locale: Locale; onOpenSettings: () => void }
 
-const languages: Record<SoftwareEngine, ScriptLanguage> = {
-  Python: 'python', MATLAB: 'matlab', Wolfram: 'wolfram', Mathics3: 'wolfram', 'Materials Studio': 'materialsscript',
+const languages: Record<ScriptEngine, ScriptLanguage> = {
+  Python: 'python', MATLAB: 'matlab', Mathics3: 'wolfram',
 }
-const extensions: Record<SoftwareEngine, string> = {
-  Python: 'py', MATLAB: 'm', Wolfram: 'wl', Mathics3: 'wl', 'Materials Studio': 'pl',
+const extensions: Record<ScriptEngine, string> = {
+  Python: 'py', MATLAB: 'm', Mathics3: 'wl',
 }
 
 function draftKey(sessionId: string | null, engine: SoftwareEngine) {
@@ -177,12 +179,21 @@ export function ScientificSoftwareWorkspace({ engine, sessionId, locale, onOpenS
 
   return <section className="warm-page warm-science-page warm-script-page">
     <div className="warm-page-heading">
-      <div><h1>{engine === 'Mathics3' ? 'Math Workspace · Mathics3' : engine}</h1><p>{copy('代码编辑、主动运行与本地结果预览；脚本输出不构成科学认证。',
-        'Edit, explicitly run and preview local outputs; script output is not scientific certification.')}</p></div>
+      <div><h1>{engine === 'Mathics3' ? 'Math Workspace · Mathics3' : engine}</h1><p>{copy('填写任务参数，查看公式、模型图与计算记录。',
+        'Configure a task and inspect formulas, model figures and calculation records.')}</p></div>
       <span className="warm-status-pill">{status}</span>
     </div>
     <div className="warm-script-layout">
       <div className="warm-script-workarea">
+        <ScientificTaskForm engine={engine} zh={locale === 'zh-CN'} onPrepare={edit} />
+        {run?.mathics_result && <section className="math-primary-result"><h2>{copy('计算结果', 'Calculation result')}</h2>
+          <p>{run.mathics_result.evaluation_kind === 'numeric'
+            ? copy('数值求值结果 · 未进行科学认证', 'Numeric evaluation · scientifically unverified')
+            : copy('符号或未化简表达式 · 不代表数值求解完成', 'Symbolic or unevaluated expression · not a completed numerical solve')}</p>
+          <MathicsFormula mathml={run.mathics_result.mathml} latex={run.mathics_result.latex} /><p>{run.mathics_result.text}</p></section>}
+        {runFigure && <figure className="model-primary-result"><img src={runFigure} alt={run?.figures[figureIndex]?.name ?? 'Result'} />
+          <figcaption>{copy('本次引擎导出的图像 · 科学检查待完成', 'Engine-exported figure · scientific checks pending')}</figcaption></figure>}
+        <details className="advanced-code-panel" open={engine === 'Python'}><summary>{copy('高级：查看或编辑执行代码', 'Advanced: inspect or edit execution code')}</summary>
         <header><strong>{copy('代码工作区', 'Code workspace')}</strong><span>{`${draftFile ?? `draft.${extensions[engine]}`} · ${saved ? copy('已保存到本机', 'Saved locally') : copy('本机保存失败', 'Local save failed')}`}</span></header>
         <Suspense fallback={<p className="warm-script-loading">{copy('正在加载编辑器…', 'Loading editor…')}</p>}>
           <CodeWorkbenchEditor language={languages[engine]} value={draft} onChange={edit}
@@ -195,16 +206,15 @@ export function ScientificSoftwareWorkspace({ engine, sessionId, locale, onOpenS
           {draftError && <span role="alert">{copy('只能打开不超过 200 KB 的 .wl/.wls 草稿。', 'Open a .wl/.wls draft of at most 200 KB.')}</span>}
           <button type="button" onClick={exportScript} disabled={!draft}>{copy('导出脚本', 'Export script')}</button>
         </footer>
+        </details>
       </div>
       <aside className="warm-script-side">
         <section><h2>{copy('本机连接', 'Local connection')}</h2>
           <p>{status}</p>
-          {engine === 'Materials Studio' && <p>{copy('需核实已授权的 MaterialsScript 版本；当前没有安全的模型读回接口。',
-            'A licensed MaterialsScript version must be verified; no safe model readback is connected yet.')}</p>}
           {engine === 'Python' && !runnerAvailable && <p>{copy('未发现独立 Python 解释器；内置科学 Runtime 不用于执行任意草稿。',
             'No separate Python interpreter found. The scientific Runtime does not execute arbitrary drafts.')}</p>}
-          {engine === 'Mathics3' && <p>{copy('Mathics3 是可选的独立本地内核；需另行安装。它不是 Wolfram Engine，也不会回退到 Wolfram。',
-            'Mathics3 is an optional, separately installed local kernel. It is not Wolfram Engine and never falls back to it.')}</p>}
+          {engine === 'Mathics3' && <p>{copy('Mathics3 使用独立的本地内核，需另行安装并配置解释器。',
+            'Mathics3 uses an independent local kernel; it does not silently fall back to another engine or certify results.')}</p>}
           {adapter?.probe === 'AVAILABLE_ON_REQUEST' &&
             <button type="button" onClick={() => void handshake()} disabled={probing}>
               {probing ? copy('正在测试…', 'Testing…') : copy('测试本机引擎', 'Test local engine')}</button>}
@@ -220,7 +230,7 @@ export function ScientificSoftwareWorkspace({ engine, sessionId, locale, onOpenS
             {copy('我已检查此脚本并同意本地执行', 'I reviewed this script and approve local execution')}</label>
           {run?.state === 'PENDING' || run?.state === 'RUNNING'
             ? <button type="button" onClick={() => void cancelScript()}>{copy('停止脚本', 'Stop script')}</button>
-            : <button type="button" onClick={() => void startScript()} disabled={!confirmed || !runnerAvailable || !draft.trim() || engine === 'Materials Studio'}>
+            : <button type="button" onClick={() => void startScript()} disabled={!confirmed || !runnerAvailable || !draft.trim()}>
                 {copy('运行脚本', 'Run script')}</button>}
           {!runnerAvailable && <p>{copy('没有可用的本机脚本运行器。编辑和导出仍可用。',
             'No local script runner is available. Editing and export remain available.')}</p>}

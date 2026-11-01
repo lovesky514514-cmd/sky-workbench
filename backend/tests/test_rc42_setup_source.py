@@ -4,10 +4,14 @@ from __future__ import annotations
 import hashlib
 import importlib.util
 import json
+
+import pytest
 from pathlib import Path
 
 
 SCRIPT = Path(__file__).resolve().parents[2] / 'scripts' / 'rc42_setup.py'
+if not SCRIPT.is_file():
+    pytest.skip('Historical RC4.2 installer is not distributed in SKY 3.1; current packaging checks run separately', allow_module_level=True)
 SPEC = importlib.util.spec_from_file_location('rc42_setup', SCRIPT)
 assert SPEC and SPEC.loader
 setup = importlib.util.module_from_spec(SPEC)

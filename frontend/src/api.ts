@@ -2,6 +2,9 @@ import type { AgentMode, EnvironmentItem, ExecutionEta, ImportedMph, ImportedMph
 import { responseError } from './safeUiError'
 import { openEventStream, type EventStreamOptions } from './eventStream'
 import { readMessageStream } from './messageStream'
+import type { EngineRun, EngineTaskPayload } from './engineTasks'
+import type { CompletionSubmission } from './planCompletion'
+import type { KnowledgeReply } from './components/KnowledgeSearchPanel'
 
 export interface DesktopBootstrap {
   desktop: boolean
@@ -31,7 +34,7 @@ export interface LocalScriptRun {
   output: string
   elapsed_ms: number
   figures: Array<{ name: string; mime: string; size: number; sha256: string }>
-  mathics_result: { status: 'success' | 'failed'; text: string; latex: string; mathml: string; messages: string[]; verification: 'not_requested' } | null
+  mathics_result: { status: 'success' | 'failed'; text: string; latex: string; mathml: string; messages: string[]; verification: 'not_requested'; evaluation_kind?: 'numeric' | 'symbolic_or_unevaluated'; execution_policy?: string } | null
   script_exit_success: boolean
   model_state_verified: false
   scientific_validation_passed: false
@@ -117,6 +120,18 @@ async function artifactObjectUrl(runId: string, filename: string): Promise<strin
   return URL.createObjectURL(await response.blob())
 }
 
+async function downloadEngineArtifact(runId: string, filename: string): Promise<void> {
+  const response = await fetch(endpoint(`/api/engine-tasks/${encodeURIComponent(runId)}/artifacts/${encodeURIComponent(filename)}`), {
+    headers: desktop?.sessionToken ? { 'X-Workbench-Token': desktop.sessionToken } : {},
+  })
+  if (!response.ok) throw new Error(responseError(await response.text(), response.status))
+  const url = URL.createObjectURL(await response.blob())
+  const anchor = document.createElement('a')
+  anchor.href = url; anchor.download = filename
+  document.body.append(anchor); anchor.click(); anchor.remove()
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000)
+}
+
 async function localScriptFigureUrl(runId: string, filename: string): Promise<string> {
   const response = await fetch(endpoint(`/api/script-runs/${encodeURIComponent(runId)}/figures/${encodeURIComponent(filename)}`), {
     headers: desktop?.sessionToken ? { 'X-Workbench-Token': desktop.sessionToken } : {},
@@ -160,6 +175,7 @@ export const api = {
   desktop: () => desktop,
   streamEvents,
   artifactObjectUrl,
+  downloadEngineArtifact,
   importMph,
   importedMph: () => request<{ items: ImportedMph[] }>('/api/imported-mph'),
   startImportedMphPreview: (id: string) => request<{ preview_state: string }>(`/api/imported-mph/${encodeURIComponent(id)}/preview`, { method: 'POST' }),
@@ -210,16 +226,28 @@ export const api = {
   localScriptStatus: (runId: string) => request<LocalScriptRun>(`/api/script-runs/${encodeURIComponent(runId)}`),
   cancelLocalScript: (runId: string) => request<LocalScriptRun>(`/api/script-runs/${encodeURIComponent(runId)}/cancel`, { method: 'POST' }),
   localScriptFigureUrl,
+  engineConfiguration: () => request<{ executables: Record<string, string> }>('/api/engine-tasks/configuration'),
+  saveEngineConfiguration: (engine: string, executable: string) => request<{ executables: Record<string, string> }>('/api/engine-tasks/configuration', { method: 'PUT', body: JSON.stringify({ engine, executable }) }),
+  connectEngine: (engine: string) => request<{ status: string; detail?: string }>('/api/engine-tasks/connect', { method: 'POST', body: JSON.stringify({ engine, executable: '' }) }),
+  engineRuns: (projectId: string) => request<{ runs: EngineRun[] }>(`/api/engine-tasks?project_id=${encodeURIComponent(projectId)}`),
+  previewEngineTask: (payload: EngineTaskPayload) => request<{ files: Record<string, string>; assumptions: string[]; structure: { atoms: import('./engineTasks').AtomPoint[]; units: string } | null }>('/api/engine-tasks/preview', { method: 'POST', body: JSON.stringify(payload) }),
+  startEngineTask: (payload: EngineTaskPayload) => request<EngineRun>('/api/engine-tasks', { method: 'POST', body: JSON.stringify(payload) }),
+  engineRun: (runId: string) => request<EngineRun>(`/api/engine-tasks/${encodeURIComponent(runId)}`),
+  cancelEngineTask: (runId: string) => request<EngineRun>(`/api/engine-tasks/${encodeURIComponent(runId)}/cancel`, { method: 'POST' }),
   startOllama: () => request<Record<string, unknown>>('/api/models/ollama/start', { method: 'POST' }),
   pullOllama: (model: string, confirmed = false) => request<Record<string, unknown>>('/api/models/ollama/pull', { method: 'POST', body: JSON.stringify({ model, confirmed }) }),
   cancelOllamaPull: () => request<Record<string, unknown>>('/api/models/ollama/pull/cancel', { method: 'POST' }),
   removeOllama: (model: string, confirmed = false) => request<Record<string, unknown>>('/api/models/ollama/remove', { method: 'POST', body: JSON.stringify({ model, confirmed }) }),
   updatePlan: (sessionId: string, plan: Plan) => request<Session>(`/api/sessions/${sessionId}/plan`, { method: 'PUT', body: JSON.stringify({ plan }) }),
+  completePlan: (sessionId: string, submission: CompletionSubmission) =>
+    request<Session>(`/api/sessions/${sessionId}/plan/completion`, { method: 'POST', body: JSON.stringify(submission) }),
   providers: () => request<{ providers: Provider[]; settings: ProviderSettings }>('/api/providers'),
   saveProviders: (providers: Record<string, ProviderConfig>, retrievalMode: RetrievalMode, activeProvider: string, comsolRoot?: string) => request<{ providers: Provider[]; settings: ProviderSettings }>('/api/settings/providers', { method: 'PUT', body: JSON.stringify({ providers, retrieval_mode: retrievalMode, active_provider: activeProvider, comsol_root: comsolRoot }) }),
   testProvider: (provider: string) => request<ProviderTestResult>('/api/providers/test', { method: 'POST', body: JSON.stringify({ provider }) }),
   acceptProvider: (provider: string) => request<ProviderAcceptanceResult>('/api/providers/acceptance', { method: 'POST', body: JSON.stringify({ provider }) }),
   knowledgeStatus: () => request<Record<string, unknown>>('/api/knowledge/status'),
+  searchKnowledge: (query: string, filters: Record<string, string>) => request<KnowledgeReply>('/api/knowledge/search', { method: 'POST', body: JSON.stringify({ query, filters }) }),
+  importKnowledgeUnits: (units: Array<Record<string, unknown>>) => request<{ imported_units: number }>('/api/knowledge/units', { method: 'POST', body: JSON.stringify({ units }) }),
   refreshKnowledge: () => request<Record<string, unknown>>('/api/knowledge/refresh', { method: 'POST', body: JSON.stringify({ include_legacy: true }) }),
   startSemanticIndex: () => request<Record<string, unknown>>('/api/knowledge/semantic/index/start', { method: 'POST' }),
   bridgeStatus: () => request<JavaBridgeStatus>('/api/comsol/bridge/status'),

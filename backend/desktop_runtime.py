@@ -106,6 +106,10 @@ def _run_worker(name: str, request: Path) -> int:
     sys.stdout.reconfigure(encoding="utf-8")
     if name == "heat_worker":
         from app.comsol.heat_worker import main
+    elif name == "cooling_worker":
+        from app.comsol.cooling_worker import main
+    elif name == 'transient_diffusion_worker':
+        from app.comsol.transient_diffusion_worker import main
     elif name == "tds_worker":
         from app.comsol.tds_worker import main
     elif name == "solid_worker":
@@ -138,7 +142,7 @@ def main() -> int:
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument(
         "--worker",
-        choices=("heat_worker", "tds_worker", "solid_worker", "electrochem_worker", "battery_worker", "multiphysics_worker"),
+        choices=("heat_worker", "cooling_worker", "tds_worker", "transient_diffusion_worker", "solid_worker", "electrochem_worker", "battery_worker", "multiphysics_worker"),
     )
     mode.add_argument("--native-self-test-report", type=Path)
     parser.add_argument("--request", type=Path)

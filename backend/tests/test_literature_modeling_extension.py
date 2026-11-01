@@ -68,13 +68,14 @@ def test_pdf_extracts_page_bound_candidate_without_retaining_pdf():
 
 def test_endpoint_rejects_when_off_then_returns_review_only(monkeypatch, tmp_path):
     from app import main
+    monkeypatch.setenv('COMSOL_WORKBENCH_SESSION_TOKEN','literature-fixture')
 
     settings = SettingsStore(path=tmp_path / "settings.json")
     monkeypatch.setattr(main, "settings_store", settings)
 
     async def exercise():
         transport = httpx.ASGITransport(app=main.app)
-        async with httpx.AsyncClient(transport=transport, base_url="http://127.0.0.1") as client:
+        async with httpx.AsyncClient(transport=transport, base_url="http://127.0.0.1",headers={'X-Workbench-Token':'literature-fixture'}) as client:
             off = await client.post("/api/extensions/literature-modeling/text", json={"source_title": "Paper A", "text": TDS})
             assert off.status_code == 403
             switch = await client.put("/api/extensions/literature-modeling", json={"enabled": True})

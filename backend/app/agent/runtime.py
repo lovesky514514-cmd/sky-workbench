@@ -29,16 +29,18 @@ from app.providers.manager import ProviderManager, provider_manager
 from app.scientific.schemas import ScientificPlan
 from app.scientific.heat_recertification import corrected_heat_execution, normalize_heat_core
 from app.scientific.resource_guard import ResourceMonitor, assess_risk, hardware_profile
-from app.session.store import SessionStore, session_store, utc_now
+from app.session.store import PlanRevisionConflict, SessionStore, session_store, utc_now
 from app.session.state_grounding import ModelStateLedger, Provenance, rebuild_context_snapshot
 from app.session.run_journal import RunCanceled, StaleAttempt
 from app.session.assumptions import AssumptionLedger
+from app.scientific.plan_completion import accept_completion, sanitize_plan_edit
 from app.memory.store import MemoryAdmissionPolicy, MemoryCandidate, MemoryStore, MemoryType
 from app.recovery.controller import ControllerInput, RecoverabilityActionController
 from app.execution.graph import ExecutionGraph, NodeState, TypedCorrection
 from app.execution.live_interrupt import LiveInterruptAdapter, comsol_parameter_name
 from app.validators import plan_quality_validator, validator_registry
-from app.validators.base_validator import ValidationReport
+from app.validators.base_validator import ValidationReport, ValidationCheck
+from app.scientific.solver_gate import solver_input_issues
 
 
 class ScientificValidationError(RuntimeError):
@@ -258,18 +260,36 @@ class AgentRuntime:
     async def update_plan(self, session_id: str, payload: dict[str, Any]) -> dict[str, Any]:
         if not self.sessions.exists(session_id):
             raise KeyError(session_id)
+        active = self._tasks.get(session_id)
+        if active and not active.done():
+            raise ValueError("Wait for the active run before changing its plan")
+        previous = self.sessions.get(session_id).get("plan") or {}
+        if previous:
+            self.sessions.assert_plan_binding(session_id, previous)
+        expected_revision = int(previous.get("revision", 0))
+        if previous and (payload.get("revision") != expected_revision or payload.get("plan_id") != previous.get("plan_id")):
+            raise PlanRevisionConflict("Plan changed; reload the current revision before saving")
         plan = ScientificPlan.model_validate(payload)
+        rejected = sanitize_plan_edit(plan, ScientificPlan.model_validate(previous) if previous else None)
+        return await self._commit_plan(session_id, plan, expected_revision, rejected_fields=rejected)
+
+    async def _commit_plan(self, session_id: str, plan: ScientificPlan, expected_revision: int,
+                           *, approvals: list[dict] | None = None,
+                           rejected_fields: list[str] | None = None) -> dict[str, Any]:
+        plan.revision = expected_revision + 1
         plan.updated_at = utc_now()
         report = self._validate_plan(plan)
         quality = plan_quality_validator.apply(plan, enforce_prompt_fidelity=False)
         plan.precheck_summary = report.model_dump(mode="json") if report else None
         plan.runnable = bool(plan.workflow_id and report and report.passed and quality.status != "INVALID")
-        self.sessions.set_plan(session_id, plan.model_dump(mode="json"))
-        self.sessions.append_event(
-            session_id,
-            "plan.validated",
-            {"plan_id": plan.plan_id, "valid": plan.runnable, "report": plan.precheck_summary},
+        plan.runnable = plan.runnable and plan.completion is None
+        plan.runnable = plan.runnable and not any(
+            item.assumption and not (item.user_confirmed or item.use_authorized)
+            for item in plan.parameters.values()
         )
+        plan.planning_status = "READY" if plan.runnable else "DRAFT_NEEDS_INPUT"
+        self.sessions.commit_plan_revision(session_id, plan.model_dump(mode="json"), expected_revision,
+                                           approvals=approvals, rejected_fields=rejected_fields)
         await self._transition(session_id, AgentState.PLAN_READY)
         return self.sessions.get(session_id)
 
@@ -292,7 +312,8 @@ class AgentRuntime:
         )
         started = time.perf_counter()
         if hasattr(self.knowledge, "search_detailed"):
-            detailed = self.knowledge.search_detailed(prompt, limit=limit)
+            detailed = self.knowledge.search_detailed(prompt, limit=limit,
+                                                     project_id=self.sessions.get(session_id)["project_id"])
             citations = detailed["results"]
             trace = detailed.get("trace", {})
         else:
@@ -375,13 +396,12 @@ class AgentRuntime:
         self.sessions.add_message(session_id, "assistant", answer, AgentMode.ASK, provider=provider, model=model, citations=[item["citation"] for item in citations], visible_reasoning_summary=f"Retrieved {len(citations)} local source chunk(s); no tools were executed.")
 
     async def _plan(self, session_id: str, prompt: str) -> ScientificPlan | None:
+        previous = self.sessions.get(session_id).get("plan") or {}
+        expected_revision = int(previous.get("revision", 0))
         ledger = ModelStateLedger(self.sessions)
         ledger.append(session_id, 'request.current', prompt, Provenance.USER_REQUEST)
         intent = compile_intent(prompt)
-        if intent.unknowns or intent.validation_issues:
-            missing = ", ".join([*intent.unknowns, *intent.validation_issues])
-            self.sessions.add_message(session_id, "assistant", f"The scientific intent is not ready for planning. Resolve before continuing: {missing}. No COMSOL action was executed.", AgentMode.PLAN, provider="deterministic-intent-compiler", model="none")
-            return None
+        # Incomplete intent still deserves a draft. Execution checks run after review.
         canonical_prompt = intent.canonical_query
         await self._transition(session_id, AgentState.RESEARCHING)
         citations = self._retrieve(session_id, canonical_prompt, 6)
@@ -422,19 +442,147 @@ class AgentRuntime:
             plan = ScientificPlan.model_validate(payload)
         except ValidationError as exc:
             raise ScientificValidationError(f"ScientificPlan schema validation failed: {exc}") from exc
+        if intent.validation_issues:
+            plan.missing_information = list(dict.fromkeys([*plan.missing_information, *intent.validation_issues]))
+            if plan.completion:
+                plan.completion.remaining_missing.extend(intent.validation_issues)
         report = self._validate_plan(plan)
         quality = plan_quality_validator.apply(plan)
         plan.precheck_summary = report.model_dump(mode="json") if report else None
         plan.runnable = bool(plan.workflow_id and report and report.passed and quality.status != "INVALID")
-        self.sessions.set_plan(session_id, plan.model_dump(mode="json"))
+        plan.runnable = plan.runnable and plan.completion is None
+        plan.planning_status = "READY" if plan.runnable else "DRAFT_NEEDS_INPUT"
+        plan.revision = expected_revision + 1
+        self.sessions.commit_plan_revision(session_id, plan.model_dump(mode="json"), expected_revision)
         ledger.append(session_id, 'plan.workflow_id', plan.workflow_id, Provenance.PLAN)
         ledger.append(session_id, 'plan.parameters', plan.model_dump(mode='json')['parameters'], Provenance.PLAN)
         ledger.append(session_id, 'plan.boundary_conditions', plan.boundary_conditions, Provenance.PLAN)
-        self.sessions.append_event(session_id, "plan.validated", {"plan_id": plan.plan_id, "valid": plan.runnable, "report": plan.precheck_summary})
         self._timeline_finish(session_id, timeline_id, status="success", output_summary=f"ScientificPlan {plan.plan_id[:8]} generated by {provider}/{model}; quality={plan.quality_status}; ready={plan.runnable}", duration_ms=round((time.perf_counter() - started) * 1000))
         await self._transition(session_id, AgentState.PLAN_READY)
         self.sessions.add_message(session_id, "assistant", format_plan(plan), AgentMode.PLAN, provider=provider, model=model, citations=[item["citation"] for item in citations], structured=plan.model_dump(mode="json"))
         return plan
+
+    async def complete_plan(
+        self,
+        session_id: str,
+        proposal_id: str,
+        values: dict[str, float | str],
+        mode: str,
+        *,
+        reviewed_digest: str,
+        expected_revision: int,
+        selected_parameters: list[str] | None = None,
+        decisions: dict[str, list[str]] | None = None,
+        question_answers: dict[str, str] | None = None,
+    ) -> dict[str, Any]:
+        saved = self.sessions.get(session_id).get("plan")
+        if not saved:
+            raise ValueError("Create a plan before accepting suggestions")
+        self.sessions.assert_plan_binding(session_id, saved)
+        active = self._tasks.get(session_id)
+        if active and not active.done():
+            raise ValueError("Wait for the active run before revising its plan")
+        plan = ScientificPlan.model_validate(saved)
+        proposal = plan.completion
+        if proposal is None or proposal.proposal_id != proposal_id:
+            raise PlanRevisionConflict(
+                "Proposal changed; reload and review the current draft"
+            )
+        if (
+            expected_revision != plan.revision
+            or reviewed_digest != proposal.reviewed_digest
+        ):
+            raise PlanRevisionConflict(
+                "Reviewed values changed; reload the current proposal"
+            )
+        accepted = accept_completion(
+            plan,
+            proposal_id,
+            values,
+            mode=mode,
+            selected_parameters=selected_parameters,
+            decisions=decisions,
+            question_answers=question_answers,
+        )
+        if (
+            accepted.workflow_id is None
+            and question_answers
+            and (
+                question_answers.get("parameter_policy") == "propose"
+                or "delegate" in question_answers.values()
+            )
+        ):
+            accepted = await self.planner.refine_model(accepted)
+        approvals = []
+        for name, item in proposal.parameters.items():
+            if name not in accepted.parameters:
+                continue
+            selected = accepted.parameters[name]
+            approvals.append(
+                dict(
+                    session_id=session_id,
+                    run_id=f"plan:{plan.plan_id}",
+                    attempt_id=f"revision:{plan.revision + 1}",
+                    plan_node_id="build",
+                    choice={
+                        "parameter": name,
+                        "value": selected.value,
+                        "unit": selected.unit,
+                        "mode": mode,
+                        "authorization": selected.authorization,
+                        "reviewed_digest": reviewed_digest,
+                    },
+                    reason=item.rationale or proposal.reason,
+                    source=selected.source,
+                    confidence=float(item.confidence or 0.5),
+                    user_confirmed=selected.user_confirmed,
+                    scope_authorized=selected.use_authorized,
+                    affected_nodes=["build", "solve", "validate", "export"],
+                    domain_sensitive=True,
+                )
+            )
+        for name, choices in {**proposal.decisions, **(decisions or {})}.items():
+            approvals.append(
+                dict(
+                    session_id=session_id,
+                    run_id=f"plan:{plan.plan_id}",
+                    attempt_id=f"revision:{plan.revision + 1}",
+                    plan_node_id="build",
+                    choice={name: choices, "mode": mode},
+                    reason=proposal.reason,
+                    source="USER_APPROVED_PROPOSAL",
+                    confidence=0.5,
+                    user_confirmed=mode != "auto",
+                    scope_authorized=True,
+                    domain_sensitive=True,
+                    affected_nodes=["build", "solve", "validate", "export"],
+                )
+            )
+        questions = {item.key: item for item in proposal.questions}
+        for key, answer in (question_answers or {}).items():
+            approvals.append(
+                dict(
+                    session_id=session_id,
+                    run_id=f"plan:{plan.plan_id}",
+                    attempt_id=f"revision:{plan.revision + 1}",
+                    plan_node_id="build",
+                    choice={
+                        "question": key,
+                        "answer": answer,
+                        "reviewed_digest": reviewed_digest,
+                    },
+                    reason=questions[key].question,
+                    source="USER_APPROVED_MODEL_CHOICE",
+                    confidence=0.5,
+                    user_confirmed=mode != "auto",
+                    scope_authorized=True,
+                    domain_sensitive=True,
+                    affected_nodes=["build", "solve", "validate", "export"],
+                )
+            )
+        return await self._commit_plan(
+            session_id, accepted, plan.revision, approvals=approvals
+        )
 
     async def _start_run(self, session_id: str) -> None:
         current = self.sessions.get(session_id)
@@ -448,12 +596,19 @@ class AgentRuntime:
             self.sessions.add_message(session_id, "assistant", f"The saved plan does not satisfy ScientificPlan 2.0 and was not executed: {exc}", AgentMode.RUN)
             return
         supported = {
+            'tds_2d_transient_closed',
+            "heat_transfer_3d_cooling",
             "heat_transfer_2d_stationary", "tds_2d_stationary_diffusion",
             "solid_mechanics_uniaxial_bar", "electrochem_primary_current",
             "lithium_ion_battery_baseline", "heat_tds_temperature_coupling",
         }
         if not plan.runnable or plan.workflow_id not in supported:
             self.sessions.add_message(session_id, "assistant", "The saved ScientificPlan is not ready for a verified real-COMSOL executor. Nothing was changed in COMSOL.", AgentMode.RUN, plan_id=plan.plan_id)
+            return
+        try:
+            self.sessions.assert_plan_binding(session_id, plan.model_dump(mode='json'))
+        except ValueError as exc:
+            self.sessions.add_message(session_id, 'assistant', str(exc), AgentMode.RUN, plan_id=plan.plan_id)
             return
         active = self._tasks.get(session_id)
         if active and not active.done():
@@ -519,7 +674,7 @@ class AgentRuntime:
                 raise ScientificValidationError(f"No validator registered for {plan.workflow_id}")
             precheck_id = self._timeline_start(session_id, category="VALIDATION", phase="Precheck", label="Validating plan, parameters and boundary definitions", tool=f"validators.{plan.workflow_id}.precheck", input_summary={"plan_id": plan.plan_id})
             precheck_started = time.perf_counter()
-            precheck = validator.precheck(plan)
+            precheck = self._validate_plan(plan)
             self.sessions.append_event(session_id, "validation.precheck", precheck.model_dump(mode="json"))
             precheck_ms = round((time.perf_counter() - precheck_started) * 1000, 3)
             self._timeline_finish(session_id, precheck_id, status="success" if precheck.passed else "error", output_summary=summarize_report(precheck), duration_ms=precheck_ms)
@@ -557,6 +712,8 @@ class AgentRuntime:
                 try:
                     monitor.start()
                     tool_name = {
+                        'tds_2d_transient_closed': 'comsol.tds_2d_transient_closed',
+                        "heat_transfer_3d_cooling": "comsol.heat_transfer_3d_cooling",
                         "heat_transfer_2d_stationary": "comsol.heat_transfer_2d",
                         "tds_2d_stationary_diffusion": "comsol.tds_2d_stationary_diffusion",
                         "solid_mechanics_uniaxial_bar": "comsol.solid_mechanics_uniaxial_bar",
@@ -564,6 +721,7 @@ class AgentRuntime:
                         "lithium_ion_battery_baseline": "comsol.lithium_ion_battery_baseline",
                         "heat_tds_temperature_coupling": "comsol.heat_tds_temperature_coupling",
                     }[str(plan.workflow_id)]
+                    self.sessions.assert_plan_binding(session_id, plan.model_dump(mode='json'))
                     execution = await self.tools.execute(
                         tool_name,
                         {"run_id": run_id, "attempt_id": attempt_id, "session_id": session_id, "workspace": str(WORKSPACE_ROOT), "plan": plan.execution_payload(), "attempt": attempt + 1},
@@ -728,7 +886,10 @@ class AgentRuntime:
                             attempt_workspace=attempt_workspace, model_tree=tree,
                         )
                         self.sessions.assert_current(run_id, attempt_id)
-                        self.sessions.set_plan(session_id, corrected_plan.model_dump(mode='json'))
+                        corrected_plan.revision = plan.revision+1
+                        self.sessions.commit_plan_revision(session_id,corrected_plan.model_dump(mode='json'),plan.revision)
+                        self.sessions.append_event(session_id,'run.reviewed_plan_rebound',{
+                            'run_id':run_id,'attempt_id':attempt_id,'revision':corrected_plan.revision})
                         execution = corrected_execution
                         plan = corrected_plan
                         self.sessions.update_run(run_id, attempt_id, artifacts=execution['artifacts'])
@@ -981,8 +1142,10 @@ class AgentRuntime:
             execution['boundary_feature_readback'] = boundary_readback
             try:
                 core = await java_bridge_client.heat_core()
+                heat_parameters = (self.sessions.get(session_id).get('plan') or {}).get('parameters', {})
+                property_symbols = ('k', *(symbol for name, symbol in (('density', 'rho'), ('heat_capacity', 'Cp')) if name in heat_parameters))
                 execution['build_readback'] = normalize_heat_core(
-                    core, boundary_readback['left'], boundary_readback['right'])
+                    core, boundary_readback['left'], boundary_readback['right'], property_symbols=property_symbols)
             except (ValueError, KeyError, TypeError, RuntimeError) as exc:
                 execution['build_readback_issue'] = f'{type(exc).__name__}: {exc}'
         execution["java_bridge"] = {"health": health, "tree": tree, "parameters": parameter_values, "checks": checks}
@@ -1015,7 +1178,13 @@ class AgentRuntime:
 
     def _validate_plan(self, plan: ScientificPlan) -> ValidationReport | None:
         validator = validator_registry.get(plan.workflow_id)
-        return validator.precheck(plan) if validator else None
+        if validator is None:
+            return None
+        report = validator.precheck(plan)
+        report.checks.extend(ValidationCheck(category='Input contract',name=f'execution_input_{index}',
+            status='failed',message=issue) for index,issue in enumerate(solver_input_issues(plan)))
+        report.passed = report.passed and all(check.status!='failed' for check in report.checks)
+        return report
 
     def _record_plan_assumptions(self, session_id: str, run_id: str, attempt_id: str,
                                  plan: ScientificPlan) -> None:
@@ -1030,8 +1199,8 @@ class AgentRuntime:
                 choice={"parameter": name, "value": parameter.value, "unit": parameter.unit},
                 reason=parameter.source or "Explicit ScientificPlan assumption",
                 source="SCIENTIFIC_PLAN", confidence=float(parameter.confidence or 0.5),
-                user_confirmed=False, affected_nodes=affected,
-                safe_default=True, domain_sensitive=False,
+                user_confirmed=parameter.user_confirmed, affected_nodes=affected,
+                safe_default=not parameter.user_confirmed, domain_sensitive=parameter.user_confirmed,
             )
         for description in plan.assumptions:
             ledger.record(

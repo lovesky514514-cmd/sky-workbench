@@ -2,7 +2,8 @@
 param(
     [Parameter(Mandatory = $true)][string]$FrozenSidecarPath,
     [Parameter(Mandatory = $true)][ValidatePattern('^[A-F0-9]{64}$')][string]$ExpectedSidecarSha256,
-    [Parameter(Mandatory = $true)][string]$TargetDir
+    [Parameter(Mandatory = $true)][string]$TargetDir,
+    [switch]$LabPreview
 )
 
 $ErrorActionPreference = 'Stop'
@@ -46,6 +47,8 @@ foreach ($name in @('CARGO_TARGET_DIR', 'CARGO_ENCODED_RUSTFLAGS', 'RUSTFLAGS',
 }
 $viteNames = @(Get-ChildItem Env:VITE_* -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Name)
 foreach ($name in $viteNames) { $saved[$name] = [Environment]::GetEnvironmentVariable($name, 'Process') }
+$sensitiveNames = @(Get-ChildItem Env: | Where-Object { $_.Name -match 'TOKEN|SECRET|API_KEY|PASSWORD' } | Select-Object -ExpandProperty Name)
+foreach ($name in $sensitiveNames) { $saved[$name] = [Environment]::GetEnvironmentVariable($name, 'Process') }
 
 try {
     $env:CARGO_TARGET_DIR = $target
@@ -54,10 +57,48 @@ try {
     $env:WORKBENCH_BUILD_PROFILE = 'public'
     # Tauri's Rust build script parses this variable as JSON. An empty value
     # can reach it through Windows child-process environment inheritance.
-    # An explicit empty object is a neutral, controlled merge configuration.
-    [Environment]::SetEnvironmentVariable('TAURI_CONFIG', '{}', 'Process')
+    # Both the desktop title and a fresh provider profile belong to this build;
+    # the installer hook preserves any settings already saved by the user.
+    $base = Get-Content -LiteralPath (Join-Path $sourceRoot 'frontend/src-tauri/tauri.conf.json') -Raw | ConvertFrom-Json
+    $base.app.windows[0].title = 'SKY Workbench 3.1'
+    $overlay = @{
+        app = @{ windows = @($base.app.windows) }
+        bundle = @{ windows = @{ nsis = @{
+            installerHooks = (Join-Path $sourceRoot 'packaging/provider_defaults.nsh')
+        } } }
+    }
+    if ($LabPreview) {
+        # A separate identifier gives the lab build its own default data path.
+        # Its product/shortcut names also remain separate from the regular app.
+        $base = Get-Content -LiteralPath (Join-Path $sourceRoot 'frontend/src-tauri/tauri.conf.json') -Raw | ConvertFrom-Json
+        $base.app.windows[0].title = 'SKY Workbench 3.1 Lab'
+        $overlay = @{
+            productName = 'SKY Workbench 3.1 Lab'
+            identifier = 'io.scientificworkbench.sky.lab31'
+            app = @{ windows = @($base.app.windows) }
+            bundle = @{ windows = @{ nsis = @{
+                startMenuFolder = 'SKY Workbench 3.1 Lab'
+                installerHooks = (Join-Path $sourceRoot 'packaging/lab_defaults.nsh')
+            } } }
+        }
+    }
+    $overlayJson = $overlay | ConvertTo-Json -Depth 20 -Compress
+    [Environment]::SetEnvironmentVariable('TAURI_CONFIG', $overlayJson, 'Process')
     [Environment]::SetEnvironmentVariable('RUSTFLAGS', $null, 'Process')
     foreach ($name in $viteNames) { [Environment]::SetEnvironmentVariable($name, $null, 'Process') }
+    foreach ($name in $sensitiveNames) { [Environment]::SetEnvironmentVariable($name, $null, 'Process') }
+    New-Item -ItemType Directory -Path $target -Force | Out-Null
+    # The CLI bundler and Rust codegen must consume the same overlay. The
+    # environment variable alone is only authoritative for Rust codegen.
+    $overlayPath = Join-Path $target 'tauri.build.config.json'
+    [IO.File]::WriteAllText($overlayPath, $overlayJson, (New-Object Text.UTF8Encoding($false)))
+    $buildInputs = @{
+        profile = $(if ($LabPreview) { 'lab-preview' } else { 'public-release' })
+        sidecar_sha256 = $actualHash
+        tauri_config_sha256 = (Get-FileHash -LiteralPath (Join-Path $sourceRoot 'frontend/src-tauri/tauri.conf.json') -Algorithm SHA256).Hash
+        configuration_overlay = $overlay
+    } | ConvertTo-Json -Depth 25
+    [IO.File]::WriteAllText((Join-Path $target 'INSTALLER_BUILD_INPUTS.json'), $buildInputs, (New-Object Text.UTF8Encoding($false)))
 
     # Rust panic locations otherwise retain the build user's home and source paths.
     $separator = [char]31
@@ -68,7 +109,7 @@ try {
 
     Push-Location (Join-Path $sourceRoot 'frontend')
     try {
-        & npm.cmd run tauri -- build --bundles nsis
+        & npm.cmd run tauri -- build --bundles nsis --config $overlayPath
         if ($LASTEXITCODE -ne 0) { throw 'Tauri/NSIS build failed.' }
     }
     finally { Pop-Location }

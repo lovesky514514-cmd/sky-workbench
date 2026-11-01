@@ -7,9 +7,10 @@ from typing import Any
 
 from app.scientific.schemas import ScientificPlan
 from app.validators.base_validator import BaseValidator, ValidationCheck, ValidationReport
+from app.scientific.static_contracts import SOLID_REQUIRED
 
 
-REQUIRED = ("length", "width", "height", "youngs_modulus", "poissons_ratio", "density", "traction")
+REQUIRED = SOLID_REQUIRED
 
 
 def check(category: str, name: str, passed: bool, message: str, observed: Any, expected: Any) -> ValidationCheck:
@@ -42,7 +43,7 @@ class SolidMechanicsValidator(BaseValidator):
             check("Units", "dimensions", all(plan.parameters[name].unit == "m" for name in ("length", "width", "height") if name in plan.parameters), "Geometry is normalized to metres", [plan.parameters[name].unit for name in ("length", "width", "height") if name in plan.parameters], "m"),
             check("Material", "youngs_modulus", young is not None and young > 0 and "youngs_modulus" in plan.parameters and plan.parameters["youngs_modulus"].unit == "Pa", "Young's modulus is positive and in Pa", young, "> 0 Pa"),
             check("Material", "poissons_ratio", poisson is not None and 0 <= poisson < 0.5, "Poisson's ratio is in the stable isotropic range", poisson, "0 <= nu < 0.5"),
-            check("Material", "density", density is not None and density > 0, "Density is positive", density, "> 0 kg/m^3"),
+            check("Material", "density", "density" not in plan.parameters or density is not None and density > 0, "Density is optional in this static model; supplied values must be positive", density, "omitted or > 0 kg/m^3"),
             check("Load", "traction", traction is not None and traction > 0 and "traction" in plan.parameters and plan.parameters["traction"].unit == "Pa", "Axial traction is positive and in Pa", traction, "> 0 Pa"),
             check("Boundary", "fixed_and_loaded", any("fixed" in item.lower() or "固定" in item for item in plan.boundary_conditions) and any("traction" in item.lower() or "载荷" in item for item in plan.boundary_conditions), "Fixed and loaded faces are explicit", plan.boundary_conditions, "left fixed; right traction"),
             check("Study", "stationary", any("stationary" in item.lower() or "稳态" in item for item in plan.study), "Stationary study is explicit", plan.study, "Stationary"),

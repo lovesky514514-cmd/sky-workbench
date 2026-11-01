@@ -4,22 +4,15 @@ from __future__ import annotations
 
 from app.scientific.schemas import ScientificPlan
 from app.validators.base_validator import ValidationCheck
+from app.scientific.static_contracts import HEAT_REQUIRED, HEAT_OPTIONAL
 
 
-REQUIRED_HEAT_PARAMETERS = (
-    "width",
-    "height",
-    "left_temperature",
-    "right_temperature",
-    "thermal_conductivity",
-    "density",
-    "heat_capacity",
-)
+REQUIRED_HEAT_PARAMETERS = HEAT_REQUIRED
 
 
 def validate_parameters(plan: ScientificPlan) -> list[ValidationCheck]:
     checks: list[ValidationCheck] = []
-    for name in REQUIRED_HEAT_PARAMETERS:
+    for name in (*REQUIRED_HEAT_PARAMETERS, *(name for name in HEAT_OPTIONAL if name in plan.parameters)):
         parameter = plan.parameters.get(name)
         present = bool(parameter and parameter.unit and parameter.source)
         checks.append(

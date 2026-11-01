@@ -11,6 +11,7 @@ from threading import RLock
 from typing import Any
 
 from app.app_paths import app_paths
+from app.providers.deepseek import DEFAULT_MODEL as DEEPSEEK_MODEL
 
 BACKEND_ROOT = app_paths.backend_root
 PROJECT_ROOT = app_paths.project_root
@@ -107,7 +108,7 @@ DEFAULT_SETTINGS: dict[str, Any] = {
         "deepseek": {
             "enabled": False,
             "base_url": "https://api.deepseek.com/v1",
-            "model": "deepseek-chat",
+            "model": DEEPSEEK_MODEL,
         },
         "kimi": {
             "enabled": False,

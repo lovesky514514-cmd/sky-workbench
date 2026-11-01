@@ -14,6 +14,7 @@ def test_planner_uses_original_for_deterministic_values_but_canonical_for_model_
     canonical = compile_intent(original).canonical_query
     payload, provider, _ = asyncio.run(ScientificPlanner(providers=NoProvider()).plan(canonical, [], original_prompt=original))
     assert provider == "offline-scientific-planner"
-    assert payload["runnable"] is True
+    assert payload["runnable"] is False
+    assert set(payload['completion']['parameters']) == {'thermal_conductivity'}
     assert payload["parameters"]["left_temperature"]["value"] == 373
     assert payload["original_request"] == original

@@ -1,51 +1,36 @@
-# AI providers and scientific software compatibility
+# AI 与仿真软件兼容范围（3.1）
 
-This document describes source-level capability, not a new certified desktop release.
+这是当前源码的能力说明。安装发现、接口握手、模型输入、求解完成与科学验证分别判断，不能互相替代。
 
-## AI connections
+## AI 服务
 
-- Ollama remains optional. First-run setup favors a user-configured cloud provider; an absent local service or model is shown as unavailable, and model download requires explicit confirmation.
-- Kimi, DeepSeek, and Doubao are opt-in under **Settings → AI providers → Cloud APIs**. The user must supply an exact model ID and their own API key. Kimi defaults to the China Moonshot endpoint; Doubao defaults to the Ark data-plane endpoint. Billing plans may use different endpoints, so check the account's official documentation before changing it.
-- OpenAI, Claude, and Gemini are in the second-level international section. Availability depends on the user's account, network, region, and provider terms. The app does not route around regional restrictions.
-- Cloud keys stay in Runtime process memory or an explicitly supplied environment variable. They are not persisted to the settings JSON or sent to the frontend after saving. A restarted Runtime may require key re-entry.
-- A provider marked **Configured** has *not* passed a live inference check. **Test Connection** makes one real inference. The four-part acceptance test is separate and may incur provider charges. An explicitly selected provider never silently falls back to a different endpoint.
-- Sending a scientific prompt to a cloud API may disclose that prompt and its supplied context to the provider. Local MPH files and COMSOL installation files are not uploaded automatically. AI output remains subject to ScientificPlan validation and the independent execution/evidence gates.
+- 支持用户配置的云服务与可选本地 Ollama / LM Studio。缺少本地服务时显示不可用，不静默转发给另一服务。
+- 本轮真实验证使用 DeepSeek `deepseek-flash`，地址 `https://api.deepseek.com/v1`。文本、流式、JSON 与 ScientificPlan 四项推理通过；其他服务仍需按账户、端点和精确模型 ID 验证。
+- 云端 Key 仅保留在当前 Runtime 内存或用户自己提供的环境变量中，不写入设置 JSON，不从接口回显。源码运行可配置 `COMSOL_WORKBENCH_DEEPSEEK_API_KEY` 或 `DEEPSEEK_API_KEY`；界面输入的 Key 在 Runtime 重启后需重填。
+- Configured 表示已配置；Test Connection 才发出真实推理，四项能力验收是单独测试。这些操作可能消耗服务额度。
+- 截断或空白 DeepSeek JSON 最多向同一模型/端点重试一次；失败或拒绝不算有效输出，不会自动改投其他服务。
+- 建模请求及选中的参考内容会发送到配置的云服务，执行权限仍由本地计划、单位、用户审核和证据契约决定。
 
-## Scientific software
+## 科学软件
 
-| Software | Current source capability | Scientific execution claim |
+| 软件 | 已有源码能力 | 实际验证边界 |
 | --- | --- | --- |
-| COMSOL 6.3 | Existing Java Bridge and scientific workers; version-specific installation discovery | Requires a real licensed installation, model readback, and per-run validation. Historical tests are not a claim about a new binary. |
-| COMSOL 6.2 / 6.4 | Installation detection and API-JAR-specific Bridge compilation cache | **Unverified** until Bridge attachment/readback and supported workflow tests run against each version. API compatibility cannot be inferred from a matching major version. |
-| Python | Separate local interpreter discovery and explicit script run | Does not use the bundled scientific Runtime as a Python REPL; script output has no scientific certification. |
-| MATLAB | Bounded discovery, explicit `-batch` handshake, and opt-in `.m` script run | A script exit and image export do not provide model readback or a scientific execution adapter. |
-| Wolfram / Mathematica | Bounded WolframScript discovery, explicit local handshake, and opt-in `.wl` script run | Mathematica and standalone Wolfram Engine may have different licenses. No notebook/model readback or scientific adapter yet. |
-| Materials Studio | Read-only executable discovery | No model readback or scientific execution adapter yet. SDK access and redistribution terms remain unverified. |
+| COMSOL | 本机多版本扫描、Java Bridge、受支持的科学计划及模型读回/求解路径 | 本轮冻结 Runtime 用 6.3 完成铁块冷却、二维稳态导热和静力单轴杆；其他版本与模型分别验收 |
+| MATLAB | 检测、无模型固定表达式握手、受控模板/任务和主动脚本路径 | 本轮缺少 MATLAB/PDE 环境，真实求解未验证；安装与脚本退出不能替代模型或科学检查 |
+| VASP | 结构化输入、四文件预检、输出收集及电子/离子收敛区分 | 本轮没有真实环境和已验证的无计算握手，执行保留相应阻断；不分发 POTCAR 或 VASP 程序 |
+| Materials Studio | 对应脚本输入与 Forcite 受限任务/结果路径 | 本轮缺少实机；单点路径不等于几何优化，CASTEP/DMol³ 不能据此视为已完成 |
+| LAMMPS | LJ reduced 单位受限输入、受控进程、thermo 和轨迹等产物 | 基准执行/收集通过，科学结果仍需复核；水 TIP4P、铜 EAM 等需要额外力场和输入适配 |
+| Mathics3 | 独立 Python 环境中的数学执行、受限表达式与结果显示 | 两个手工转写案例及冻结数值求值通过；不保证任意语言问题的物理方程正确 |
+| Python | 独立解释器的用户主动脚本路径 | 不是 OS 级沙箱，脚本输出不自动成为科学认证 |
 
-Selecting a COMSOL installation root in Settings changes which local API JAR the Bridge discovers; it does not migrate an MPH file or prove a workflow. The Bridge still uses its own per-process credential and Workbench-owned process lifecycle. No COMSOL proprietary JAR, installation or license is distributed by this feature.
+商业 Wolfram/Mathematica 程序的导航、扫描、握手和执行入口已移除；Mathics3 使用的语言语法支持保留，不承诺完整 Mathematica 兼容性。
 
-`GET /api/simulation-adapters` never launches software. The user-triggered
-`POST /api/simulation-adapters/{matlab|wolfram}/probe` runs a fixed expression
-in an owned local process with a 90-second limit and discards vendor output.
-The result is `HANDSHAKE_PASSED`, a specific failure state, or `UNAVAILABLE`;
-`readback=UNVERIFIED` and `execute=UNAVAILABLE` remain unchanged. The Wolfram
-probe forces `-local` so it cannot silently use Wolfram Cloud. Materials Studio
-remains detection-only because its MaterialsScript invocation depends on the
-installed product version and licensed documentation (2026 introduces Python
-MaterialsScript, while earlier releases commonly use Perl).
+## 执行契约
 
-`/api/script-runs` is a separate, user-confirmed scratch-code path for Python,
-MATLAB and Wolfram. It owns one bounded child process, discards credential-shaped
-environment variables, captures limited output and serves integrity-checked
-local raster files. It does not change ASK/PLAN/RUN, the COMSOL Bridge, the
-ExecutionVerdict or scientific claims. The script runs under the user's OS
-account and is not a security sandbox. Materials Studio remains editor-only.
+`GET /api/simulation-adapters` 仅返回能力，不启动软件。主动握手与任务执行需要用户显式触发，并由工作台持有的进程管理。脚本、模板、结果收集与 ASK/PLAN/RUN 的科学执行范围分别判断。
 
-The common contract is discovery, explicit connection probe and honest
-capability reporting. A future vendor adapter must independently implement
-model ownership, readback, cancellation, artifact provenance and scientific
-checks before the Runtime can route a natural-language plan to that engine.
-Existing ASK/PLAN/RUN currently target the COMSOL scientific workflows; a
-Wolfram or MATLAB handshake does **not** redirect those tasks.
+带数值的执行输入先检查单位、参数使用授权及计划修订；未知或不兼容单位不能只靠 AI 文本解释通过。缺少软件时可继续保留草案，但不能虚报启动或完成。三维资源预估、实际网格/自由度、内存和磁盘保护按执行路径实施。
 
-Official references used when selecting API shapes: [Moonshot API configuration](https://github.com/MoonshotAI/kimi-cli/blob/main/docs/en/configuration/env-vars.md), [Volcengine Ark OpenAI-compatible API](https://docs.volcengine.com/docs/ark/compatible-with-openai-sdk?lang=zh), [Claude Messages API](https://platform.claude.com/docs/en/api/http/messages), [Gemini generateContent API](https://ai.google.dev/api), [COMSOL 6.4 Java API notes](https://doc.comsol.com/6.4/doc/com.comsol.help.comsol/comsol_api_intro.46.02.html), [MATLAB batch startup](https://www.mathworks.com/help/matlab/ref/matlabwindows.html), [MATLAB Engine for Python](https://www.mathworks.com/help/matlab/matlab_external/get-started-with-matlab-engine-for-python.html), [WolframScript local kernel](https://reference.wolfram.com/language/ref/program/wolframscript.html.en), [Wolfram Engine vs Mathematica](https://www.wolfram.com/engine/faq/), [Materials Studio 2026 scripting](https://www.3ds.com/support/documentation/resource-library/t61-2025-materials-studio-2026).
+COMSOL 连接需要用户本机安装、许可、适用 API 与当前模型读回。切换安装目录不等于迁移 MPH，也不认证另一版本。高级脚本可运行于当前系统用户权限下；输入限制和所属进程回收不等于 OS 权限隔离。
+
+详见 [3.1 验证记录](VALIDATION_3.1.md)、[使用帮助](USER_GUIDE_V3_CN.md)与[引擎内容许可矩阵](ENGINE_CONTENT_LICENSE_MATRIX.md)。

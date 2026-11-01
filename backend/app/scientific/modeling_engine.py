@@ -129,7 +129,11 @@ def validate_coupling_dag(edges: list[CouplingEdge]) -> list[str]:
 
 modeling_engine = ModelingEngine()
 modeling_engine.register("heat_transfer_2d_stationary", None, CapabilityStatus.UNVERIFIED, "Registered by legacy real executor at runtime")
+modeling_engine.register("heat_transfer_3d_cooling", None, CapabilityStatus.EXPERIMENTAL,
+    "3D constant-property air cooling; reviewed assumptions and per-run numerical checks required")
 modeling_engine.register("tds_2d_stationary_diffusion", None, CapabilityStatus.UNVERIFIED, "Registered by legacy real executor at runtime")
+modeling_engine.register("tds_2d_transient_closed", None, CapabilityStatus.EXPERIMENTAL,
+    "Single-species constant diffusion, explicit cosine initial profile and sealed rectangle; per-run validation required")
 modeling_engine.register("solid_mechanics_uniaxial_bar", None, CapabilityStatus.UNVERIFIED, "Real COMSOL acceptance pending")
 modeling_engine.register("electrochemistry", None, CapabilityStatus.UNVERIFIED, "Licensed module probe pending")
 modeling_engine.register("lithium_ion_battery_baseline", None, CapabilityStatus.UNVERIFIED, "Real runtime acceptance is reported by the capability endpoint")

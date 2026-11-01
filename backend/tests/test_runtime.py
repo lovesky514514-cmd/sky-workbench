@@ -5,6 +5,8 @@ from app.agent.planner import extract_heat_transfer_plan
 from app.agent.runtime import AgentRuntime
 from app.models import AgentMode, AgentState
 from app.session.store import SessionStore
+from app.scientific.schemas import ScientificPlan
+from app.scientific.plan_completion import attach_completion, accept_completion
 
 
 def test_run_response_publishes_precheck_state_before_background_execution(tmp_path) -> None:
@@ -14,7 +16,10 @@ def test_run_response_publishes_precheck_state_before_background_execution(tmp_p
     prompt = "建立二维稳态热传导模型，矩形 10 mm × 5 mm，左边 373 K，右边 293 K，材料为铝，上下绝热。"
     plan = extract_heat_transfer_plan(prompt)
     assert plan is not None
-    store.set_plan(session["id"], plan)
+    reviewed = attach_completion(ScientificPlan.model_validate(plan))
+    reviewed = accept_completion(reviewed,reviewed.completion.proposal_id,{})
+    reviewed.runnable = True
+    store.commit_plan_revision(session['id'],reviewed.model_dump(mode='json'),0)
     store.set_state(session["id"], AgentState.WAITING_FOR_EXECUTION)
     runtime = AgentRuntime(sessions=store)
 

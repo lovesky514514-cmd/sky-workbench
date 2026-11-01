@@ -3,6 +3,7 @@ import type { Plan, ScientificParameter } from '../types'
 import { CitationList } from './CitationList'
 import { currentLocale, translate, type Locale } from '../i18n'
 import { safeUiError } from '../safeUiError'
+import { ModelingBriefView } from './ModelingBriefView'
 
 export function PlanCard({ locale, plan, editable = false, onSave }: { locale?: Locale; plan: Plan; editable?: boolean; onSave?: (plan: Plan) => Promise<void> }) {
   const activeLocale = locale ?? currentLocale()
@@ -12,7 +13,8 @@ export function PlanCard({ locale, plan, editable = false, onSave }: { locale?: 
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState('')
   useEffect(() => { setDraft(plan); setSaveError('') }, [plan])
-  const updateParameter = (name: string, patch: Partial<ScientificParameter>) => setDraft((current) => ({ ...current, parameters: { ...current.parameters, [name]: { ...current.parameters[name], ...patch } } }))
+  // Editing a value invalidates its old normalization and verification provenance.
+  const updateParameter = (name: string, patch: Partial<ScientificParameter>) => setDraft((current) => ({ ...current, parameters: { ...current.parameters, [name]: { ...current.parameters[name], ...patch, original_value: null, original_unit: null, quantity: {}, normalized_value: null, normalized_unit: null, verified: false, source: 'User-edited input', status: 'User Provided' } } }))
   const save = async () => {
     if (!onSave) return
     setSaveError('')
@@ -33,6 +35,8 @@ export function PlanCard({ locale, plan, editable = false, onSave }: { locale?: 
       <PlanSection title={t('Validation')} values={plan.validation} />
       <PlanSection title={t('Expected Outputs')} values={plan.expected_outputs} />
     </div>
+    <p>{activeLocale === 'zh-CN' ? '计划预检、参数使用授权和真实求解完成分别记录。预检通过后仍需显式 RUN。' : 'Preflight, parameter authorization and completed solves are separate. A successful preflight still requires RUN.'}</p>
+    <ModelingBriefView plan={plan} zh={activeLocale === 'zh-CN'} />
     <div className="plan-section-wide"><div className="plan-section-title"><span>{t('Parameters & provenance')}</span>{editable && <button onClick={() => setEditing((value) => !value)}>{editing ? t('Cancel edit') : t('Edit plan')}</button>}</div>
       <div className="plan-parameters"><div className="parameter-header"><span>{t('Name')}</span><span>{t('Value')}</span><span>{t('Unit')}</span><span>{t('Source')}</span><span>{t('Status')}</span></div>{Object.entries(draft.parameters).map(([name, value]) => (
         <div className="parameter-row" key={name}>

@@ -1,21 +1,41 @@
 {
-  "schema": "swb-license-collection-v1",
-  "status": "PENDING_INDEPENDENT_APPROVAL",
+  "schema": "sky-candidate-license-collection-v2",
+  "status": "NOTICE_COLLECTION_VERIFIED",
   "python": [
+    {
+      "ecosystem": "python",
+      "name": "altgraph",
+      "version": "0.17.5",
+      "declared_license": "MIT",
+      "source_url": "https://files.pythonhosted.org/packages/a9/ba/000a1996d4308bc65120167c21241a3b205464a2e0b58deda26ae8ac21d1/altgraph-0.17.5-py2.py3-none-any.whl",
+      "wheel_sha256": "f3a22400bce1b0c701683820ac4f3b159cd301acab067c51c653e06961600597",
+      "files": [
+        {
+          "file": "python-3.1/altgraph-0.17.5/altgraph-0.17.5.dist-info/LICENSE",
+          "bytes": 1002,
+          "sha256": "6C194D6DB0C64D45535D10C95142B9B0CDA7B7DCC7F1DDEE302B3D536F3DBE46",
+          "source": "installed distribution RECORD: altgraph 0.17.5"
+        }
+      ],
+      "scope": "candidate build environment; frozen subset audited separately",
+      "status": "NOTICE_TEXT_COLLECTED"
+    },
     {
       "ecosystem": "python",
       "name": "annotated-doc",
       "version": "0.0.5",
       "declared_license": "MIT",
+      "source_url": "https://files.pythonhosted.org/packages/3e/30/e900b21425a860e195f32e37657aa1f7c7f2b1bfb26f03ca209b90933c06/annotated_doc-0.0.5-py3-none-any.whl",
+      "wheel_sha256": "117bac03a25ede5df5440e855b32d556049ca169ead221505badf432fed4b101",
       "files": [
         {
-          "file": "python/annotated-doc-0.0.5/annotated_doc-0.0.5.dist-info/licenses/LICENSE",
+          "file": "python-3.1/annotated-doc-0.0.5/annotated_doc-0.0.5.dist-info/licenses/LICENSE",
           "bytes": 1086,
           "sha256": "FFF170779A6ACBF65ABDB405C087F1CEE1786691E4A96A4034517E4A504A0CDF",
           "source": "installed distribution RECORD: annotated-doc 0.0.5"
         }
       ],
-      "source_url": "https://pypi.org/project/annotated-doc/0.0.5/",
+      "scope": "candidate build environment; frozen subset audited separately",
       "status": "NOTICE_TEXT_COLLECTED"
     },
     {
@@ -23,15 +43,17 @@
       "name": "annotated-types",
       "version": "0.8.0",
       "declared_license": "MIT",
+      "source_url": "https://files.pythonhosted.org/packages/99/91/8acff4f5e50511b911bbccb72b8628a49c68ce14148cd9f6431094859a90/annotated_types-0.8.0-py3-none-any.whl",
+      "wheel_sha256": "f072f4d804ea359e4eaf198b1af7a8b0943881a87f31bb764f8bf219bb9419e0",
       "files": [
         {
-          "file": "python/annotated-types-0.8.0/annotated_types-0.8.0.dist-info/licenses/LICENSE",
+          "file": "python-3.1/annotated-types-0.8.0/annotated_types-0.8.0.dist-info/licenses/LICENSE",
           "bytes": 1083,
           "sha256": "FE1049884B1A0D9342901E88E07F32925D24B3121D9972B6A6805FB9824B095D",
           "source": "installed distribution RECORD: annotated-types 0.8.0"
         }
       ],
-      "source_url": "https://pypi.org/project/annotated-types/0.8.0/",
+      "scope": "candidate build environment; frozen subset audited separately",
       "status": "NOTICE_TEXT_COLLECTED"
     },
     {
@@ -39,15 +61,17 @@
       "name": "anyio",
       "version": "4.15.1",
       "declared_license": "MIT",
+      "source_url": "https://files.pythonhosted.org/packages/12/b8/4bd346e22b28902df4d651910f5242c28d84e4a5c2435ca5c3f797ed7e2e/anyio-4.15.1-py3-none-any.whl",
+      "wheel_sha256": "6152fdbbf9a77fdec97731721bebf7c4c44f7c29b424b0065826173efc7ed101",
       "files": [
         {
-          "file": "python/anyio-4.15.1/anyio-4.15.1.dist-info/licenses/LICENSE",
+          "file": "python-3.1/anyio-4.15.1/anyio-4.15.1.dist-info/licenses/LICENSE",
           "bytes": 1081,
           "sha256": "5361AC9DC58F2EF5FD2E9B09C68297C17F04950909BBC8023BDB82EACF22C2B0",
           "source": "installed distribution RECORD: anyio 4.15.1"
         }
       ],
-      "source_url": "https://pypi.org/project/anyio/4.15.1/",
+      "scope": "candidate build environment; frozen subset audited separately",
       "status": "NOTICE_TEXT_COLLECTED"
     },
     {
@@ -55,31 +79,35 @@
       "name": "attrs",
       "version": "26.1.0",
       "declared_license": "MIT",
+      "source_url": "https://files.pythonhosted.org/packages/64/b4/17d4b0b2a2dc85a6df63d1157e028ed19f90d4cd97c36717afef2bc2f395/attrs-26.1.0-py3-none-any.whl",
+      "wheel_sha256": "c647aa4a12dfbad9333ca4e71fe62ddc36f4e63b2d260a37a8b83d2f043ac309",
       "files": [
         {
-          "file": "python/attrs-26.1.0/attrs-26.1.0.dist-info/licenses/LICENSE",
+          "file": "python-3.1/attrs-26.1.0/attrs-26.1.0.dist-info/licenses/LICENSE",
           "bytes": 1109,
           "sha256": "882115C95DFC2AF1EEB6714F8EC6D5CBCABF667CAFF8729F42420DA63F714E9F",
           "source": "installed distribution RECORD: attrs 26.1.0"
         }
       ],
-      "source_url": "https://pypi.org/project/attrs/26.1.0/",
+      "scope": "candidate build environment; frozen subset audited separately",
       "status": "NOTICE_TEXT_COLLECTED"
     },
     {
       "ecosystem": "python",
       "name": "certifi",
-      "version": "2026.7.22",
+      "version": "2026.10.23",
       "declared_license": "MPL-2.0",
+      "source_url": "https://files.pythonhosted.org/packages/32/d1/a3652fe2c19134d0d15922177821d863cbd7e842d53a21bbe7e8e3a1b5ac/certifi-2026.10.23-py3-none-any.whl",
+      "wheel_sha256": "e9b54de76e530bb6cf0ccd036787103acb58fd42ba930ea8bf948ddbaa2f61d1",
       "files": [
         {
-          "file": "python/certifi-2026.7.22/certifi-2026.7.22.dist-info/licenses/LICENSE",
+          "file": "python-3.1/certifi-2026.10.23/certifi-2026.10.23.dist-info/licenses/LICENSE",
           "bytes": 989,
           "sha256": "E93716DA6B9C0D5A4A1DF60FE695B370F0695603D21F6F83F053E42CFC10CAF7",
-          "source": "installed distribution RECORD: certifi 2026.7.22"
+          "source": "installed distribution RECORD: certifi 2026.10.23"
         }
       ],
-      "source_url": "https://pypi.org/project/certifi/2026.7.22/",
+      "scope": "candidate build environment; frozen subset audited separately",
       "status": "NOTICE_TEXT_COLLECTED"
     },
     {
@@ -87,15 +115,17 @@
       "name": "cffi",
       "version": "2.1.1",
       "declared_license": "MIT-0",
+      "source_url": "https://files.pythonhosted.org/packages/d9/79/615cc094e2fb508cade7de88d3b4f6c4ec2bab695c97bce9153dc65aadf5/cffi-2.1.1-cp312-cp312-win_amd64.whl",
+      "wheel_sha256": "f53e442b08449d42821fa4a4fba000095af9f62742a500f978a9f557ec44339a",
       "files": [
         {
-          "file": "python/cffi-2.1.1/cffi-2.1.1.dist-info/licenses/LICENSE",
+          "file": "python-3.1/cffi-2.1.1/cffi-2.1.1.dist-info/licenses/LICENSE",
           "bytes": 1123,
           "sha256": "5BA24DDC57067F9249ADD644C3AFC41A5D6DC37E23433EF759D95DF370B0AF63",
           "source": "installed distribution RECORD: cffi 2.1.1"
         }
       ],
-      "source_url": "https://pypi.org/project/cffi/2.1.1/",
+      "scope": "candidate build environment; frozen subset audited separately",
       "status": "NOTICE_TEXT_COLLECTED"
     },
     {
@@ -103,15 +133,35 @@
       "name": "click",
       "version": "8.5.0",
       "declared_license": "BSD-3-Clause",
+      "source_url": "https://files.pythonhosted.org/packages/58/50/6c0d534c5f134586a8e1ba4e330569e32f057e33372ae556463212fb4cd3/click-8.5.0-py3-none-any.whl",
+      "wheel_sha256": "255bc9599cf7748b4b1a446ccc735421bd08a2ae529a8b88597d3de5664ee360",
       "files": [
         {
-          "file": "python/click-8.5.0/click-8.5.0.dist-info/licenses/LICENSE.txt",
+          "file": "python-3.1/click-8.5.0/click-8.5.0.dist-info/licenses/LICENSE.txt",
           "bytes": 1475,
           "sha256": "9A8AD106A394E853BFE21F42F4E72D592819A22805D991B5F3275029292B658D",
           "source": "installed distribution RECORD: click 8.5.0"
         }
       ],
-      "source_url": "https://pypi.org/project/click/8.5.0/",
+      "scope": "candidate build environment; frozen subset audited separately",
+      "status": "NOTICE_TEXT_COLLECTED"
+    },
+    {
+      "ecosystem": "python",
+      "name": "colorama",
+      "version": "0.4.6",
+      "declared_license": "SEE_LICENSE_FILES",
+      "source_url": "https://files.pythonhosted.org/packages/d1/d6/3965ed04c63042e047cb6a3e6ed1a63a35087b6a609aa3a15ed8ac56c221/colorama-0.4.6-py2.py3-none-any.whl",
+      "wheel_sha256": "4f1d9991f5acc0ca119f9d443620b77f9d6b33703e51011c16baf57afb285fc6",
+      "files": [
+        {
+          "file": "python-3.1/colorama-0.4.6/colorama-0.4.6.dist-info/licenses/LICENSE.txt",
+          "bytes": 1491,
+          "sha256": "CAC35C02686E5D04A5A7140BFB3B36E73AED496656E891102E428886D7930318",
+          "source": "installed distribution RECORD: colorama 0.4.6"
+        }
+      ],
+      "scope": "candidate build environment; frozen subset audited separately",
       "status": "NOTICE_TEXT_COLLECTED"
     },
     {
@@ -119,55 +169,47 @@
       "name": "cryptography",
       "version": "50.0.2",
       "declared_license": "Apache-2.0 OR BSD-3-Clause",
+      "source_url": "https://files.pythonhosted.org/packages/9a/4f/adfc442765721292fff86d314ce385d3249d22db42295c0dd057727b60f3/cryptography-50.0.2-cp311-abi3-win_amd64.whl",
+      "wheel_sha256": "7afa5a6602a9f29af1f3a2965f831bae7c9d5d597b7cbb716d41ab3b7d89879c",
       "files": [
         {
-          "file": "python/cryptography-50.0.2/cryptography-50.0.2.dist-info/licenses/LICENSE",
+          "file": "python-3.1/cryptography-50.0.2/cryptography-50.0.2.dist-info/licenses/LICENSE",
           "bytes": 197,
           "sha256": "3E0C7C091A948B82533BA98FD7CBB40432D6F1A9ACBF85F5922D2F99A93AE6BB",
           "source": "installed distribution RECORD: cryptography 50.0.2"
         },
         {
-          "file": "python/cryptography-50.0.2/cryptography-50.0.2.dist-info/licenses/LICENSE.APACHE",
+          "file": "python-3.1/cryptography-50.0.2/cryptography-50.0.2.dist-info/licenses/LICENSE.APACHE",
           "bytes": 11360,
           "sha256": "AAC73B3148F6D1D7111DBCA32099F68D26C644C6813AE1E4F05F6579AA2663FE",
           "source": "installed distribution RECORD: cryptography 50.0.2"
         },
         {
-          "file": "python/cryptography-50.0.2/cryptography-50.0.2.dist-info/licenses/LICENSE.BSD",
+          "file": "python-3.1/cryptography-50.0.2/cryptography-50.0.2.dist-info/licenses/LICENSE.BSD",
           "bytes": 1532,
           "sha256": "602C4C7482DE6479DD2E9793CDA275E5E63D773DACD1ECA689232AB7008FB4FB",
           "source": "installed distribution RECORD: cryptography 50.0.2"
-        },
-        {
-          "file": "python/cryptography-50.0.2/cryptography-50.0.2.dist-info/sboms/cryptography-rust.cyclonedx.json",
-          "bytes": 45629,
-          "sha256": "246AF194B4C524807C5AAFFD2B7FF86C2C9BEE3EB3FCEEAC987709AD76E4E7EF",
-          "source": "installed distribution RECORD: cryptography 50.0.2"
-        },
-        {
-          "file": "python/cryptography-50.0.2/cryptography-50.0.2.dist-info/sboms/sbom.json",
-          "bytes": 1223,
-          "sha256": "5B5EEA08DD952A16EEF188F7A85AD439A4409EFA0E2BCE9CA339A4DE9C8DB3F0",
-          "source": "installed distribution RECORD: cryptography 50.0.2"
         }
       ],
-      "source_url": "https://pypi.org/project/cryptography/50.0.2/",
+      "scope": "candidate build environment; frozen subset audited separately",
       "status": "NOTICE_TEXT_COLLECTED"
     },
     {
       "ecosystem": "python",
       "name": "fastapi",
-      "version": "0.143.5",
+      "version": "0.162.0",
       "declared_license": "MIT",
+      "source_url": "https://files.pythonhosted.org/packages/b4/4f/3f2c25c9b43970b5e9a08beb5e04776247edea684ddc0930f4f02f0bb6cb/fastapi-0.162.0-py3-none-any.whl",
+      "wheel_sha256": "3785963de305dd09912426cb81f2d230fce98ab3521cdfe97265c8d14983128c",
       "files": [
         {
-          "file": "python/fastapi-0.143.5/fastapi-0.143.5.dist-info/licenses/LICENSE",
+          "file": "python-3.1/fastapi-0.162.0/fastapi-0.162.0.dist-info/licenses/LICENSE",
           "bytes": 1086,
           "sha256": "4EC89FFC81485B97FEC584B2D4A961032EEFFE834453894FD9C1274906CC744E",
-          "source": "installed distribution RECORD: fastapi 0.143.5"
+          "source": "installed distribution RECORD: fastapi 0.162.0"
         }
       ],
-      "source_url": "https://pypi.org/project/fastapi/0.143.5/",
+      "scope": "candidate build environment; frozen subset audited separately",
       "status": "NOTICE_TEXT_COLLECTED"
     },
     {
@@ -175,15 +217,17 @@
       "name": "h11",
       "version": "0.16.0",
       "declared_license": "MIT",
+      "source_url": "https://files.pythonhosted.org/packages/04/4b/29cac41a4d98d144bf5f6d33995617b185d14b22401f75ca86f384e87ff1/h11-0.16.0-py3-none-any.whl",
+      "wheel_sha256": "63cf8bbe7522de3bf65932fda1d9c2772064ffb3dae62d55932da54b31cb6c86",
       "files": [
         {
-          "file": "python/h11-0.16.0/h11-0.16.0.dist-info/licenses/LICENSE.txt",
+          "file": "python-3.1/h11-0.16.0/h11-0.16.0.dist-info/licenses/LICENSE.txt",
           "bytes": 1124,
           "sha256": "37DB5BB85926DB28A427A25867F10B1232003AEA1BE69CCB851138ADB8E6F361",
           "source": "installed distribution RECORD: h11 0.16.0"
         }
       ],
-      "source_url": "https://pypi.org/project/h11/0.16.0/",
+      "scope": "candidate build environment; frozen subset audited separately",
       "status": "NOTICE_TEXT_COLLECTED"
     },
     {
@@ -191,15 +235,17 @@
       "name": "httpcore",
       "version": "1.0.9",
       "declared_license": "BSD-3-Clause",
+      "source_url": "https://files.pythonhosted.org/packages/7e/f5/f66802a942d491edb555dd61e3a9961140fd64c90bce1eafd741609d334d/httpcore-1.0.9-py3-none-any.whl",
+      "wheel_sha256": "2d400746a40668fc9dec9810239072b40b4484b640a8c38fd654a024c7a1bf55",
       "files": [
         {
-          "file": "python/httpcore-1.0.9/httpcore-1.0.9.dist-info/licenses/LICENSE.md",
+          "file": "python-3.1/httpcore-1.0.9/httpcore-1.0.9.dist-info/licenses/LICENSE.md",
           "bytes": 1518,
           "sha256": "FDCB59154C74CBABA16A11242F7740BEA9F23D6FEB5547917D8C5F94A80392A5",
           "source": "installed distribution RECORD: httpcore 1.0.9"
         }
       ],
-      "source_url": "https://pypi.org/project/httpcore/1.0.9/",
+      "scope": "candidate build environment; frozen subset audited separately",
       "status": "NOTICE_TEXT_COLLECTED"
     },
     {
@@ -207,27 +253,29 @@
       "name": "httptools",
       "version": "0.9.0",
       "declared_license": "MIT",
+      "source_url": "https://files.pythonhosted.org/packages/8b/69/813f1bf90be507d4166c437be1a413574d0e0abf36e2fec10c266661b0ee/httptools-0.9.0-cp312-cp312-win_amd64.whl",
+      "wheel_sha256": "7e32b83bd8c2f8b6fa726ef34e63e21c4d7eddc277d40d4ef7245ea3ed28e5b6",
       "files": [
         {
-          "file": "python/httptools-0.9.0/httptools-0.9.0.dist-info/licenses/LICENSE",
+          "file": "python-3.1/httptools-0.9.0/httptools-0.9.0.dist-info/licenses/LICENSE",
           "bytes": 1114,
           "sha256": "1C028B059D7A58E14CCDA38CABCED698C591FE614FFBE4F721430446E86C8D69",
           "source": "installed distribution RECORD: httptools 0.9.0"
         },
         {
-          "file": "python/httptools-0.9.0/httptools-0.9.0.dist-info/licenses/vendor/http-parser/LICENSE-MIT",
+          "file": "python-3.1/httptools-0.9.0/httptools-0.9.0.dist-info/licenses/vendor/http-parser/LICENSE-MIT",
           "bytes": 1096,
           "sha256": "5CD1B682C0CCBAC0CB31B86A9A1104C3E2E7B1377A282B8169D2694B400DB7C2",
           "source": "installed distribution RECORD: httptools 0.9.0"
         },
         {
-          "file": "python/httptools-0.9.0/httptools-0.9.0.dist-info/licenses/vendor/llhttp/LICENSE",
+          "file": "python-3.1/httptools-0.9.0/httptools-0.9.0.dist-info/licenses/vendor/llhttp/LICENSE",
           "bytes": 1091,
           "sha256": "279012E02A10ACFD59A3F2D8F13A497332535D871C2B27C89988985B06A3A438",
           "source": "installed distribution RECORD: httptools 0.9.0"
         }
       ],
-      "source_url": "https://pypi.org/project/httptools/0.9.0/",
+      "scope": "candidate build environment; frozen subset audited separately",
       "status": "NOTICE_TEXT_COLLECTED"
     },
     {
@@ -235,15 +283,17 @@
       "name": "httpx",
       "version": "0.28.1",
       "declared_license": "BSD-3-Clause",
+      "source_url": "https://files.pythonhosted.org/packages/2a/39/e50c7c3a983047577ee07d2a9e53faf5a69493943ec3f6a384bdc792deb2/httpx-0.28.1-py3-none-any.whl",
+      "wheel_sha256": "d909fcccc110f8c7faf814ca82a9a4d816bc5a6dbfea25d6591d6985b8ba59ad",
       "files": [
         {
-          "file": "python/httpx-0.28.1/httpx-0.28.1.dist-info/licenses/LICENSE.md",
+          "file": "python-3.1/httpx-0.28.1/httpx-0.28.1.dist-info/licenses/LICENSE.md",
           "bytes": 1508,
           "sha256": "4EC59D544F12B5F539A3A716FD321AC58CCD8030B465221F2C880200CDF28D8D",
           "source": "installed distribution RECORD: httpx 0.28.1"
         }
       ],
-      "source_url": "https://pypi.org/project/httpx/0.28.1/",
+      "scope": "candidate build environment; frozen subset audited separately",
       "status": "NOTICE_TEXT_COLLECTED"
     },
     {
@@ -251,15 +301,17 @@
       "name": "httpx-sse",
       "version": "0.4.3",
       "declared_license": "MIT",
+      "source_url": "https://files.pythonhosted.org/packages/d2/fd/6668e5aec43ab844de6fc74927e155a3b37bf40d7c3790e49fc0406b6578/httpx_sse-0.4.3-py3-none-any.whl",
+      "wheel_sha256": "0ac1c9fe3c0afad2e0ebb25a934a59f4c7823b60792691f779fad2c5568830fc",
       "files": [
         {
-          "file": "python/httpx-sse-0.4.3/httpx_sse-0.4.3.dist-info/licenses/LICENSE",
+          "file": "python-3.1/httpx-sse-0.4.3/httpx_sse-0.4.3.dist-info/licenses/LICENSE",
           "bytes": 1072,
           "sha256": "BEEC67E4EE83A7AF26F242BED9987AA863D6D2DFB776106AA2360C4187F31901",
           "source": "installed distribution RECORD: httpx-sse 0.4.3"
         }
       ],
-      "source_url": "https://pypi.org/project/httpx-sse/0.4.3/",
+      "scope": "candidate build environment; frozen subset audited separately",
       "status": "NOTICE_TEXT_COLLECTED"
     },
     {
@@ -267,15 +319,35 @@
       "name": "idna",
       "version": "3.20",
       "declared_license": "BSD-3-Clause",
+      "source_url": "https://files.pythonhosted.org/packages/58/a2/bb081bab032533a855d44de1d56f8e8426114ff1ba5d1f07a438a0a654f8/idna-3.20-py3-none-any.whl",
+      "wheel_sha256": "ab7ae7122974553370f0bdb919e1a960b2cd1bc1ef0276416d896db81c14582c",
       "files": [
         {
-          "file": "python/idna-3.20/idna-3.20.dist-info/licenses/LICENSE.md",
+          "file": "python-3.1/idna-3.20/idna-3.20.dist-info/licenses/LICENSE.md",
           "bytes": 1541,
           "sha256": "1A9A4F0E3D479A27240DDD59A9137A66AB4A0F9DFDC8CA6188CC0BFD85187F04",
           "source": "installed distribution RECORD: idna 3.20"
         }
       ],
-      "source_url": "https://pypi.org/project/idna/3.20/",
+      "scope": "candidate build environment; frozen subset audited separately",
+      "status": "NOTICE_TEXT_COLLECTED"
+    },
+    {
+      "ecosystem": "python",
+      "name": "iniconfig",
+      "version": "2.3.1",
+      "declared_license": "MIT",
+      "source_url": "https://files.pythonhosted.org/packages/56/43/4ca9e49d27a1fcf6bece6f6aec0ea46bb9112489b93d4b688fb415457bdb/iniconfig-2.3.1-py3-none-any.whl",
+      "wheel_sha256": "9121e2c1fdb355232495be3194c8dfe87ccc2d5dee45947b78e68f499790d7a7",
+      "files": [
+        {
+          "file": "python-3.1/iniconfig-2.3.1/iniconfig-2.3.1.dist-info/licenses/LICENSE",
+          "bytes": 1098,
+          "sha256": "3409FA91F7ACE557894632676656E32264FE5EF7581535725DC9A23774551BD4",
+          "source": "installed distribution RECORD: iniconfig 2.3.1"
+        }
+      ],
+      "scope": "candidate build environment; frozen subset audited separately",
       "status": "NOTICE_TEXT_COLLECTED"
     },
     {
@@ -283,21 +355,23 @@
       "name": "jpype1",
       "version": "1.7.1",
       "declared_license": "Apache-2.0",
+      "source_url": "https://files.pythonhosted.org/packages/ca/80/c0098bedd014bc9a1a8a349e40a1fc1408c79af28f6c32bdbb1a2b839c7b/jpype1-1.7.1-cp312-cp312-win_amd64.whl",
+      "wheel_sha256": "d7dad528c73d02987358485dc37fab36edb9ad8bce53533e65f54cff1b68a4bc",
       "files": [
         {
-          "file": "python/jpype1-1.7.1/jpype1-1.7.1.dist-info/licenses/LICENSE",
+          "file": "python-3.1/jpype1-1.7.1/jpype1-1.7.1.dist-info/licenses/LICENSE",
           "bytes": 11357,
           "sha256": "C71D239DF91726FC519C6EB72D318EC65820627232B2F796219E87DCF35D0AB4",
           "source": "installed distribution RECORD: jpype1 1.7.1"
         },
         {
-          "file": "python/jpype1-1.7.1/jpype1-1.7.1.dist-info/licenses/NOTICE",
+          "file": "python-3.1/jpype1-1.7.1/jpype1-1.7.1.dist-info/licenses/NOTICE",
           "bytes": 1999,
           "sha256": "63E1AE53A18AFBE98C0583694229A0C83526DF8127C51E57745913CB3FB0B92E",
           "source": "installed distribution RECORD: jpype1 1.7.1"
         }
       ],
-      "source_url": "https://pypi.org/project/jpype1/1.7.1/",
+      "scope": "candidate build environment; frozen subset audited separately",
       "status": "NOTICE_TEXT_COLLECTED"
     },
     {
@@ -305,15 +379,17 @@
       "name": "jsonschema",
       "version": "4.26.0",
       "declared_license": "MIT",
+      "source_url": "https://files.pythonhosted.org/packages/69/90/f63fb5873511e014207a475e2bb4e8b2e570d655b00ac19a9a0ca0a385ee/jsonschema-4.26.0-py3-none-any.whl",
+      "wheel_sha256": "d489f15263b8d200f8387e64b4c3a75f06629559fb73deb8fdfb525f2dab50ce",
       "files": [
         {
-          "file": "python/jsonschema-4.26.0/jsonschema-4.26.0.dist-info/licenses/COPYING",
+          "file": "python-3.1/jsonschema-4.26.0/jsonschema-4.26.0.dist-info/licenses/COPYING",
           "bytes": 1057,
           "sha256": "4F92A015A13C4D1A040BEF018AA13430B4F1BC73B41B16BB846C346766DE7439",
           "source": "installed distribution RECORD: jsonschema 4.26.0"
         }
       ],
-      "source_url": "https://pypi.org/project/jsonschema/4.26.0/",
+      "scope": "candidate build environment; frozen subset audited separately",
       "status": "NOTICE_TEXT_COLLECTED"
     },
     {
@@ -321,15 +397,17 @@
       "name": "jsonschema-specifications",
       "version": "2025.9.1",
       "declared_license": "MIT",
+      "source_url": "https://files.pythonhosted.org/packages/41/45/1a4ed80516f02155c51f51e8cedb3c1902296743db0bbc66608a0db2814f/jsonschema_specifications-2025.9.1-py3-none-any.whl",
+      "wheel_sha256": "98802fee3a11ee76ecaca44429fda8a41bff98b00a0f2838151b113f210cc6fe",
       "files": [
         {
-          "file": "python/jsonschema-specifications-2025.9.1/jsonschema_specifications-2025.9.1.dist-info/licenses/COPYING",
+          "file": "python-3.1/jsonschema-specifications-2025.9.1/jsonschema_specifications-2025.9.1.dist-info/licenses/COPYING",
           "bytes": 1057,
           "sha256": "42DCD63495F87B4EB7C7757AFA379BB55A53F94AFD7A5F657D9ADF57236E515C",
           "source": "installed distribution RECORD: jsonschema-specifications 2025.9.1"
         }
       ],
-      "source_url": "https://pypi.org/project/jsonschema-specifications/2025.9.1/",
+      "scope": "candidate build environment; frozen subset audited separately",
       "status": "NOTICE_TEXT_COLLECTED"
     },
     {
@@ -337,31 +415,53 @@
       "name": "mcp",
       "version": "1.30.0",
       "declared_license": "MIT",
+      "source_url": "https://files.pythonhosted.org/packages/f5/f4/e58bc33317c92a0203664daaf00bf6f41166cc0149e5d6870a03f7cd004a/mcp-1.30.0-py3-none-any.whl",
+      "wheel_sha256": "666edb5009503e1047c9d60346a756f94b261f05cc2625f23d41c728ffc484d0",
       "files": [
         {
-          "file": "python/mcp-1.30.0/mcp-1.30.0.dist-info/licenses/LICENSE",
+          "file": "python-3.1/mcp-1.30.0/mcp-1.30.0.dist-info/licenses/LICENSE",
           "bytes": 1071,
           "sha256": "5E13DBBC1D120FC2A03CECDE7C91424AE2D7DE11B63D58DED2F4431E261EE50D",
           "source": "installed distribution RECORD: mcp 1.30.0"
         }
       ],
-      "source_url": "https://pypi.org/project/mcp/1.30.0/",
+      "scope": "candidate build environment; frozen subset audited separately",
       "status": "NOTICE_TEXT_COLLECTED"
     },
     {
       "ecosystem": "python",
-      "name": "mph",
+      "name": "MPh",
       "version": "1.4.0",
       "declared_license": "MIT",
+      "source_url": "https://files.pythonhosted.org/packages/ef/6e/1de806ec962cd29a9c9a74905b43b75d90f7daf7c970bb4c7ceb9877164e/mph-1.4.0-py3-none-any.whl",
+      "wheel_sha256": "835835ac9d211601def50a6f8c61b783531e905d7165c8de7bf8a378a040c385",
       "files": [
         {
-          "file": "python/mph-1.4.0/mph-1.4.0.dist-info/licenses/license.txt",
+          "file": "python-3.1/MPh-1.4.0/mph-1.4.0.dist-info/licenses/license.txt",
           "bytes": 1093,
           "sha256": "3536EE5B808FBB68BA82D8BBB24BCA81574C5082ECCE8529EE120B5D4BF0114B",
-          "source": "installed distribution RECORD: mph 1.4.0"
+          "source": "installed distribution RECORD: MPh 1.4.0"
         }
       ],
-      "source_url": "https://pypi.org/project/mph/1.4.0/",
+      "scope": "candidate build environment; frozen subset audited separately",
+      "status": "NOTICE_TEXT_COLLECTED"
+    },
+    {
+      "ecosystem": "python",
+      "name": "networkx",
+      "version": "3.7",
+      "declared_license": "BSD-3-Clause",
+      "source_url": "https://files.pythonhosted.org/packages/7e/cd/fe58041e9011f307c490e3e17dd48cc516448f7c698a3f2d9d9d65d7e6a8/networkx-3.7-py3-none-any.whl",
+      "wheel_sha256": "e3fd2c13a7814cee3746340d8d7f8598a67f16a58bf47fb7f8793fab6efca1b0",
+      "files": [
+        {
+          "file": "python-3.1/networkx-3.7/networkx-3.7.dist-info/licenses/LICENSE.txt",
+          "bytes": 1763,
+          "sha256": "6025F323EA29DC2F0EE0ABD9523BF910186F55B0E148E6EBF646C55566278E2E",
+          "source": "installed distribution RECORD: networkx 3.7"
+        }
+      ],
+      "scope": "candidate build environment; frozen subset audited separately",
       "status": "NOTICE_TEXT_COLLECTED"
     },
     {
@@ -369,139 +469,149 @@
       "name": "numpy",
       "version": "2.5.4",
       "declared_license": "BSD-3-Clause AND 0BSD AND MIT AND Zlib AND CC0-1.0",
+      "source_url": "https://files.pythonhosted.org/packages/12/33/fefe62073dc8acfd0f2b9ed7c003af2f50aa61555e113e6db02b8f79f145/numpy-2.5.4-cp312-cp312-win_amd64.whl",
+      "wheel_sha256": "a7b1b6353e36a7e50de2973a38d705c88ee93adcf120673cee7f45a4a3fa223a",
       "files": [
         {
-          "file": "python/numpy-2.5.4/numpy-2.5.4.dist-info/licenses/LICENSE.txt",
+          "file": "python-3.1/numpy-2.5.4/numpy-2.5.4.dist-info/licenses/LICENSE.txt",
           "bytes": 45831,
           "sha256": "A804DFF0EAD9FADC5293456410BCBFC32BF024BE9C4513459663FB7B442D2341",
           "source": "installed distribution RECORD: numpy 2.5.4"
         },
         {
-          "file": "python/numpy-2.5.4/numpy-2.5.4.dist-info/licenses/numpy/_core/include/numpy/libdivide/LICENSE.txt",
+          "file": "python-3.1/numpy-2.5.4/numpy-2.5.4.dist-info/licenses/numpy/_core/include/numpy/libdivide/LICENSE.txt",
           "bytes": 1039,
           "sha256": "D544761558B510866C21F7E8A2D5716FCA76E0B98117E3B6B86314DB7244D150",
           "source": "installed distribution RECORD: numpy 2.5.4"
         },
         {
-          "file": "python/numpy-2.5.4/numpy-2.5.4.dist-info/licenses/numpy/_core/src/common/pythoncapi-compat/COPYING",
+          "file": "python-3.1/numpy-2.5.4/numpy-2.5.4.dist-info/licenses/numpy/_core/src/common/pythoncapi-compat/COPYING",
           "bytes": 704,
           "sha256": "AEA41976C720F91BD19725C16916A1ACE40EB1EA42620D340E587A5DE4BBCEA0",
           "source": "installed distribution RECORD: numpy 2.5.4"
         },
         {
-          "file": "python/numpy-2.5.4/numpy-2.5.4.dist-info/licenses/numpy/_core/src/highway/LICENSE",
+          "file": "python-3.1/numpy-2.5.4/numpy-2.5.4.dist-info/licenses/numpy/_core/src/highway/LICENSE",
           "bytes": 21155,
           "sha256": "D208152E2777FFD0126EACC1BD21C0320D69E4E6B622D21A2A12A47E8EF73763",
           "source": "installed distribution RECORD: numpy 2.5.4"
         },
         {
-          "file": "python/numpy-2.5.4/numpy-2.5.4.dist-info/licenses/numpy/_core/src/npysort/x86-simd-sort/LICENSE.md",
+          "file": "python-3.1/numpy-2.5.4/numpy-2.5.4.dist-info/licenses/numpy/_core/src/multiarray/dragon4_LICENSE.txt",
+          "bytes": 1441,
+          "sha256": "B0FD592D4EAD563148E3977E7B589169D46A5EF2FF133C755A81AF880A3FC919",
+          "source": "installed distribution RECORD: numpy 2.5.4"
+        },
+        {
+          "file": "python-3.1/numpy-2.5.4/numpy-2.5.4.dist-info/licenses/numpy/_core/src/npysort/x86-simd-sort/LICENSE.md",
           "bytes": 1542,
           "sha256": "A732977853530066790C42817087F4829B518DD98D340C916ACBFD227E39D3CB",
           "source": "installed distribution RECORD: numpy 2.5.4"
         },
         {
-          "file": "python/numpy-2.5.4/numpy-2.5.4.dist-info/licenses/numpy/_core/src/umath/svml/LICENSE",
+          "file": "python-3.1/numpy-2.5.4/numpy-2.5.4.dist-info/licenses/numpy/_core/src/umath/svml/LICENSE",
           "bytes": 1573,
           "sha256": "585483905B13D4B42F800C55BA99E89D6E2E33CCD5F503E201C07531D148FF41",
           "source": "installed distribution RECORD: numpy 2.5.4"
         },
         {
-          "file": "python/numpy-2.5.4/numpy-2.5.4.dist-info/licenses/numpy/fft/pocketfft/LICENSE.md",
+          "file": "python-3.1/numpy-2.5.4/numpy-2.5.4.dist-info/licenses/numpy/fft/pocketfft/LICENSE.md",
           "bytes": 1523,
           "sha256": "8DB000E158C162E7249787852D8C69764706502CCEE725C06641B31C1E95C8AF",
           "source": "installed distribution RECORD: numpy 2.5.4"
         },
         {
-          "file": "python/numpy-2.5.4/numpy-2.5.4.dist-info/licenses/numpy/linalg/lapack_lite/LICENSE.txt",
+          "file": "python-3.1/numpy-2.5.4/numpy-2.5.4.dist-info/licenses/numpy/linalg/lapack_lite/LICENSE.txt",
           "bytes": 2314,
           "sha256": "19060EF465E1797D682EE0FC3081BD25AB1395E995E43D25C9D13C95D9A3CD6B",
           "source": "installed distribution RECORD: numpy 2.5.4"
         },
         {
-          "file": "python/numpy-2.5.4/numpy-2.5.4.dist-info/licenses/numpy/ma/LICENSE",
+          "file": "python-3.1/numpy-2.5.4/numpy-2.5.4.dist-info/licenses/numpy/ma/LICENSE",
           "bytes": 1616,
           "sha256": "D78DBB208B80D92B4D333E41A4BAAE50D12444F46E53199FA7726A91DE6E2DA7",
           "source": "installed distribution RECORD: numpy 2.5.4"
         },
         {
-          "file": "python/numpy-2.5.4/numpy-2.5.4.dist-info/licenses/numpy/random/LICENSE.md",
+          "file": "python-3.1/numpy-2.5.4/numpy-2.5.4.dist-info/licenses/numpy/random/LICENSE.md",
           "bytes": 3582,
           "sha256": "B4BC2F4FA1C95778F1ED3DD8F14706BECE399475B978F9F34B5D3CD72521B48A",
           "source": "installed distribution RECORD: numpy 2.5.4"
         },
         {
-          "file": "python/numpy-2.5.4/numpy-2.5.4.dist-info/licenses/numpy/random/src/distributions/LICENSE.md",
+          "file": "python-3.1/numpy-2.5.4/numpy-2.5.4.dist-info/licenses/numpy/random/src/distributions/LICENSE.md",
           "bytes": 2805,
           "sha256": "CF5619F25B112D5CE7C896EFFFC8E610BCB345DFADCC19F2C1460AA48FFF2C9E",
           "source": "installed distribution RECORD: numpy 2.5.4"
         },
         {
-          "file": "python/numpy-2.5.4/numpy-2.5.4.dist-info/licenses/numpy/random/src/mt19937/LICENSE.md",
+          "file": "python-3.1/numpy-2.5.4/numpy-2.5.4.dist-info/licenses/numpy/random/src/mt19937/LICENSE.md",
           "bytes": 2986,
           "sha256": "92C10699884321F1C2947FE2A70AB23B0FBF1507F756D89DD08F38C61FC3D4FA",
           "source": "installed distribution RECORD: numpy 2.5.4"
         },
         {
-          "file": "python/numpy-2.5.4/numpy-2.5.4.dist-info/licenses/numpy/random/src/pcg64/LICENSE.md",
+          "file": "python-3.1/numpy-2.5.4/numpy-2.5.4.dist-info/licenses/numpy/random/src/pcg64/LICENSE.md",
           "bytes": 1176,
           "sha256": "41190663B77BEE5302386495A07B7EABFBFA571AA0AE2F11DA6764162062FC4F",
           "source": "installed distribution RECORD: numpy 2.5.4"
         },
         {
-          "file": "python/numpy-2.5.4/numpy-2.5.4.dist-info/licenses/numpy/random/src/philox/LICENSE.md",
+          "file": "python-3.1/numpy-2.5.4/numpy-2.5.4.dist-info/licenses/numpy/random/src/philox/LICENSE.md",
           "bytes": 1540,
           "sha256": "322AC46D870C8AEEAD6C53ADCCCC839296FB3C8E456EAE155081297DAF7F8013",
           "source": "installed distribution RECORD: numpy 2.5.4"
         },
         {
-          "file": "python/numpy-2.5.4/numpy-2.5.4.dist-info/licenses/numpy/random/src/sfc64/LICENSE.md",
+          "file": "python-3.1/numpy-2.5.4/numpy-2.5.4.dist-info/licenses/numpy/random/src/sfc64/LICENSE.md",
           "bytes": 1253,
           "sha256": "28CAD82CE1379DC529DF30DA78EC012D7D0D1D576B03DDCB93388AEE53659F59",
           "source": "installed distribution RECORD: numpy 2.5.4"
         },
         {
-          "file": "python/numpy-2.5.4/numpy-2.5.4.dist-info/licenses/numpy/random/src/splitmix64/LICENSE.md",
+          "file": "python-3.1/numpy-2.5.4/numpy-2.5.4.dist-info/licenses/numpy/random/src/splitmix64/LICENSE.md",
           "bytes": 340,
           "sha256": "454EC7350E478E037061850B67395753B425B1CB0A34BBC26290B020BF89D763",
           "source": "installed distribution RECORD: numpy 2.5.4"
         },
         {
-          "file": "python/numpy-2.5.4/numpy/_core/include/numpy/random/LICENSE.txt",
+          "file": "python-3.1/numpy-2.5.4/numpy/_core/include/numpy/random/LICENSE.txt",
           "bytes": 1039,
           "sha256": "D544761558B510866C21F7E8A2D5716FCA76E0B98117E3B6B86314DB7244D150",
           "source": "installed distribution RECORD: numpy 2.5.4"
         },
         {
-          "file": "python/numpy-2.5.4/numpy/ma/LICENSE",
+          "file": "python-3.1/numpy-2.5.4/numpy/ma/LICENSE",
           "bytes": 1616,
           "sha256": "D78DBB208B80D92B4D333E41A4BAAE50D12444F46E53199FA7726A91DE6E2DA7",
           "source": "installed distribution RECORD: numpy 2.5.4"
         },
         {
-          "file": "python/numpy-2.5.4/numpy/random/LICENSE.md",
+          "file": "python-3.1/numpy-2.5.4/numpy/random/LICENSE.md",
           "bytes": 3582,
           "sha256": "B4BC2F4FA1C95778F1ED3DD8F14706BECE399475B978F9F34B5D3CD72521B48A",
           "source": "installed distribution RECORD: numpy 2.5.4"
         }
       ],
-      "source_url": "https://pypi.org/project/numpy/2.5.4/",
+      "scope": "candidate build environment; frozen subset audited separately",
       "status": "NOTICE_TEXT_COLLECTED"
     },
     {
       "ecosystem": "python",
       "name": "opentelemetry-api",
-      "version": "1.45.1",
+      "version": "1.45.2",
       "declared_license": "Apache-2.0",
+      "source_url": "https://files.pythonhosted.org/packages/a9/2d/610db864d7513158cebb8f36cc88e67e73bd6c7aa1905ef18d89e1281c81/opentelemetry_api-1.45.2-py3-none-any.whl",
+      "wheel_sha256": "2cbd737377e710ee740d261c94e93fa0f08e6d037c18f17513cc0a2d94479a34",
       "files": [
         {
-          "file": "python/opentelemetry-api-1.45.1/opentelemetry_api-1.45.1.dist-info/licenses/LICENSE",
+          "file": "python-3.1/opentelemetry-api-1.45.2/opentelemetry_api-1.45.2.dist-info/licenses/LICENSE",
           "bytes": 11357,
           "sha256": "C71D239DF91726FC519C6EB72D318EC65820627232B2F796219E87DCF35D0AB4",
-          "source": "installed distribution RECORD: opentelemetry-api 1.45.1"
+          "source": "installed distribution RECORD: opentelemetry-api 1.45.2"
         }
       ],
-      "source_url": "https://pypi.org/project/opentelemetry-api/1.45.1/",
+      "scope": "candidate build environment; frozen subset audited separately",
       "status": "NOTICE_TEXT_COLLECTED"
     },
     {
@@ -509,81 +619,173 @@
       "name": "packaging",
       "version": "26.3",
       "declared_license": "Apache-2.0 OR BSD-2-Clause",
+      "source_url": "https://files.pythonhosted.org/packages/63/34/ba1c580383c9eada3711951fef0795c80b829a078d72188184bcab9dd527/packaging-26.3-py3-none-any.whl",
+      "wheel_sha256": "d7193f7c8e4e93f444fde0262bf90af30e16fa0ad0ad44cb553c87339b23cd1c",
       "files": [
         {
-          "file": "python/packaging-26.3/packaging-26.3.dist-info/licenses/LICENSE",
+          "file": "python-3.1/packaging-26.3/packaging-26.3.dist-info/licenses/LICENSE",
           "bytes": 197,
           "sha256": "CAD1EF5BD340D73E074BA614D26F7DEACA5C7940C3D8C34852E65C4909686C48",
           "source": "installed distribution RECORD: packaging 26.3"
         },
         {
-          "file": "python/packaging-26.3/packaging-26.3.dist-info/licenses/LICENSE.APACHE",
+          "file": "python-3.1/packaging-26.3/packaging-26.3.dist-info/licenses/LICENSE.APACHE",
           "bytes": 10174,
           "sha256": "0D542E0C8804E39AA7F37EB00DA5A762149DC682D7829451287E11B938E94594",
           "source": "installed distribution RECORD: packaging 26.3"
         },
         {
-          "file": "python/packaging-26.3/packaging-26.3.dist-info/licenses/LICENSE.BSD",
+          "file": "python-3.1/packaging-26.3/packaging-26.3.dist-info/licenses/LICENSE.BSD",
           "bytes": 1344,
           "sha256": "B70E7E9B742F1CC6F948B34C16AA39FFECE94196364BC88FF0D2180F0028FAC5",
           "source": "installed distribution RECORD: packaging 26.3"
         }
       ],
-      "source_url": "https://pypi.org/project/packaging/26.3/",
+      "scope": "candidate build environment; frozen subset audited separately",
+      "status": "NOTICE_TEXT_COLLECTED"
+    },
+    {
+      "ecosystem": "python",
+      "name": "pefile",
+      "version": "2024.8.26",
+      "declared_license": "MIT",
+      "source_url": "https://files.pythonhosted.org/packages/54/16/12b82f791c7f50ddec566873d5bdd245baa1491bac11d15ffb98aecc8f8b/pefile-2024.8.26-py3-none-any.whl",
+      "wheel_sha256": "76f8b485dcd3b1bb8166f1128d395fa3d87af26360c2358fb75b80019b957c6f",
+      "files": [
+        {
+          "file": "python-3.1/pefile-2024.8.26/pefile-2024.8.26.dist-info/LICENSE",
+          "bytes": 1083,
+          "sha256": "B44409C067C6DA52BFB54BB6624FB11A7B52157C3A13AE1400232F8196E86AD3",
+          "source": "installed distribution RECORD: pefile 2024.8.26"
+        }
+      ],
+      "scope": "candidate build environment; frozen subset audited separately",
+      "status": "NOTICE_TEXT_COLLECTED"
+    },
+    {
+      "ecosystem": "python",
+      "name": "pluggy",
+      "version": "1.7.0",
+      "declared_license": "MIT",
+      "source_url": "https://files.pythonhosted.org/packages/40/9e/2b38731e0fc536806f16490e1a12d7f0dc2a1235aa8cc07bcc75416a7daa/pluggy-1.7.0-py3-none-any.whl",
+      "wheel_sha256": "7dd7b0d8832ba3cb632c306926ded123429211b83641b35dc5c41ad2d34f9bec",
+      "files": [
+        {
+          "file": "python-3.1/pluggy-1.7.0/pluggy-1.7.0.dist-info/licenses/LICENSE",
+          "bytes": 1110,
+          "sha256": "D6B65E6C213A5D0B577911D34D6E5949B9F59D76C238C5071A2F3FC16CFB2606",
+          "source": "installed distribution RECORD: pluggy 1.7.0"
+        }
+      ],
+      "scope": "candidate build environment; frozen subset audited separately",
+      "status": "NOTICE_TEXT_COLLECTED"
+    },
+    {
+      "ecosystem": "python",
+      "name": "psutil",
+      "version": "7.2.2",
+      "declared_license": "BSD-3-Clause",
+      "source_url": "https://files.pythonhosted.org/packages/b4/90/e2159492b5426be0c1fef7acba807a03511f97c5f86b3caeda6ad92351a7/psutil-7.2.2-cp37-abi3-win_amd64.whl",
+      "wheel_sha256": "eb7e81434c8d223ec4a219b5fc1c47d0417b12be7ea866e24fb5ad6e84b3d988",
+      "files": [
+        {
+          "file": "python-3.1/psutil-7.2.2/psutil-7.2.2.dist-info/LICENSE",
+          "bytes": 1577,
+          "sha256": "C7ADC4D5D1337A548B967421F1FBE258B93033A0417708FD6F4E38F8ECBCEB80",
+          "source": "installed distribution RECORD: psutil 7.2.2"
+        }
+      ],
+      "scope": "candidate build environment; frozen subset audited separately",
+      "status": "NOTICE_TEXT_COLLECTED"
+    },
+    {
+      "ecosystem": "python",
+      "name": "pycparser",
+      "version": "3.12",
+      "declared_license": "BSD-3-Clause",
+      "source_url": "https://files.pythonhosted.org/packages/b6/ae/315bbeee126a769cbde43cf4908acb4b40408d8bf8bbf334dd7368d8dadf/pycparser-3.12-py3-none-any.whl",
+      "wheel_sha256": "a076f3f489b39b43ed13563a1dafe42447445bec2e294154ec5c57fcdda4c85e",
+      "files": [
+        {
+          "file": "python-3.1/pycparser-3.12/pycparser-3.12.dist-info/licenses/LICENSE",
+          "bytes": 1543,
+          "sha256": "0A9E78156AE8B96CAF1B4F11AC2DF424B83DE29736F9E757630548A6272FDF90",
+          "source": "installed distribution RECORD: pycparser 3.12"
+        }
+      ],
+      "scope": "candidate build environment; frozen subset audited separately",
       "status": "NOTICE_TEXT_COLLECTED"
     },
     {
       "ecosystem": "python",
       "name": "pydantic",
-      "version": "2.14.1",
+      "version": "2.14.2",
       "declared_license": "MIT",
+      "source_url": "https://files.pythonhosted.org/packages/97/01/c71a71258b58659c72504e5fd65b451f6e36e34dc931d0b237ded213c814/pydantic-2.14.2-py3-none-any.whl",
+      "wheel_sha256": "7efbf7507b937931cd32a5755acb00ea1cf5ccb1d4e8067a5850d5069e382118",
       "files": [
         {
-          "file": "python/pydantic-2.14.1/pydantic-2.14.1.dist-info/licenses/LICENSE",
+          "file": "python-3.1/pydantic-2.14.2/pydantic-2.14.2.dist-info/licenses/LICENSE",
           "bytes": 1129,
           "sha256": "A9E186F3CA16B5EEF84318E7A701721351A00CB7B8AE3A4394B67B49E3529EF3",
-          "source": "installed distribution RECORD: pydantic 2.14.1"
+          "source": "installed distribution RECORD: pydantic 2.14.2"
         }
       ],
-      "source_url": "https://pypi.org/project/pydantic/2.14.1/",
-      "status": "NOTICE_TEXT_COLLECTED"
-    },
-    {
-      "ecosystem": "python",
-      "name": "pydantic-core",
-      "version": "2.50.1",
-      "declared_license": "MIT",
-      "files": [
-        {
-          "file": "python/pydantic-core-2.50.1/pydantic_core-2.50.1.dist-info/licenses/LICENSE",
-          "bytes": 1101,
-          "sha256": "FBE7F615F18D135C07000E5A86325DB27F42C7729699EF166AC1F7A3F4586BF4",
-          "source": "installed distribution RECORD: pydantic-core 2.50.1"
-        },
-        {
-          "file": "python/pydantic-core-2.50.1/pydantic_core-2.50.1.dist-info/sboms/pydantic-core.cyclonedx.json",
-          "bytes": 121110,
-          "sha256": "5367C561194D03751D49D0253EA152D1B9C54E5A239A333BAA4F955704AE9BC4",
-          "source": "installed distribution RECORD: pydantic-core 2.50.1"
-        }
-      ],
-      "source_url": "https://pypi.org/project/pydantic-core/2.50.1/",
+      "scope": "candidate build environment; frozen subset audited separately",
       "status": "NOTICE_TEXT_COLLECTED"
     },
     {
       "ecosystem": "python",
       "name": "pydantic-settings",
-      "version": "2.16.0",
+      "version": "2.16.2",
       "declared_license": "MIT",
+      "source_url": "https://files.pythonhosted.org/packages/39/88/4131c51ff87b7cd7f82a1194d0c0a2b7ca68c72d9da04c3b7e69ab91a79f/pydantic_settings-2.16.2-py3-none-any.whl",
+      "wheel_sha256": "8d523e5c129b097686bde019bd6109bff53f4c8c3f63f1ddf9933ffa42e5ab4f",
       "files": [
         {
-          "file": "python/pydantic-settings-2.16.0/pydantic_settings-2.16.0.dist-info/licenses/LICENSE",
+          "file": "python-3.1/pydantic-settings-2.16.2/pydantic_settings-2.16.2.dist-info/licenses/LICENSE",
           "bytes": 1103,
           "sha256": "EB355A753E020346D33D83BF9769135B89FC610568AC531A01C295BCEE7FD998",
-          "source": "installed distribution RECORD: pydantic-settings 2.16.0"
+          "source": "installed distribution RECORD: pydantic-settings 2.16.2"
         }
       ],
-      "source_url": "https://pypi.org/project/pydantic-settings/2.16.0/",
+      "scope": "candidate build environment; frozen subset audited separately",
+      "status": "NOTICE_TEXT_COLLECTED"
+    },
+    {
+      "ecosystem": "python",
+      "name": "pydantic_core",
+      "version": "2.50.2",
+      "declared_license": "MIT",
+      "source_url": "https://files.pythonhosted.org/packages/b4/fb/679144362d7e5162519d9f6631ec982521417de3196351c6c56485f5b29f/pydantic_core-2.50.2-cp312-cp312-win_amd64.whl",
+      "wheel_sha256": "b381574614245f18fdb2d6d1aa8f149e225869c47b5ee7f81812de8977817314",
+      "files": [
+        {
+          "file": "python-3.1/pydantic_core-2.50.2/pydantic_core-2.50.2.dist-info/licenses/LICENSE",
+          "bytes": 1101,
+          "sha256": "FBE7F615F18D135C07000E5A86325DB27F42C7729699EF166AC1F7A3F4586BF4",
+          "source": "installed distribution RECORD: pydantic_core 2.50.2"
+        }
+      ],
+      "scope": "candidate build environment; frozen subset audited separately",
+      "status": "NOTICE_TEXT_COLLECTED"
+    },
+    {
+      "ecosystem": "python",
+      "name": "Pygments",
+      "version": "2.21.0",
+      "declared_license": "BSD-2-Clause",
+      "source_url": "https://files.pythonhosted.org/packages/71/46/17f022dd3e953bf20a04a028a21ec746d942f8d2af30fa0f124fa0e6a684/pygments-2.21.0-py3-none-any.whl",
+      "wheel_sha256": "2363c69b61c4a97c838da3b130dcd6468f4848992b21a82f2a63ec34377137d9",
+      "files": [
+        {
+          "file": "python-3.1/Pygments-2.21.0/pygments-2.21.0.dist-info/licenses/LICENSE",
+          "bytes": 1331,
+          "sha256": "A9D66F1D526DF02E29DCE73436D34E56E8632F46C275BBDFFC70569E882F9F17",
+          "source": "installed distribution RECORD: Pygments 2.21.0"
+        }
+      ],
+      "scope": "candidate build environment; frozen subset audited separately",
       "status": "NOTICE_TEXT_COLLECTED"
     },
     {
@@ -591,31 +793,107 @@
       "name": "pyinstaller",
       "version": "6.22.2",
       "declared_license": "GPLv2-or-later with a special exception which allows to use PyInstaller to build and distribute non-free programs (including commercial ones)",
+      "source_url": "https://files.pythonhosted.org/packages/3f/53/8ba1d0f6159b490f700eac6161a4be5f0d4672608a6dae9fd73679f183ee/pyinstaller-6.22.2-py3-none-win_amd64.whl",
+      "wheel_sha256": "9b990fa6bbe143572f06644a984ad0d7aa2e2ccc6929d4916031343a5888e9a7",
       "files": [
         {
-          "file": "python/pyinstaller-6.22.2/pyinstaller-6.22.2.dist-info/licenses/COPYING.txt",
+          "file": "python-3.1/pyinstaller-6.22.2/pyinstaller-6.22.2.dist-info/licenses/COPYING.txt",
           "bytes": 32138,
           "sha256": "DCF75FDB959DB1E3B41C0F8505069D2ECE781B5EC6B3D0A4D30975CFC6580245",
           "source": "installed distribution RECORD: pyinstaller 6.22.2"
         }
       ],
-      "source_url": "https://pypi.org/project/pyinstaller/6.22.2/",
+      "scope": "candidate build environment; frozen subset audited separately",
+      "status": "NOTICE_TEXT_COLLECTED"
+    },
+    {
+      "ecosystem": "python",
+      "name": "pyinstaller-hooks-contrib",
+      "version": "2026.9",
+      "declared_license": "SEE_LICENSE_FILES",
+      "source_url": "https://files.pythonhosted.org/packages/93/fe/ded0e20de0580257d97dbabb4db7ab4d96ad8ade7d41149e66308057cf52/pyinstaller_hooks_contrib-2026.9-py3-none-any.whl",
+      "wheel_sha256": "fb3e67dd64122561724c48ad0366ac9e8c16e638b63bf7d85de03bf3fdbf06c3",
+      "files": [
+        {
+          "file": "python-3.1/pyinstaller-hooks-contrib-2026.9/pyinstaller_hooks_contrib-2026.9.dist-info/licenses/LICENSE",
+          "bytes": 27666,
+          "sha256": "91D0BAAFF00773038E72C0A1FC9D5D2D38706B7A2B9C04F34296608F931B9CD0",
+          "source": "installed distribution RECORD: pyinstaller-hooks-contrib 2026.9"
+        }
+      ],
+      "scope": "candidate build environment; frozen subset audited separately",
+      "status": "NOTICE_TEXT_COLLECTED"
+    },
+    {
+      "ecosystem": "python",
+      "name": "PyJWT",
+      "version": "2.15.1",
+      "declared_license": "MIT",
+      "source_url": "https://files.pythonhosted.org/packages/50/ca/44de4e75f8aadc457f0634be3b542815078ded46dca30efb960edeecad6e/pyjwt-2.15.1-py3-none-any.whl",
+      "wheel_sha256": "42d59d631f7768a1028a64c7ff581a9bf7519804daf91fc5b6c56e30eec5e193",
+      "files": [
+        {
+          "file": "python-3.1/PyJWT-2.15.1/pyjwt-2.15.1.dist-info/licenses/LICENSE",
+          "bytes": 1085,
+          "sha256": "797A7A20231D4C433E9F1911DB1731D06B5828B98F499819A034F7C0F56F5CE5",
+          "source": "installed distribution RECORD: PyJWT 2.15.1"
+        }
+      ],
+      "scope": "candidate build environment; frozen subset audited separately",
       "status": "NOTICE_TEXT_COLLECTED"
     },
     {
       "ecosystem": "python",
       "name": "pypdf",
-      "version": "6.21.1",
+      "version": "6.21.4",
       "declared_license": "BSD-3-Clause",
+      "source_url": "https://files.pythonhosted.org/packages/3f/4b/77e8ad4ac42c9d93600f40541a50e9feb3a61d2bbee2d76f659346072051/pypdf-6.21.4-py3-none-any.whl",
+      "wheel_sha256": "33e4fb41ca352810eb4e9838aa0d82d6888a5f8bf682f43e99cce5faa666255c",
       "files": [
         {
-          "file": "python/pypdf-6.21.1/pypdf-6.21.1.dist-info/licenses/LICENSE",
+          "file": "python-3.1/pypdf-6.21.4/pypdf-6.21.4.dist-info/licenses/LICENSE",
           "bytes": 1605,
           "sha256": "A97AC230E5F33EF10A5367A850EB01F91F1A0B064E34742C7794D2294557F524",
-          "source": "installed distribution RECORD: pypdf 6.21.1"
+          "source": "installed distribution RECORD: pypdf 6.21.4"
         }
       ],
-      "source_url": "https://pypi.org/project/pypdf/6.21.1/",
+      "scope": "candidate build environment; frozen subset audited separately",
+      "status": "NOTICE_TEXT_COLLECTED"
+    },
+    {
+      "ecosystem": "python",
+      "name": "pytest",
+      "version": "8.4.2",
+      "declared_license": "MIT",
+      "source_url": "https://files.pythonhosted.org/packages/a8/a4/20da314d277121d6534b3a980b29035dcd51e6744bd79075a6ce8fa4eb8d/pytest-8.4.2-py3-none-any.whl",
+      "wheel_sha256": "872f880de3fc3a5bdc88a11b39c9710c3497a547cfa9320bc3c5e62fbf272e79",
+      "files": [
+        {
+          "file": "python-3.1/pytest-8.4.2/pytest-8.4.2.dist-info/licenses/LICENSE",
+          "bytes": 1091,
+          "sha256": "CA836A5F9ECCA3B2F350230FAA20A48FB8B145653B5568D784862DF864706B9B",
+          "source": "installed distribution RECORD: pytest 8.4.2"
+        }
+      ],
+      "scope": "candidate build environment; frozen subset audited separately",
+      "status": "NOTICE_TEXT_COLLECTED"
+    },
+    {
+      "ecosystem": "python",
+      "name": "pytest-asyncio",
+      "version": "1.4.0",
+      "declared_license": "Apache-2.0",
+      "source_url": "https://files.pythonhosted.org/packages/03/e2/08a497ef684b88559c9cc5f4ad53a37e7b99e727094a86d6ea32536d5d3c/pytest_asyncio-1.4.0-py3-none-any.whl",
+      "wheel_sha256": "933ca923a23075a87fb7070c0ec272a6848489824d887c85c812670932835aa1",
+      "files": [
+        {
+          "file": "python-3.1/pytest-asyncio-1.4.0/pytest_asyncio-1.4.0.dist-info/licenses/LICENSE",
+          "bytes": 11324,
+          "sha256": "A8AD31B1C3F40DCA5A84119351B8FA8DDC868EDD77FAD8A8EBF6D8F2D16FA4AE",
+          "source": "installed distribution RECORD: pytest-asyncio 1.4.0"
+        }
+      ],
+      "scope": "candidate build environment; frozen subset audited separately",
       "status": "NOTICE_TEXT_COLLECTED"
     },
     {
@@ -623,15 +901,17 @@
       "name": "python-dotenv",
       "version": "1.2.4",
       "declared_license": "BSD-3-Clause",
+      "source_url": "https://files.pythonhosted.org/packages/60/d1/38f3a3405989a89ac18390803e70c6ad7c7760da4f9b83cbeca0c44a0c72/python_dotenv-1.2.4-py3-none-any.whl",
+      "wheel_sha256": "42269a8a5b3fd54ffa6f3d84b18abed50064717576b4ecf03dc4a55d8aa04fdc",
       "files": [
         {
-          "file": "python/python-dotenv-1.2.4/python_dotenv-1.2.4.dist-info/licenses/LICENSE",
+          "file": "python-3.1/python-dotenv-1.2.4/python_dotenv-1.2.4.dist-info/licenses/LICENSE",
           "bytes": 1556,
           "sha256": "80619B7049F08C81683AD0E01F08F257A840652DD71EE83146D36658C7D2C2B9",
           "source": "installed distribution RECORD: python-dotenv 1.2.4"
         }
       ],
-      "source_url": "https://pypi.org/project/python-dotenv/1.2.4/",
+      "scope": "candidate build environment; frozen subset audited separately",
       "status": "NOTICE_TEXT_COLLECTED"
     },
     {
@@ -639,15 +919,17 @@
       "name": "python-multipart",
       "version": "0.0.32",
       "declared_license": "Apache-2.0",
+      "source_url": "https://files.pythonhosted.org/packages/e1/04/e8135ebd1ad02c56ec633277529b2602ff99ff634be76cdba5744cf554fd/python_multipart-0.0.32-py3-none-any.whl",
+      "wheel_sha256": "ff6d3f776f16878c894e52e107296ffc890e913c611b1a4ec6c44e2821fe2e23",
       "files": [
         {
-          "file": "python/python-multipart-0.0.32/python_multipart-0.0.32.dist-info/licenses/LICENSE.txt",
+          "file": "python-3.1/python-multipart-0.0.32/python_multipart-0.0.32.dist-info/licenses/LICENSE.txt",
           "bytes": 11358,
           "sha256": "CFC7749B96F63BD31C3C42B5C471BF756814053E847C10F3EB003417BC523D30",
           "source": "installed distribution RECORD: python-multipart 0.0.32"
         }
       ],
-      "source_url": "https://pypi.org/project/python-multipart/0.0.32/",
+      "scope": "candidate build environment; frozen subset audited separately",
       "status": "NOTICE_TEXT_COLLECTED"
     },
     {
@@ -655,109 +937,143 @@
       "name": "pywin32",
       "version": "312",
       "declared_license": "PSF",
+      "source_url": "https://files.pythonhosted.org/packages/03/d9/77040d3b43df3f3be32ea289433d660d2727f5ba327bc73be835127d9d60/pywin32-312-cp312-cp312-win_amd64.whl",
+      "wheel_sha256": "b457f6d628a47e8a7346ce22acb7e1a46a4a78b52e1d17e1af56871bd19a93bc",
       "files": [
         {
-          "file": "python/pywin32-312/adodbapi/license.txt",
+          "file": "python-3.1/pywin32-312/adodbapi/license.txt",
           "bytes": 26925,
           "sha256": "5EA2F23C7F00C3006BACF267183E816D8D4B6DC95EA57A4DDB0FF81DE6D8719E",
           "source": "installed distribution RECORD: pywin32 312"
         },
         {
-          "file": "python/pywin32-312/pythonwin/License.txt",
+          "file": "python-3.1/pywin32-312/pythonwin/License.txt",
           "bytes": 1541,
           "sha256": "A74D826EFB242DB087B850348E20ABBFD591B51E2081F2048735290913872924",
           "source": "installed distribution RECORD: pywin32 312"
         },
         {
-          "file": "python/pywin32-312/pythonwin/pywin/idle/LICENSE.txt",
-          "bytes": 12540,
-          "sha256": "A0FA1E7B8A4230055685E796548AC084A6C0EEA395294574093BBA72EFD9191B",
-          "source": "installed distribution RECORD: pywin32 312"
-        },
-        {
-          "file": "python/pywin32-312/pywin32-312.dist-info/licenses/adodbapi/license.txt",
-          "bytes": 26925,
-          "sha256": "5EA2F23C7F00C3006BACF267183E816D8D4B6DC95EA57A4DDB0FF81DE6D8719E",
-          "source": "installed distribution RECORD: pywin32 312"
-        },
-        {
-          "file": "python/pywin32-312/pywin32-312.dist-info/licenses/com/License.txt",
-          "bytes": 1570,
-          "sha256": "FAD39C18FC3825FA278DB1C86FD52CF88D7C525B3C2FBF7817FA383CBAE4D423",
-          "source": "installed distribution RECORD: pywin32 312"
-        },
-        {
-          "file": "python/pywin32-312/pywin32-312.dist-info/licenses/com/win32comext/mapi/src/MAPIStubLibrary/LICENSE",
-          "bytes": 1087,
-          "sha256": "1C4CF44D2FB8BF2D10214D6DA80CC9E05502824CC4460F35BE4C7BCB4CDE53DA",
-          "source": "installed distribution RECORD: pywin32 312"
-        },
-        {
-          "file": "python/pywin32-312/pywin32-312.dist-info/licenses/pythonwin/License.txt",
-          "bytes": 1541,
-          "sha256": "A74D826EFB242DB087B850348E20ABBFD591B51E2081F2048735290913872924",
-          "source": "installed distribution RECORD: pywin32 312"
-        },
-        {
-          "file": "python/pywin32-312/pywin32-312.dist-info/licenses/pythonwin/Scintilla/License.txt",
+          "file": "python-3.1/pywin32-312/pythonwin/Scintilla-License.txt",
           "bytes": 873,
           "sha256": "57EC79BBEAB4FD1CF7460A7AD450D2AB01471810459AEAE9E75E4C66B472095F",
           "source": "installed distribution RECORD: pywin32 312"
         },
         {
-          "file": "python/pywin32-312/pywin32-312.dist-info/licenses/pythonwin/pywin/idle/LICENSE.txt",
+          "file": "python-3.1/pywin32-312/pythonwin/pywin/idle/LICENSE.txt",
           "bytes": 12540,
           "sha256": "A0FA1E7B8A4230055685E796548AC084A6C0EEA395294574093BBA72EFD9191B",
           "source": "installed distribution RECORD: pywin32 312"
         },
         {
-          "file": "python/pywin32-312/pywin32-312.dist-info/licenses/win32/License.txt",
-          "bytes": 1541,
-          "sha256": "A74D826EFB242DB087B850348E20ABBFD591B51E2081F2048735290913872924",
+          "file": "python-3.1/pywin32-312/pywin32-312.dist-info/licenses/adodbapi/license.txt",
+          "bytes": 26925,
+          "sha256": "5EA2F23C7F00C3006BACF267183E816D8D4B6DC95EA57A4DDB0FF81DE6D8719E",
           "source": "installed distribution RECORD: pywin32 312"
         },
         {
-          "file": "python/pywin32-312/win32/License.txt",
-          "bytes": 1541,
-          "sha256": "A74D826EFB242DB087B850348E20ABBFD591B51E2081F2048735290913872924",
-          "source": "installed distribution RECORD: pywin32 312"
-        },
-        {
-          "file": "python/pywin32-312/win32com/License.txt",
+          "file": "python-3.1/pywin32-312/pywin32-312.dist-info/licenses/com/License.txt",
           "bytes": 1570,
           "sha256": "FAD39C18FC3825FA278DB1C86FD52CF88D7C525B3C2FBF7817FA383CBAE4D423",
           "source": "installed distribution RECORD: pywin32 312"
         },
         {
-          "file": "python/pywin32-312/win32comext/License.txt",
+          "file": "python-3.1/pywin32-312/pywin32-312.dist-info/licenses/com/win32comext/mapi/src/MAPIStubLibrary/LICENSE",
+          "bytes": 1087,
+          "sha256": "1C4CF44D2FB8BF2D10214D6DA80CC9E05502824CC4460F35BE4C7BCB4CDE53DA",
+          "source": "installed distribution RECORD: pywin32 312"
+        },
+        {
+          "file": "python-3.1/pywin32-312/pywin32-312.dist-info/licenses/pythonwin/License.txt",
+          "bytes": 1541,
+          "sha256": "A74D826EFB242DB087B850348E20ABBFD591B51E2081F2048735290913872924",
+          "source": "installed distribution RECORD: pywin32 312"
+        },
+        {
+          "file": "python-3.1/pywin32-312/pywin32-312.dist-info/licenses/pythonwin/Scintilla/License.txt",
+          "bytes": 873,
+          "sha256": "57EC79BBEAB4FD1CF7460A7AD450D2AB01471810459AEAE9E75E4C66B472095F",
+          "source": "installed distribution RECORD: pywin32 312"
+        },
+        {
+          "file": "python-3.1/pywin32-312/pywin32-312.dist-info/licenses/pythonwin/pywin/idle/LICENSE.txt",
+          "bytes": 12540,
+          "sha256": "A0FA1E7B8A4230055685E796548AC084A6C0EEA395294574093BBA72EFD9191B",
+          "source": "installed distribution RECORD: pywin32 312"
+        },
+        {
+          "file": "python-3.1/pywin32-312/pywin32-312.dist-info/licenses/win32/License.txt",
+          "bytes": 1541,
+          "sha256": "A74D826EFB242DB087B850348E20ABBFD591B51E2081F2048735290913872924",
+          "source": "installed distribution RECORD: pywin32 312"
+        },
+        {
+          "file": "python-3.1/pywin32-312/win32/License.txt",
+          "bytes": 1541,
+          "sha256": "A74D826EFB242DB087B850348E20ABBFD591B51E2081F2048735290913872924",
+          "source": "installed distribution RECORD: pywin32 312"
+        },
+        {
+          "file": "python-3.1/pywin32-312/win32com/License.txt",
           "bytes": 1570,
           "sha256": "FAD39C18FC3825FA278DB1C86FD52CF88D7C525B3C2FBF7817FA383CBAE4D423",
           "source": "installed distribution RECORD: pywin32 312"
         },
         {
-          "file": "python/pywin32-312/win32comext/mapi/NOTICE.md",
+          "file": "python-3.1/pywin32-312/win32comext/License.txt",
+          "bytes": 1570,
+          "sha256": "FAD39C18FC3825FA278DB1C86FD52CF88D7C525B3C2FBF7817FA383CBAE4D423",
+          "source": "installed distribution RECORD: pywin32 312"
+        },
+        {
+          "file": "python-3.1/pywin32-312/win32comext/mapi/MAPIStubLibrary-License.txt",
+          "bytes": 1087,
+          "sha256": "1C4CF44D2FB8BF2D10214D6DA80CC9E05502824CC4460F35BE4C7BCB4CDE53DA",
+          "source": "installed distribution RECORD: pywin32 312"
+        },
+        {
+          "file": "python-3.1/pywin32-312/win32comext/mapi/NOTICE.md",
           "bytes": 476,
           "sha256": "DEDF997C8F5568A0E0AFF57D009F501226EA30C401323D67912B6A8F8735A825",
           "source": "installed distribution RECORD: pywin32 312"
         }
       ],
-      "source_url": "https://pypi.org/project/pywin32/312/",
+      "scope": "candidate build environment; frozen subset audited separately",
       "status": "NOTICE_TEXT_COLLECTED"
     },
     {
       "ecosystem": "python",
-      "name": "pyyaml",
-      "version": "6.0.3",
-      "declared_license": "MIT",
+      "name": "pywin32-ctypes",
+      "version": "0.2.3",
+      "declared_license": "BSD-3-Clause",
+      "source_url": "https://files.pythonhosted.org/packages/de/3d/8161f7711c017e01ac9f008dfddd9410dff3674334c233bde66e7ba65bbf/pywin32_ctypes-0.2.3-py3-none-any.whl",
+      "wheel_sha256": "8a1513379d709975552d202d942d9837758905c8d01eb82b8bcc30918929e7b8",
       "files": [
         {
-          "file": "python/pyyaml-6.0.3/pyyaml-6.0.3.dist-info/licenses/LICENSE",
-          "bytes": 1101,
-          "sha256": "8D3928F9DC4490FD635707CB88EB26BD764102A7282954307D3E5167A577E8A4",
-          "source": "installed distribution RECORD: pyyaml 6.0.3"
+          "file": "python-3.1/pywin32-ctypes-0.2.3/pywin32_ctypes-0.2.3.dist-info/LICENSE.txt",
+          "bytes": 1644,
+          "sha256": "DFA83B3E2709ADFCDB838D9AD55823CA674ABB780E60563D9DD9544CCBF785E9",
+          "source": "installed distribution RECORD: pywin32-ctypes 0.2.3"
         }
       ],
-      "source_url": "https://pypi.org/project/pyyaml/6.0.3/",
+      "scope": "candidate build environment; frozen subset audited separately",
+      "status": "NOTICE_TEXT_COLLECTED"
+    },
+    {
+      "ecosystem": "python",
+      "name": "PyYAML",
+      "version": "6.0.3",
+      "declared_license": "MIT",
+      "source_url": "https://files.pythonhosted.org/packages/86/bf/899e81e4cce32febab4fb42bb97dcdf66bc135272882d1987881a4b519e9/pyyaml-6.0.3-cp312-cp312-win_amd64.whl",
+      "wheel_sha256": "5fcd34e47f6e0b794d17de1b4ff496c00986e1c83f7ab2fb8fcfe9616ff7477b",
+      "files": [
+        {
+          "file": "python-3.1/PyYAML-6.0.3/pyyaml-6.0.3.dist-info/licenses/LICENSE",
+          "bytes": 1101,
+          "sha256": "8D3928F9DC4490FD635707CB88EB26BD764102A7282954307D3E5167A577E8A4",
+          "source": "installed distribution RECORD: PyYAML 6.0.3"
+        }
+      ],
+      "scope": "candidate build environment; frozen subset audited separately",
       "status": "NOTICE_TEXT_COLLECTED"
     },
     {
@@ -765,15 +1081,17 @@
       "name": "referencing",
       "version": "0.37.0",
       "declared_license": "MIT",
+      "source_url": "https://files.pythonhosted.org/packages/2c/58/ca301544e1fa93ed4f80d724bf5b194f6e4b945841c5bfd555878eea9fcb/referencing-0.37.0-py3-none-any.whl",
+      "wheel_sha256": "381329a9f99628c9069361716891d34ad94af76e461dcb0335825aecc7692231",
       "files": [
         {
-          "file": "python/referencing-0.37.0/referencing-0.37.0.dist-info/licenses/COPYING",
+          "file": "python-3.1/referencing-0.37.0/referencing-0.37.0.dist-info/licenses/COPYING",
           "bytes": 1057,
           "sha256": "42DCD63495F87B4EB7C7757AFA379BB55A53F94AFD7A5F657D9ADF57236E515C",
           "source": "installed distribution RECORD: referencing 0.37.0"
         }
       ],
-      "source_url": "https://pypi.org/project/referencing/0.37.0/",
+      "scope": "candidate build environment; frozen subset audited separately",
       "status": "NOTICE_TEXT_COLLECTED"
     },
     {
@@ -781,181 +1099,167 @@
       "name": "rpds-py",
       "version": "2026.9.1",
       "declared_license": "MIT",
+      "source_url": "https://files.pythonhosted.org/packages/1c/84/1700cc748d0eaa747486e4e82882d2575224e6e9a3148df583058850c629/rpds_py-2026.9.1-cp312-cp312-win_amd64.whl",
+      "wheel_sha256": "5ce8943f79c2210f7abcc28e86367b03b28d95027fd01c46d2472373ae70c86f",
       "files": [
         {
-          "file": "python/rpds-py-2026.9.1/rpds_py-2026.9.1.dist-info/licenses/LICENSE",
+          "file": "python-3.1/rpds-py-2026.9.1/rpds_py-2026.9.1.dist-info/licenses/LICENSE",
           "bytes": 1076,
           "sha256": "8BCB72C82EA8AE74802293C41D93AD7D51434001B0AE45A603A5AF0F507AEE0A",
           "source": "installed distribution RECORD: rpds-py 2026.9.1"
-        },
-        {
-          "file": "python/rpds-py-2026.9.1/rpds_py-2026.9.1.dist-info/sboms/rpds-py.cyclonedx.json",
-          "bytes": 20558,
-          "sha256": "A8DB785AD239B49FB141B65C1948186F35166F118FC19E39CA98CC965CBB8255",
-          "source": "installed distribution RECORD: rpds-py 2026.9.1"
         }
       ],
-      "source_url": "https://pypi.org/project/rpds-py/2026.9.1/",
+      "scope": "candidate build environment; frozen subset audited separately",
       "status": "NOTICE_TEXT_COLLECTED"
     },
     {
       "ecosystem": "python",
       "name": "setuptools",
-      "version": "84.0.0",
+      "version": "84.2.1",
       "declared_license": "MIT",
+      "source_url": "https://files.pythonhosted.org/packages/ef/55/6dc6d6bb953bdfc52519a0059592c52b6e3b8ad51cf8256dffceb55b0610/setuptools-84.2.1-py3-none-any.whl",
+      "wheel_sha256": "ca140b45d5325a9478f880e351484f62fef15f336462e449ca0c03c873d589c2",
       "files": [
         {
-          "file": "python/setuptools-84.0.0/setuptools-84.0.0.dist-info/licenses/LICENSE",
+          "file": "python-3.1/setuptools-84.2.1/setuptools-84.2.1.dist-info/licenses/LICENSE",
           "bytes": 1023,
           "sha256": "86DA0F01AEAE46348A3C3D465195DC1CECCDE79F79E87769A64B8DA04B2A4741",
-          "source": "installed distribution RECORD: setuptools 84.0.0"
+          "source": "installed distribution RECORD: setuptools 84.2.1"
         },
         {
-          "file": "python/setuptools-84.0.0/setuptools/_vendor/autocommand-2.2.2.dist-info/LICENSE",
+          "file": "python-3.1/setuptools-84.2.1/setuptools/_vendor/autocommand-2.2.2.dist-info/LICENSE",
           "bytes": 7634,
           "sha256": "ADE78D04982D69972D444A8E14A94F87A2334DD3855CC80348EA8E240AA0DF2D",
-          "source": "installed distribution RECORD: setuptools 84.0.0"
+          "source": "installed distribution RECORD: setuptools 84.2.1"
         },
         {
-          "file": "python/setuptools-84.0.0/setuptools/_vendor/backports.tarfile-1.2.0.dist-info/LICENSE",
+          "file": "python-3.1/setuptools-84.2.1/setuptools/_vendor/backports.tarfile-1.2.0.dist-info/LICENSE",
           "bytes": 1023,
           "sha256": "86DA0F01AEAE46348A3C3D465195DC1CECCDE79F79E87769A64B8DA04B2A4741",
-          "source": "installed distribution RECORD: setuptools 84.0.0"
+          "source": "installed distribution RECORD: setuptools 84.2.1"
         },
         {
-          "file": "python/setuptools-84.0.0/setuptools/_vendor/importlib_metadata-8.7.1.dist-info/licenses/LICENSE",
+          "file": "python-3.1/setuptools-84.2.1/setuptools/_vendor/importlib_metadata-8.7.1.dist-info/licenses/LICENSE",
           "bytes": 10278,
           "sha256": "458502E12D97BBF64438606A20044AA85EB05FB0A8A807BB35DBEC253FD1FC04",
-          "source": "installed distribution RECORD: setuptools 84.0.0"
+          "source": "installed distribution RECORD: setuptools 84.2.1"
         },
         {
-          "file": "python/setuptools-84.0.0/setuptools/_vendor/jaraco.text-4.0.0.dist-info/LICENSE",
+          "file": "python-3.1/setuptools-84.2.1/setuptools/_vendor/jaraco.text-4.0.0.dist-info/LICENSE",
           "bytes": 1023,
           "sha256": "86DA0F01AEAE46348A3C3D465195DC1CECCDE79F79E87769A64B8DA04B2A4741",
-          "source": "installed distribution RECORD: setuptools 84.0.0"
+          "source": "installed distribution RECORD: setuptools 84.2.1"
         },
         {
-          "file": "python/setuptools-84.0.0/setuptools/_vendor/jaraco_context-6.1.0.dist-info/licenses/LICENSE",
+          "file": "python-3.1/setuptools-84.2.1/setuptools/_vendor/jaraco_context-6.1.0.dist-info/licenses/LICENSE",
           "bytes": 1076,
           "sha256": "9755A18519666E5F0F4CAE3DAAD3D7012BCAE48A600B31237D75E9FE134E6683",
-          "source": "installed distribution RECORD: setuptools 84.0.0"
+          "source": "installed distribution RECORD: setuptools 84.2.1"
         },
         {
-          "file": "python/setuptools-84.0.0/setuptools/_vendor/jaraco_functools-4.4.0.dist-info/licenses/LICENSE",
+          "file": "python-3.1/setuptools-84.2.1/setuptools/_vendor/jaraco_functools-4.4.0.dist-info/licenses/LICENSE",
           "bytes": 1076,
           "sha256": "5A57CB4DB85E2A2DD88C290628908ADD57E3451449E0A9A71FDFB38776FD759D",
-          "source": "installed distribution RECORD: setuptools 84.0.0"
+          "source": "installed distribution RECORD: setuptools 84.2.1"
         },
         {
-          "file": "python/setuptools-84.0.0/setuptools/_vendor/more_itertools-10.8.0.dist-info/licenses/LICENSE",
+          "file": "python-3.1/setuptools-84.2.1/setuptools/_vendor/more_itertools-10.8.0.dist-info/licenses/LICENSE",
           "bytes": 1053,
           "sha256": "09F1C8C9E941AF3E584D59641EA9B87D83C0CB0FD007EB5EF391A7E2643C1A46",
-          "source": "installed distribution RECORD: setuptools 84.0.0"
+          "source": "installed distribution RECORD: setuptools 84.2.1"
         },
         {
-          "file": "python/setuptools-84.0.0/setuptools/_vendor/packaging-26.0.dist-info/licenses/LICENSE",
+          "file": "python-3.1/setuptools-84.2.1/setuptools/_vendor/packaging-26.3.dist-info/licenses/LICENSE",
           "bytes": 197,
           "sha256": "CAD1EF5BD340D73E074BA614D26F7DEACA5C7940C3D8C34852E65C4909686C48",
-          "source": "installed distribution RECORD: setuptools 84.0.0"
+          "source": "installed distribution RECORD: setuptools 84.2.1"
         },
         {
-          "file": "python/setuptools-84.0.0/setuptools/_vendor/packaging-26.0.dist-info/licenses/LICENSE.APACHE",
+          "file": "python-3.1/setuptools-84.2.1/setuptools/_vendor/packaging-26.3.dist-info/licenses/LICENSE.APACHE",
           "bytes": 10174,
           "sha256": "0D542E0C8804E39AA7F37EB00DA5A762149DC682D7829451287E11B938E94594",
-          "source": "installed distribution RECORD: setuptools 84.0.0"
+          "source": "installed distribution RECORD: setuptools 84.2.1"
         },
         {
-          "file": "python/setuptools-84.0.0/setuptools/_vendor/packaging-26.0.dist-info/licenses/LICENSE.BSD",
+          "file": "python-3.1/setuptools-84.2.1/setuptools/_vendor/packaging-26.3.dist-info/licenses/LICENSE.BSD",
           "bytes": 1344,
           "sha256": "B70E7E9B742F1CC6F948B34C16AA39FFECE94196364BC88FF0D2180F0028FAC5",
-          "source": "installed distribution RECORD: setuptools 84.0.0"
+          "source": "installed distribution RECORD: setuptools 84.2.1"
         },
         {
-          "file": "python/setuptools-84.0.0/setuptools/_vendor/platformdirs-4.4.0.dist-info/licenses/LICENSE",
+          "file": "python-3.1/setuptools-84.2.1/setuptools/_vendor/platformdirs-4.4.0.dist-info/licenses/LICENSE",
           "bytes": 1089,
           "sha256": "29E0FD62E929850E86EB28C3FDCCF0CEFDF4FA94879011CFFB3D0D4BED6D4DB6",
-          "source": "installed distribution RECORD: setuptools 84.0.0"
+          "source": "installed distribution RECORD: setuptools 84.2.1"
         },
         {
-          "file": "python/setuptools-84.0.0/setuptools/_vendor/tomli-2.4.0.dist-info/licenses/LICENSE",
+          "file": "python-3.1/setuptools-84.2.1/setuptools/_vendor/tomli-2.4.0.dist-info/licenses/LICENSE",
           "bytes": 1072,
           "sha256": "B80816B0D530B8ACCB4C2211783790984A6E3B61922C2B5EE92F3372AB2742FE",
-          "source": "installed distribution RECORD: setuptools 84.0.0"
+          "source": "installed distribution RECORD: setuptools 84.2.1"
         },
         {
-          "file": "python/setuptools-84.0.0/setuptools/_vendor/wheel-0.46.3.dist-info/licenses/LICENSE.txt",
+          "file": "python-3.1/setuptools-84.2.1/setuptools/_vendor/wheel-0.46.3.dist-info/licenses/LICENSE.txt",
           "bytes": 1107,
           "sha256": "30C23618679108F3E8EA1D2A658C7CA417BDFC891C98EF1A89FA4FF0C9828654",
-          "source": "installed distribution RECORD: setuptools 84.0.0"
+          "source": "installed distribution RECORD: setuptools 84.2.1"
         },
         {
-          "file": "python/setuptools-84.0.0/setuptools/_vendor/zipp-3.23.0.dist-info/licenses/LICENSE",
+          "file": "python-3.1/setuptools-84.2.1/setuptools/_vendor/zipp-3.23.0.dist-info/licenses/LICENSE",
           "bytes": 1076,
           "sha256": "5A57CB4DB85E2A2DD88C290628908ADD57E3451449E0A9A71FDFB38776FD759D",
-          "source": "installed distribution RECORD: setuptools 84.0.0"
+          "source": "installed distribution RECORD: setuptools 84.2.1"
         },
         {
-          "file": "python/setuptools-84.0.0/setuptools/config/NOTICE",
+          "file": "python-3.1/setuptools-84.2.1/setuptools/config/NOTICE",
           "bytes": 493,
           "sha256": "2DDDF08818297A3B89D43D95FF659D8DA85741108C9136DFA3A4D856C0623BD8",
-          "source": "installed distribution RECORD: setuptools 84.0.0"
+          "source": "installed distribution RECORD: setuptools 84.2.1"
         },
         {
-          "file": "python/setuptools-84.0.0/setuptools/config/_validate_pyproject/NOTICE",
+          "file": "python-3.1/setuptools-84.2.1/setuptools/config/_validate_pyproject/NOTICE",
           "bytes": 18737,
           "sha256": "09C9BCEA95CA086F8BC5BED174E40BC835B297D40FB5F86BBBB570FE0A5581A7",
-          "source": "installed distribution RECORD: setuptools 84.0.0"
+          "source": "installed distribution RECORD: setuptools 84.2.1"
         }
       ],
-      "source_url": "https://pypi.org/project/setuptools/84.0.0/",
+      "scope": "candidate build environment; frozen subset audited separately",
       "status": "NOTICE_TEXT_COLLECTED"
     },
     {
       "ecosystem": "python",
       "name": "sse-starlette",
-      "version": "3.5.0",
+      "version": "3.6.0",
       "declared_license": "BSD-3-Clause",
+      "source_url": "https://files.pythonhosted.org/packages/cf/49/35053078cdfcf639237e8bee6dc6f34f1b3a3cc8d01800a1e213e1660ff6/sse_starlette-3.6.0-py3-none-any.whl",
+      "wheel_sha256": "e4dfa4d237d2712cb2b4d4918eda9b457cd6b44bbecdc838af75de836565bafd",
       "files": [
         {
-          "file": "python/sse-starlette-3.5.0/sse_starlette-3.5.0.dist-info/licenses/LICENSE",
+          "file": "python-3.1/sse-starlette-3.6.0/sse_starlette-3.6.0.dist-info/licenses/LICENSE",
           "bytes": 1511,
           "sha256": "80AF6BFCCBEBD2C14D4AAB96695CAB9950E177190CC80F5EF819E99996883E8E",
-          "source": "installed distribution RECORD: sse-starlette 3.5.0"
+          "source": "installed distribution RECORD: sse-starlette 3.6.0"
         }
       ],
-      "source_url": "https://pypi.org/project/sse-starlette/3.5.0/",
+      "scope": "candidate build environment; frozen subset audited separately",
       "status": "NOTICE_TEXT_COLLECTED"
     },
     {
       "ecosystem": "python",
       "name": "starlette",
-      "version": "1.8.0",
+      "version": "1.10.0",
       "declared_license": "BSD-3-Clause",
+      "source_url": "https://files.pythonhosted.org/packages/88/2e/947cfe02def9371c07cd5bf5b6b61c829e9aecb9904db02a66cfafbc1eec/starlette-1.10.0-py3-none-any.whl",
+      "wheel_sha256": "478c0ab3b4ced6e82719849c118fa406f0278a3499c1a898cd15cd31bdc38ce4",
       "files": [
         {
-          "file": "python/starlette-1.8.0/starlette-1.8.0.dist-info/licenses/LICENSE.md",
+          "file": "python-3.1/starlette-1.10.0/starlette-1.10.0.dist-info/licenses/LICENSE.md",
           "bytes": 1518,
           "sha256": "DCB95677A02240243187E964F941847D19B17821CF99E5AFAE684FAB328C19BF",
-          "source": "installed distribution RECORD: starlette 1.8.0"
+          "source": "installed distribution RECORD: starlette 1.10.0"
         }
       ],
-      "source_url": "https://pypi.org/project/starlette/1.8.0/",
-      "status": "NOTICE_TEXT_COLLECTED"
-    },
-    {
-      "ecosystem": "python",
-      "name": "typing-extensions",
-      "version": "4.16.0",
-      "declared_license": "PSF-2.0",
-      "files": [
-        {
-          "file": "python/typing-extensions-4.16.0/typing_extensions-4.16.0.dist-info/licenses/LICENSE",
-          "bytes": 13936,
-          "sha256": "3B2F81FE21D181C499C59A256C8E1968455D6689D269AA85373BFB6AF41DA3BF",
-          "source": "installed distribution RECORD: typing-extensions 4.16.0"
-        }
-      ],
-      "source_url": "https://pypi.org/project/typing-extensions/4.16.0/",
+      "scope": "candidate build environment; frozen subset audited separately",
       "status": "NOTICE_TEXT_COLLECTED"
     },
     {
@@ -963,15 +1267,35 @@
       "name": "typing-inspection",
       "version": "0.4.4",
       "declared_license": "MIT",
+      "source_url": "https://files.pythonhosted.org/packages/67/81/4add07e5172b7ac40d8ed5ff580409a7801a4fe26d529bdd915401dabfbe/typing_inspection-0.4.4-py3-none-any.whl",
+      "wheel_sha256": "65b8397ba37ccbce054456aaccddfc91e6e3083c92824df348d96ca832f3f147",
       "files": [
         {
-          "file": "python/typing-inspection-0.4.4/typing_inspection-0.4.4.dist-info/licenses/LICENSE",
+          "file": "python-3.1/typing-inspection-0.4.4/typing_inspection-0.4.4.dist-info/licenses/LICENSE",
           "bytes": 1090,
           "sha256": "804B59B25F2C31BD278F9202A19AE49A3945AA2664387E2D0A128C7CACC61EC3",
           "source": "installed distribution RECORD: typing-inspection 0.4.4"
         }
       ],
-      "source_url": "https://pypi.org/project/typing-inspection/0.4.4/",
+      "scope": "candidate build environment; frozen subset audited separately",
+      "status": "NOTICE_TEXT_COLLECTED"
+    },
+    {
+      "ecosystem": "python",
+      "name": "typing_extensions",
+      "version": "4.16.0",
+      "declared_license": "PSF-2.0",
+      "source_url": "https://files.pythonhosted.org/packages/49/d3/b8441a820a491ddfc024b0b0cf0393375b75ea13866d9c66727e54c2fc80/typing_extensions-4.16.0-py3-none-any.whl",
+      "wheel_sha256": "481caa481374e813c1b176ada14e97f1f67a4539ce9cfeb3f350d78d6370c2e8",
+      "files": [
+        {
+          "file": "python-3.1/typing_extensions-4.16.0/typing_extensions-4.16.0.dist-info/licenses/LICENSE",
+          "bytes": 13936,
+          "sha256": "3B2F81FE21D181C499C59A256C8E1968455D6689D269AA85373BFB6AF41DA3BF",
+          "source": "installed distribution RECORD: typing_extensions 4.16.0"
+        }
+      ],
+      "scope": "candidate build environment; frozen subset audited separately",
       "status": "NOTICE_TEXT_COLLECTED"
     },
     {
@@ -979,21 +1303,23 @@
       "name": "tzdata",
       "version": "2026.4",
       "declared_license": "Apache-2.0",
+      "source_url": "https://files.pythonhosted.org/packages/f9/bc/8737e8d54cf51106118039b83f485a4783112fab49ea9d044b234978a46e/tzdata-2026.4-py2.py3-none-any.whl",
+      "wheel_sha256": "c2169a8b0a7a5e9674da5a135ccdfb2b3e671b333ed9fed17b41f73c34476e81",
       "files": [
         {
-          "file": "python/tzdata-2026.4/tzdata-2026.4.dist-info/licenses/LICENSE",
+          "file": "python-3.1/tzdata-2026.4/tzdata-2026.4.dist-info/licenses/LICENSE",
           "bytes": 625,
           "sha256": "DF58F69EA88683035D720B5375BCEF0CF5AEAA98A1D098D572E0992C378DEB46",
           "source": "installed distribution RECORD: tzdata 2026.4"
         },
         {
-          "file": "python/tzdata-2026.4/tzdata-2026.4.dist-info/licenses/licenses/LICENSE_APACHE",
+          "file": "python-3.1/tzdata-2026.4/tzdata-2026.4.dist-info/licenses/licenses/LICENSE_APACHE",
           "bytes": 11357,
           "sha256": "C71D239DF91726FC519C6EB72D318EC65820627232B2F796219E87DCF35D0AB4",
           "source": "installed distribution RECORD: tzdata 2026.4"
         }
       ],
-      "source_url": "https://pypi.org/project/tzdata/2026.4/",
+      "scope": "candidate build environment; frozen subset audited separately",
       "status": "NOTICE_TEXT_COLLECTED"
     },
     {
@@ -1001,15 +1327,17 @@
       "name": "uvicorn",
       "version": "0.54.0",
       "declared_license": "BSD-3-Clause",
+      "source_url": "https://files.pythonhosted.org/packages/38/0c/b54a4fdd7f90a3af8b02ebc9ce6712c2c208b7926a2f7bad95c33ebbe943/uvicorn-0.54.0-py3-none-any.whl",
+      "wheel_sha256": "505bdb0f318731d45f1f712071fc781a8981f6847a31c902c9f5e652d4f67faf",
       "files": [
         {
-          "file": "python/uvicorn-0.54.0/uvicorn-0.54.0.dist-info/licenses/LICENSE.md",
+          "file": "python-3.1/uvicorn-0.54.0/uvicorn-0.54.0.dist-info/licenses/LICENSE.md",
           "bytes": 1526,
           "sha256": "EFE1ACF3E62FB99C288B0EC73E5A773B7268EF4320FE757EA994214E4B63C371",
           "source": "installed distribution RECORD: uvicorn 0.54.0"
         }
       ],
-      "source_url": "https://pypi.org/project/uvicorn/0.54.0/",
+      "scope": "candidate build environment; frozen subset audited separately",
       "status": "NOTICE_TEXT_COLLECTED"
     },
     {
@@ -1017,53 +1345,35 @@
       "name": "watchfiles",
       "version": "1.3.0",
       "declared_license": "MIT",
+      "source_url": "https://files.pythonhosted.org/packages/48/a1/1c4a1b3c8030cd03206232612be8a6e8799093490c220b0fcb935d02b75a/watchfiles-1.3.0-cp310-abi3-win_amd64.whl",
+      "wheel_sha256": "1acabde19b67e673274e89a04d613b7fb1f122e2c4b8ec9a581e59c149264b61",
       "files": [
         {
-          "file": "python/watchfiles-1.3.0/watchfiles-1.3.0.dist-info/licenses/LICENSE",
+          "file": "python-3.1/watchfiles-1.3.0/watchfiles-1.3.0.dist-info/licenses/LICENSE",
           "bytes": 1112,
           "sha256": "2D40A03346BDED8DAA4BD22D23825A6F2568A0820FBEF76AC05BAE534421E189",
           "source": "installed distribution RECORD: watchfiles 1.3.0"
-        },
-        {
-          "file": "python/watchfiles-1.3.0/watchfiles-1.3.0.dist-info/sboms/watchfiles_rust_notify.cyclonedx.json",
-          "bytes": 31598,
-          "sha256": "AF2CD90F0A34B91B624D4179D84B9884F933F03EEB1179A1994BDB76AE756505",
-          "source": "installed distribution RECORD: watchfiles 1.3.0"
         }
       ],
-      "source_url": "https://pypi.org/project/watchfiles/1.3.0/",
+      "scope": "candidate build environment; frozen subset audited separately",
       "status": "NOTICE_TEXT_COLLECTED"
     },
     {
       "ecosystem": "python",
       "name": "websockets",
-      "version": "17.2",
+      "version": "17.4",
       "declared_license": "BSD-3-Clause",
+      "source_url": "https://files.pythonhosted.org/packages/59/31/d1636ba67ee9232a60033d90483e48686aa3856014e59110f29015f97bd2/websockets-17.4-cp312-cp312-win_amd64.whl",
+      "wheel_sha256": "dde9cd67f18803949ebf96de8aba12b8ec5ee3115e34c75a2db85a3b0a6c20d5",
       "files": [
         {
-          "file": "python/websockets-17.2/websockets-17.2.dist-info/licenses/LICENSE",
+          "file": "python-3.1/websockets-17.4/websockets-17.4.dist-info/licenses/LICENSE",
           "bytes": 1538,
           "sha256": "0F44514998ACA209D3482D10204A8ADF2AA4296FF157A36A5C0922F2280632D3",
-          "source": "installed distribution RECORD: websockets 17.2"
+          "source": "installed distribution RECORD: websockets 17.4"
         }
       ],
-      "source_url": "https://pypi.org/project/websockets/17.2/",
-      "status": "NOTICE_TEXT_COLLECTED"
-    },
-    {
-      "ecosystem": "python",
-      "name": "CPython",
-      "version": "3.12.14",
-      "declared_license": "PSF license and historical/third-party terms in the exact distribution text",
-      "source_url": "https://docs.python.org/3.12/license.html",
-      "files": [
-        {
-          "file": "python/CPython/LICENSE.txt",
-          "bytes": 25066,
-          "sha256": "886A0EAD2D89030EE62DBFF52B04E47AB91998341295BB9C56FB952B4E081C7A",
-          "source": "base Python distribution license"
-        }
-      ],
+      "scope": "candidate build environment; frozen subset audited separately",
       "status": "NOTICE_TEXT_COLLECTED"
     }
   ],
@@ -1352,6 +1662,24 @@
     },
     {
       "ecosystem": "rust",
+      "name": "brotli-decompressor",
+      "version": "5.0.3",
+      "windows_normal_dependency": true,
+      "declared_license": "BSD-3-Clause/MIT",
+      "files": [
+        {
+          "file": "rust/brotli-decompressor-5.0.3/LICENSE",
+          "bytes": 1483,
+          "sha256": "C0C56F26D9C051CAC4D200C34C84E7AE9AAA853E01A982A1DF08B09931E518AE",
+          "source": "locked crate package brotli-decompressor 5.0.3"
+        }
+      ],
+      "source_url": "https://crates.io/api/v1/crates/brotli-decompressor/5.0.3/download",
+      "crate_sha256": "3A32ACAC15FE1967BC3986B2A6347DFFC965602354EA6F450AD07E8BFD253583",
+      "status": "NOTICE_TEXT_COLLECTED"
+    },
+    {
+      "ecosystem": "rust",
       "name": "brotli",
       "version": "8.0.4",
       "windows_normal_dependency": true,
@@ -1372,24 +1700,6 @@
       ],
       "source_url": "https://crates.io/api/v1/crates/brotli/8.0.4/download",
       "crate_sha256": "5CC91AAC060A7A1E25823BDCCBFB6AF1875B88F17C6DAAC97894EED8207166B3",
-      "status": "NOTICE_TEXT_COLLECTED"
-    },
-    {
-      "ecosystem": "rust",
-      "name": "brotli-decompressor",
-      "version": "5.0.3",
-      "windows_normal_dependency": true,
-      "declared_license": "BSD-3-Clause/MIT",
-      "files": [
-        {
-          "file": "rust/brotli-decompressor-5.0.3/LICENSE",
-          "bytes": 1483,
-          "sha256": "C0C56F26D9C051CAC4D200C34C84E7AE9AAA853E01A982A1DF08B09931E518AE",
-          "source": "locked crate package brotli-decompressor 5.0.3"
-        }
-      ],
-      "source_url": "https://crates.io/api/v1/crates/brotli-decompressor/5.0.3/download",
-      "crate_sha256": "3A32ACAC15FE1967BC3986B2A6347DFFC965602354EA6F450AD07E8BFD253583",
       "status": "NOTICE_TEXT_COLLECTED"
     },
     {
@@ -1604,24 +1914,6 @@
     },
     {
       "ecosystem": "rust",
-      "name": "sky-workbench",
-      "version": "2.0.0",
-      "windows_normal_dependency": true,
-      "declared_license": "Apache-2.0",
-      "files": [
-        {
-          "file": "FIRST_PARTY_APACHE_2_0.txt",
-          "bytes": 11358,
-          "sha256": "CFC7749B96F63BD31C3C42B5C471BF756814053E847C10F3EB003417BC523D30",
-          "source": "first-party license text bundled in Tauri resources"
-        }
-      ],
-      "source_url": null,
-      "crate_sha256": null,
-      "status": "FIRST_PARTY_LICENSE_DECLARED"
-    },
-    {
-      "ecosystem": "rust",
       "name": "cookie",
       "version": "0.18.2",
       "windows_normal_dependency": true,
@@ -1772,24 +2064,6 @@
     },
     {
       "ecosystem": "rust",
-      "name": "cssparser",
-      "version": "0.36.0",
-      "windows_normal_dependency": true,
-      "declared_license": "MPL-2.0",
-      "files": [
-        {
-          "file": "rust/cssparser-0.36.0/LICENSE",
-          "bytes": 16726,
-          "sha256": "FAB3DD6BDAB226F1C08630B1DD917E11FCB4EC5E1E020E2C16F83A0A13863E85",
-          "source": "locked crate package cssparser 0.36.0"
-        }
-      ],
-      "source_url": "https://crates.io/api/v1/crates/cssparser/0.36.0/download",
-      "crate_sha256": "DAE61CF9C0ABB83BD659DAB65B7E4E38D8236824C85F0F804F173567BDA257D2",
-      "status": "NOTICE_TEXT_COLLECTED"
-    },
-    {
-      "ecosystem": "rust",
       "name": "cssparser-macros",
       "version": "0.6.1",
       "windows_normal_dependency": true,
@@ -1808,26 +2082,20 @@
     },
     {
       "ecosystem": "rust",
-      "name": "ctor",
-      "version": "0.8.0",
+      "name": "cssparser",
+      "version": "0.36.0",
       "windows_normal_dependency": true,
-      "declared_license": "Apache-2.0 OR MIT",
+      "declared_license": "MPL-2.0",
       "files": [
         {
-          "file": "rust/ctor-0.8.0/LICENSE-APACHE",
-          "bytes": 11324,
-          "sha256": "A8AD31B1C3F40DCA5A84119351B8FA8DDC868EDD77FAD8A8EBF6D8F2D16FA4AE",
-          "source": "locked crate package ctor 0.8.0"
-        },
-        {
-          "file": "rust/ctor-0.8.0/LICENSE-MIT",
-          "bytes": 1022,
-          "sha256": "BCCAA8B6C09F94E81F06696E179DBE058464BBDFBC823B6D49CADA1D71E84AC3",
-          "source": "locked crate package ctor 0.8.0"
+          "file": "rust/cssparser-0.36.0/LICENSE",
+          "bytes": 16726,
+          "sha256": "FAB3DD6BDAB226F1C08630B1DD917E11FCB4EC5E1E020E2C16F83A0A13863E85",
+          "source": "locked crate package cssparser 0.36.0"
         }
       ],
-      "source_url": "https://crates.io/api/v1/crates/ctor/0.8.0/download",
-      "crate_sha256": "352D39C2F7BEF1D6AD73DB6F5160EFCAED66D94EF8C6C573A8410C00BF909A98",
+      "source_url": "https://crates.io/api/v1/crates/cssparser/0.36.0/download",
+      "crate_sha256": "DAE61CF9C0ABB83BD659DAB65B7E4E38D8236824C85F0F804F173567BDA257D2",
       "status": "NOTICE_TEXT_COLLECTED"
     },
     {
@@ -1852,6 +2120,30 @@
       ],
       "source_url": "https://crates.io/api/v1/crates/ctor-proc-macro/0.0.7/download",
       "crate_sha256": "52560ADF09603E58C9A7EE1FE1DCB95A16927B17C127F0AC02D6E768A0E25BC1",
+      "status": "NOTICE_TEXT_COLLECTED"
+    },
+    {
+      "ecosystem": "rust",
+      "name": "ctor",
+      "version": "0.8.0",
+      "windows_normal_dependency": true,
+      "declared_license": "Apache-2.0 OR MIT",
+      "files": [
+        {
+          "file": "rust/ctor-0.8.0/LICENSE-APACHE",
+          "bytes": 11324,
+          "sha256": "A8AD31B1C3F40DCA5A84119351B8FA8DDC868EDD77FAD8A8EBF6D8F2D16FA4AE",
+          "source": "locked crate package ctor 0.8.0"
+        },
+        {
+          "file": "rust/ctor-0.8.0/LICENSE-MIT",
+          "bytes": 1022,
+          "sha256": "BCCAA8B6C09F94E81F06696E179DBE058464BBDFBC823B6D49CADA1D71E84AC3",
+          "source": "locked crate package ctor 0.8.0"
+        }
+      ],
+      "source_url": "https://crates.io/api/v1/crates/ctor/0.8.0/download",
+      "crate_sha256": "352D39C2F7BEF1D6AD73DB6F5160EFCAED66D94EF8C6C573A8410C00BF909A98",
       "status": "NOTICE_TEXT_COLLECTED"
     },
     {
@@ -1934,24 +2226,6 @@
     },
     {
       "ecosystem": "rust",
-      "name": "derive_more",
-      "version": "2.1.1",
-      "windows_normal_dependency": true,
-      "declared_license": "MIT",
-      "files": [
-        {
-          "file": "rust/derive_more-2.1.1/LICENSE",
-          "bytes": 1080,
-          "sha256": "8A35369F3CA263B3C62FBB5032947E53B6BFEBC6C8A4D1BB982DE1C069F6FBA5",
-          "source": "locked crate package derive_more 2.1.1"
-        }
-      ],
-      "source_url": "https://crates.io/api/v1/crates/derive_more/2.1.1/download",
-      "crate_sha256": "D751E9E49156B02B44F9C1815BCB94B984CDCC4396ECC32521C739452808B134",
-      "status": "NOTICE_TEXT_COLLECTED"
-    },
-    {
-      "ecosystem": "rust",
       "name": "derive_more-impl",
       "version": "2.1.1",
       "windows_normal_dependency": true,
@@ -1966,6 +2240,24 @@
       ],
       "source_url": "https://crates.io/api/v1/crates/derive_more-impl/2.1.1/download",
       "crate_sha256": "799A97264921D8623A957F6C3B9011F3B5492F557BBB7A5A19B7FA6D06BA8DCB",
+      "status": "NOTICE_TEXT_COLLECTED"
+    },
+    {
+      "ecosystem": "rust",
+      "name": "derive_more",
+      "version": "2.1.1",
+      "windows_normal_dependency": true,
+      "declared_license": "MIT",
+      "files": [
+        {
+          "file": "rust/derive_more-2.1.1/LICENSE",
+          "bytes": 1080,
+          "sha256": "8A35369F3CA263B3C62FBB5032947E53B6BFEBC6C8A4D1BB982DE1C069F6FBA5",
+          "source": "locked crate package derive_more 2.1.1"
+        }
+      ],
+      "source_url": "https://crates.io/api/v1/crates/derive_more/2.1.1/download",
+      "crate_sha256": "D751E9E49156B02B44F9C1815BCB94B984CDCC4396ECC32521C739452808B134",
       "status": "NOTICE_TEXT_COLLECTED"
     },
     {
@@ -1994,30 +2286,6 @@
     },
     {
       "ecosystem": "rust",
-      "name": "dirs",
-      "version": "6.0.0",
-      "windows_normal_dependency": true,
-      "declared_license": "MIT OR Apache-2.0",
-      "files": [
-        {
-          "file": "rust/dirs-6.0.0/LICENSE-APACHE",
-          "bytes": 9694,
-          "sha256": "D3174AD63E721D4C9DCCB8AD4320848992D314369BC46319720B5802C9153FE9",
-          "source": "locked crate package dirs 6.0.0"
-        },
-        {
-          "file": "rust/dirs-6.0.0/LICENSE-MIT",
-          "bytes": 1069,
-          "sha256": "6A2E0ADE09A7D5F816F11566FEE2B151B32235A7FAD52B41D49CCE96F833C1A9",
-          "source": "locked crate package dirs 6.0.0"
-        }
-      ],
-      "source_url": "https://crates.io/api/v1/crates/dirs/6.0.0/download",
-      "crate_sha256": "C3E8AA94D75141228480295A7D0E7FEB620B1A5AD9F12BC40BE62411E38CCE4E",
-      "status": "NOTICE_TEXT_COLLECTED"
-    },
-    {
-      "ecosystem": "rust",
       "name": "dirs-sys",
       "version": "0.5.0",
       "windows_normal_dependency": true,
@@ -2038,6 +2306,30 @@
       ],
       "source_url": "https://crates.io/api/v1/crates/dirs-sys/0.5.0/download",
       "crate_sha256": "E01A3366D27EE9890022452EE61B2B63A67E6F13F58900B651FF5665F0BB1FAB",
+      "status": "NOTICE_TEXT_COLLECTED"
+    },
+    {
+      "ecosystem": "rust",
+      "name": "dirs",
+      "version": "6.0.0",
+      "windows_normal_dependency": true,
+      "declared_license": "MIT OR Apache-2.0",
+      "files": [
+        {
+          "file": "rust/dirs-6.0.0/LICENSE-APACHE",
+          "bytes": 9694,
+          "sha256": "D3174AD63E721D4C9DCCB8AD4320848992D314369BC46319720B5802C9153FE9",
+          "source": "locked crate package dirs 6.0.0"
+        },
+        {
+          "file": "rust/dirs-6.0.0/LICENSE-MIT",
+          "bytes": 1069,
+          "sha256": "6A2E0ADE09A7D5F816F11566FEE2B151B32235A7FAD52B41D49CCE96F833C1A9",
+          "source": "locked crate package dirs 6.0.0"
+        }
+      ],
+      "source_url": "https://crates.io/api/v1/crates/dirs/6.0.0/download",
+      "crate_sha256": "C3E8AA94D75141228480295A7D0E7FEB620B1A5AD9F12BC40BE62411E38CCE4E",
       "status": "NOTICE_TEXT_COLLECTED"
     },
     {
@@ -2108,6 +2400,24 @@
     },
     {
       "ecosystem": "rust",
+      "name": "dtoa-short",
+      "version": "0.3.5",
+      "windows_normal_dependency": true,
+      "declared_license": "MPL-2.0",
+      "files": [
+        {
+          "file": "rust/dtoa-short-0.3.5/LICENSE",
+          "bytes": 16725,
+          "sha256": "1F256ECAD192880510E84AD60474EAB7589218784B9A50BC7CEEE34C2B91F1D5",
+          "source": "locked crate package dtoa-short 0.3.5"
+        }
+      ],
+      "source_url": "https://crates.io/api/v1/crates/dtoa-short/0.3.5/download",
+      "crate_sha256": "CD1511A7B6A56299BD043A9C167A6D2BFB37BF84A6DFCEABA651168ADFB43C87",
+      "status": "NOTICE_TEXT_COLLECTED"
+    },
+    {
+      "ecosystem": "rust",
       "name": "dtoa",
       "version": "1.0.11",
       "windows_normal_dependency": true,
@@ -2132,20 +2442,26 @@
     },
     {
       "ecosystem": "rust",
-      "name": "dtoa-short",
-      "version": "0.3.5",
-      "windows_normal_dependency": true,
-      "declared_license": "MPL-2.0",
+      "name": "dtor-proc-macro",
+      "version": "0.0.6",
+      "windows_normal_dependency": false,
+      "declared_license": "Apache-2.0 OR MIT",
       "files": [
         {
-          "file": "rust/dtoa-short-0.3.5/LICENSE",
-          "bytes": 16725,
-          "sha256": "1F256ECAD192880510E84AD60474EAB7589218784B9A50BC7CEEE34C2B91F1D5",
-          "source": "locked crate package dtoa-short 0.3.5"
+          "file": "rust/dtor-proc-macro-0.0.6/LICENSE-APACHE",
+          "bytes": 11324,
+          "sha256": "A8AD31B1C3F40DCA5A84119351B8FA8DDC868EDD77FAD8A8EBF6D8F2D16FA4AE",
+          "source": "locked crate package dtor-proc-macro 0.0.6"
+        },
+        {
+          "file": "rust/dtor-proc-macro-0.0.6/LICENSE-MIT",
+          "bytes": 1022,
+          "sha256": "BCCAA8B6C09F94E81F06696E179DBE058464BBDFBC823B6D49CADA1D71E84AC3",
+          "source": "locked crate package dtor-proc-macro 0.0.6"
         }
       ],
-      "source_url": "https://crates.io/api/v1/crates/dtoa-short/0.3.5/download",
-      "crate_sha256": "CD1511A7B6A56299BD043A9C167A6D2BFB37BF84A6DFCEABA651168ADFB43C87",
+      "source_url": "https://crates.io/api/v1/crates/dtor-proc-macro/0.0.6/download",
+      "crate_sha256": "F678CF4A922C215C63E0DE95EB1FF08A958A81D47E485CF9DA1E27BF6305CFA5",
       "status": "NOTICE_TEXT_COLLECTED"
     },
     {
@@ -2170,30 +2486,6 @@
       ],
       "source_url": "https://crates.io/api/v1/crates/dtor/0.3.0/download",
       "crate_sha256": "F1057D6C64987086FF8ED0FD3FBF377A6B7D205CC7715868CD401705F715CBE4",
-      "status": "NOTICE_TEXT_COLLECTED"
-    },
-    {
-      "ecosystem": "rust",
-      "name": "dtor-proc-macro",
-      "version": "0.0.6",
-      "windows_normal_dependency": false,
-      "declared_license": "Apache-2.0 OR MIT",
-      "files": [
-        {
-          "file": "rust/dtor-proc-macro-0.0.6/LICENSE-APACHE",
-          "bytes": 11324,
-          "sha256": "A8AD31B1C3F40DCA5A84119351B8FA8DDC868EDD77FAD8A8EBF6D8F2D16FA4AE",
-          "source": "locked crate package dtor-proc-macro 0.0.6"
-        },
-        {
-          "file": "rust/dtor-proc-macro-0.0.6/LICENSE-MIT",
-          "bytes": 1022,
-          "sha256": "BCCAA8B6C09F94E81F06696E179DBE058464BBDFBC823B6D49CADA1D71E84AC3",
-          "source": "locked crate package dtor-proc-macro 0.0.6"
-        }
-      ],
-      "source_url": "https://crates.io/api/v1/crates/dtor-proc-macro/0.0.6/download",
-      "crate_sha256": "F678CF4A922C215C63E0DE95EB1FF08A958A81D47E485CF9DA1E27BF6305CFA5",
       "status": "NOTICE_TEXT_COLLECTED"
     },
     {
@@ -2518,30 +2810,6 @@
       ],
       "source_url": "https://crates.io/api/v1/crates/generic-array/0.14.7/download",
       "crate_sha256": "85649CA51FD72272D7821ADAF274AD91C288277713D9C18820D8499A7FF69E9A",
-      "status": "NOTICE_TEXT_COLLECTED"
-    },
-    {
-      "ecosystem": "rust",
-      "name": "getrandom",
-      "version": "0.2.17",
-      "windows_normal_dependency": true,
-      "declared_license": "MIT OR Apache-2.0",
-      "files": [
-        {
-          "file": "rust/getrandom-0.2.17/LICENSE-APACHE",
-          "bytes": 10849,
-          "sha256": "AAFF376532EA30A0CD5330B9502AD4A4C8BF769C539C87FFE78819D188A18EBF",
-          "source": "locked crate package getrandom 0.2.17"
-        },
-        {
-          "file": "rust/getrandom-0.2.17/LICENSE-MIT",
-          "bytes": 1130,
-          "sha256": "42FA16951CE7F24B5A467A40E5B449A1D41E662F97CA779864F053F39E097737",
-          "source": "locked crate package getrandom 0.2.17"
-        }
-      ],
-      "source_url": "https://crates.io/api/v1/crates/getrandom/0.2.17/download",
-      "crate_sha256": "FF2ABC00BE7FCA6EBC474524697AE276AD847AD0A6B3FAA4BCB027E9A4614AD0",
       "status": "NOTICE_TEXT_COLLECTED"
     },
     {
@@ -3944,30 +4212,6 @@
     },
     {
       "ecosystem": "rust",
-      "name": "ref-cast",
-      "version": "1.0.27",
-      "windows_normal_dependency": false,
-      "declared_license": "MIT OR Apache-2.0",
-      "files": [
-        {
-          "file": "rust/ref-cast-1.0.27/LICENSE-APACHE",
-          "bytes": 9723,
-          "sha256": "62C7A1E35F56406896D7AA7CA52D0CC0D272AC022B5D2796E7D6905DB8A3636A",
-          "source": "locked crate package ref-cast 1.0.27"
-        },
-        {
-          "file": "rust/ref-cast-1.0.27/LICENSE-MIT",
-          "bytes": 1023,
-          "sha256": "23F18E03DC49DF91622FE2A76176497404E46CED8A715D9D2B67A7446571CCA3",
-          "source": "locked crate package ref-cast 1.0.27"
-        }
-      ],
-      "source_url": "https://crates.io/api/v1/crates/ref-cast/1.0.27/download",
-      "crate_sha256": "7E440FB4E4B4147295338EFB76001AB9E4EFC0E5839DF2C47FC5AC2381D365C3",
-      "status": "NOTICE_TEXT_COLLECTED"
-    },
-    {
-      "ecosystem": "rust",
       "name": "ref-cast-impl",
       "version": "1.0.27",
       "windows_normal_dependency": false,
@@ -3992,26 +4236,26 @@
     },
     {
       "ecosystem": "rust",
-      "name": "regex",
-      "version": "1.13.1",
-      "windows_normal_dependency": true,
+      "name": "ref-cast",
+      "version": "1.0.27",
+      "windows_normal_dependency": false,
       "declared_license": "MIT OR Apache-2.0",
       "files": [
         {
-          "file": "rust/regex-1.13.1/LICENSE-APACHE",
-          "bytes": 10847,
-          "sha256": "A60EEA817514531668D7E00765731449FE14D059D3249E0BC93B36DE45F759F2",
-          "source": "locked crate package regex 1.13.1"
+          "file": "rust/ref-cast-1.0.27/LICENSE-APACHE",
+          "bytes": 9723,
+          "sha256": "62C7A1E35F56406896D7AA7CA52D0CC0D272AC022B5D2796E7D6905DB8A3636A",
+          "source": "locked crate package ref-cast 1.0.27"
         },
         {
-          "file": "rust/regex-1.13.1/LICENSE-MIT",
-          "bytes": 1071,
-          "sha256": "6485B8ED310D3F0340BF1AD1F47645069CE4069DCC6BB46C7D5C6FAF41DE1FDB",
-          "source": "locked crate package regex 1.13.1"
+          "file": "rust/ref-cast-1.0.27/LICENSE-MIT",
+          "bytes": 1023,
+          "sha256": "23F18E03DC49DF91622FE2A76176497404E46CED8A715D9D2B67A7446571CCA3",
+          "source": "locked crate package ref-cast 1.0.27"
         }
       ],
-      "source_url": "https://crates.io/api/v1/crates/regex/1.13.1/download",
-      "crate_sha256": "F020237B6C8EED93DB2E2CB53C00C60A8E1BC73DA7D073199A1180401450218D",
+      "source_url": "https://crates.io/api/v1/crates/ref-cast/1.0.27/download",
+      "crate_sha256": "7E440FB4E4B4147295338EFB76001AB9E4EFC0E5839DF2C47FC5AC2381D365C3",
       "status": "NOTICE_TEXT_COLLECTED"
     },
     {
@@ -4070,50 +4314,26 @@
     },
     {
       "ecosystem": "rust",
-      "name": "ring",
-      "version": "0.17.14",
+      "name": "regex",
+      "version": "1.13.1",
       "windows_normal_dependency": true,
-      "declared_license": "Apache-2.0 AND ISC",
+      "declared_license": "MIT OR Apache-2.0",
       "files": [
         {
-          "file": "rust/ring-0.17.14/LICENSE",
-          "bytes": 499,
-          "sha256": "B3D734001A94EFFF3579978D953391AA7115F877657D25EB54037A43875D078A",
-          "source": "locked crate package ring 0.17.14"
-        },
-        {
-          "file": "rust/ring-0.17.14/LICENSE-BoringSSL",
-          "bytes": 14870,
-          "sha256": "005FC765DDC5115DA796CCA915BAA9557ABAE13FF35E0A47C47AFFC56F6C414D",
-          "source": "locked crate package ring 0.17.14"
-        },
-        {
-          "file": "rust/ring-0.17.14/LICENSE-other-bits",
-          "bytes": 731,
-          "sha256": "F025CCFB7DFB6BDFEDC75CA0F67ACC69E6FB4998143D834F7C2F38A29989680F",
-          "source": "locked crate package ring 0.17.14"
-        },
-        {
-          "file": "rust/ring-0.17.14/src/polyfill/once_cell/LICENSE-APACHE",
+          "file": "rust/regex-1.13.1/LICENSE-APACHE",
           "bytes": 10847,
           "sha256": "A60EEA817514531668D7E00765731449FE14D059D3249E0BC93B36DE45F759F2",
-          "source": "locked crate package ring 0.17.14"
+          "source": "locked crate package regex 1.13.1"
         },
         {
-          "file": "rust/ring-0.17.14/src/polyfill/once_cell/LICENSE-MIT",
-          "bytes": 1022,
-          "sha256": "6EE2ED6C77710DE911761ACD5FC1AD1DA00F476BEB1A7EF27E78C2D1858DEAFC",
-          "source": "locked crate package ring 0.17.14"
-        },
-        {
-          "file": "rust/ring-0.17.14/third_party/fiat/LICENSE",
-          "bytes": 638,
-          "sha256": "9EACBCB81BE660840C714A560A9D65BA07913DB98DD4BAF969F78DD499FDD60F",
-          "source": "locked crate package ring 0.17.14"
+          "file": "rust/regex-1.13.1/LICENSE-MIT",
+          "bytes": 1071,
+          "sha256": "6485B8ED310D3F0340BF1AD1F47645069CE4069DCC6BB46C7D5C6FAF41DE1FDB",
+          "source": "locked crate package regex 1.13.1"
         }
       ],
-      "source_url": "https://crates.io/api/v1/crates/ring/0.17.14/download",
-      "crate_sha256": "A4689E6C2294D81E88DC6261C768B63BC4FCDB852BE6D1352498B114F61383B7",
+      "source_url": "https://crates.io/api/v1/crates/regex/1.13.1/download",
+      "crate_sha256": "F020237B6C8EED93DB2E2CB53C00C60A8E1BC73DA7D073199A1180401450218D",
       "status": "NOTICE_TEXT_COLLECTED"
     },
     {
@@ -4328,30 +4548,6 @@
     },
     {
       "ecosystem": "rust",
-      "name": "serde",
-      "version": "1.0.229",
-      "windows_normal_dependency": true,
-      "declared_license": "MIT OR Apache-2.0",
-      "files": [
-        {
-          "file": "rust/serde-1.0.229/LICENSE-APACHE",
-          "bytes": 9723,
-          "sha256": "62C7A1E35F56406896D7AA7CA52D0CC0D272AC022B5D2796E7D6905DB8A3636A",
-          "source": "locked crate package serde 1.0.229"
-        },
-        {
-          "file": "rust/serde-1.0.229/LICENSE-MIT",
-          "bytes": 1023,
-          "sha256": "23F18E03DC49DF91622FE2A76176497404E46CED8A715D9D2B67A7446571CCA3",
-          "source": "locked crate package serde 1.0.229"
-        }
-      ],
-      "source_url": "https://crates.io/api/v1/crates/serde/1.0.229/download",
-      "crate_sha256": "4148590AFEBADA386688F18773DA617792BF2EF03FFC1E4CBD2B1D45B023E0BA",
-      "status": "NOTICE_TEXT_COLLECTED"
-    },
-    {
-      "ecosystem": "rust",
       "name": "serde-untagged",
       "version": "0.1.9",
       "windows_normal_dependency": true,
@@ -4372,6 +4568,30 @@
       ],
       "source_url": "https://crates.io/api/v1/crates/serde-untagged/0.1.9/download",
       "crate_sha256": "F9FAF48A4A2D2693BE24C6289DBE26552776EB7737074E6722891FADBE6C5058",
+      "status": "NOTICE_TEXT_COLLECTED"
+    },
+    {
+      "ecosystem": "rust",
+      "name": "serde",
+      "version": "1.0.229",
+      "windows_normal_dependency": true,
+      "declared_license": "MIT OR Apache-2.0",
+      "files": [
+        {
+          "file": "rust/serde-1.0.229/LICENSE-APACHE",
+          "bytes": 9723,
+          "sha256": "62C7A1E35F56406896D7AA7CA52D0CC0D272AC022B5D2796E7D6905DB8A3636A",
+          "source": "locked crate package serde 1.0.229"
+        },
+        {
+          "file": "rust/serde-1.0.229/LICENSE-MIT",
+          "bytes": 1023,
+          "sha256": "23F18E03DC49DF91622FE2A76176497404E46CED8A715D9D2B67A7446571CCA3",
+          "source": "locked crate package serde 1.0.229"
+        }
+      ],
+      "source_url": "https://crates.io/api/v1/crates/serde/1.0.229/download",
+      "crate_sha256": "4148590AFEBADA386688F18773DA617792BF2EF03FFC1E4CBD2B1D45B023E0BA",
       "status": "NOTICE_TEXT_COLLECTED"
     },
     {
@@ -4568,30 +4788,6 @@
     },
     {
       "ecosystem": "rust",
-      "name": "serialize-to-javascript",
-      "version": "0.1.2",
-      "windows_normal_dependency": true,
-      "declared_license": "MIT OR Apache-2.0",
-      "files": [
-        {
-          "file": "rust/serialize-to-javascript-0.1.2/LICENSE-APACHE",
-          "bytes": 11357,
-          "sha256": "C71D239DF91726FC519C6EB72D318EC65820627232B2F796219E87DCF35D0AB4",
-          "source": "locked crate package serialize-to-javascript 0.1.2"
-        },
-        {
-          "file": "rust/serialize-to-javascript-0.1.2/LICENSE-MIT",
-          "bytes": 1066,
-          "sha256": "E53A7165E8BC3CED5E5628404B3D2D28ECC14AD720F1C09BA28385D5151ECF93",
-          "source": "locked crate package serialize-to-javascript 0.1.2"
-        }
-      ],
-      "source_url": "https://crates.io/api/v1/crates/serialize-to-javascript/0.1.2/download",
-      "crate_sha256": "04F3666A07A197CDB77CDF306C32BE9B7F598D7060D50CFD4D5AA04BFD92F6C5",
-      "status": "NOTICE_TEXT_COLLECTED"
-    },
-    {
-      "ecosystem": "rust",
       "name": "serialize-to-javascript-impl",
       "version": "0.1.2",
       "windows_normal_dependency": true,
@@ -4612,6 +4808,30 @@
       ],
       "source_url": "https://crates.io/api/v1/crates/serialize-to-javascript-impl/0.1.2/download",
       "crate_sha256": "772EE033C0916D670AF7860B6E1EF7D658A4629A6D0B4C8C3E67F09B3765B75D",
+      "status": "NOTICE_TEXT_COLLECTED"
+    },
+    {
+      "ecosystem": "rust",
+      "name": "serialize-to-javascript",
+      "version": "0.1.2",
+      "windows_normal_dependency": true,
+      "declared_license": "MIT OR Apache-2.0",
+      "files": [
+        {
+          "file": "rust/serialize-to-javascript-0.1.2/LICENSE-APACHE",
+          "bytes": 11357,
+          "sha256": "C71D239DF91726FC519C6EB72D318EC65820627232B2F796219E87DCF35D0AB4",
+          "source": "locked crate package serialize-to-javascript 0.1.2"
+        },
+        {
+          "file": "rust/serialize-to-javascript-0.1.2/LICENSE-MIT",
+          "bytes": 1066,
+          "sha256": "E53A7165E8BC3CED5E5628404B3D2D28ECC14AD720F1C09BA28385D5151ECF93",
+          "source": "locked crate package serialize-to-javascript 0.1.2"
+        }
+      ],
+      "source_url": "https://crates.io/api/v1/crates/serialize-to-javascript/0.1.2/download",
+      "crate_sha256": "04F3666A07A197CDB77CDF306C32BE9B7F598D7060D50CFD4D5AA04BFD92F6C5",
       "status": "NOTICE_TEXT_COLLECTED"
     },
     {
@@ -4994,30 +5214,6 @@
     },
     {
       "ecosystem": "rust",
-      "name": "tauri",
-      "version": "2.11.5",
-      "windows_normal_dependency": true,
-      "declared_license": "Apache-2.0 OR MIT",
-      "files": [
-        {
-          "file": "rust/tauri-2.11.5/LICENSE_APACHE-2.0",
-          "bytes": 10174,
-          "sha256": "0D542E0C8804E39AA7F37EB00DA5A762149DC682D7829451287E11B938E94594",
-          "source": "locked crate package tauri 2.11.5"
-        },
-        {
-          "file": "rust/tauri-2.11.5/LICENSE_MIT",
-          "bytes": 1090,
-          "sha256": "9DD42EA92CFF2EDE5CD477CBFCCE051B2D0115C0AC7F368EE88CB545055DFF1D",
-          "source": "locked crate package tauri 2.11.5"
-        }
-      ],
-      "source_url": "https://crates.io/api/v1/crates/tauri/2.11.5/download",
-      "crate_sha256": "667B20E2726D572DEA2DE7370DA16E188EB06008FAF9A92FAB7CDC46791190B5",
-      "status": "NOTICE_TEXT_COLLECTED"
-    },
-    {
-      "ecosystem": "rust",
       "name": "tauri-build",
       "version": "2.6.3",
       "windows_normal_dependency": false,
@@ -5090,30 +5286,6 @@
     },
     {
       "ecosystem": "rust",
-      "name": "tauri-plugin",
-      "version": "2.6.3",
-      "windows_normal_dependency": false,
-      "declared_license": "Apache-2.0 OR MIT",
-      "files": [
-        {
-          "file": "rust/tauri-plugin-2.6.3/LICENSE_MIT",
-          "bytes": 1090,
-          "sha256": "9DD42EA92CFF2EDE5CD477CBFCCE051B2D0115C0AC7F368EE88CB545055DFF1D",
-          "source": "https://raw.githubusercontent.com/tauri-apps/tauri/6f6ab1207bb3923c2721fbc67d2fdb1c8deb0c7a/LICENSE_MIT"
-        },
-        {
-          "file": "rust/tauri-plugin-2.6.3/LICENSE_APACHE-2.0",
-          "bytes": 10174,
-          "sha256": "0D542E0C8804E39AA7F37EB00DA5A762149DC682D7829451287E11B938E94594",
-          "source": "https://raw.githubusercontent.com/tauri-apps/tauri/6f6ab1207bb3923c2721fbc67d2fdb1c8deb0c7a/LICENSE_APACHE-2.0"
-        }
-      ],
-      "source_url": "https://crates.io/api/v1/crates/tauri-plugin/2.6.3/download",
-      "crate_sha256": "74BE5DD4BED9AFBD145E5716B5FA2EC28CBC29C34FFA61C258C9273D896C8020",
-      "status": "NOTICE_TEXT_COLLECTED"
-    },
-    {
-      "ecosystem": "rust",
       "name": "tauri-plugin-shell",
       "version": "2.3.6",
       "windows_normal_dependency": true,
@@ -5144,26 +5316,26 @@
     },
     {
       "ecosystem": "rust",
-      "name": "tauri-runtime",
-      "version": "2.11.3",
-      "windows_normal_dependency": true,
+      "name": "tauri-plugin",
+      "version": "2.6.3",
+      "windows_normal_dependency": false,
       "declared_license": "Apache-2.0 OR MIT",
       "files": [
         {
-          "file": "rust/tauri-runtime-2.11.3/LICENSE_APACHE-2.0",
-          "bytes": 10174,
-          "sha256": "0D542E0C8804E39AA7F37EB00DA5A762149DC682D7829451287E11B938E94594",
-          "source": "locked crate package tauri-runtime 2.11.3"
-        },
-        {
-          "file": "rust/tauri-runtime-2.11.3/LICENSE_MIT",
+          "file": "rust/tauri-plugin-2.6.3/LICENSE_MIT",
           "bytes": 1090,
           "sha256": "9DD42EA92CFF2EDE5CD477CBFCCE051B2D0115C0AC7F368EE88CB545055DFF1D",
-          "source": "locked crate package tauri-runtime 2.11.3"
+          "source": "https://raw.githubusercontent.com/tauri-apps/tauri/6f6ab1207bb3923c2721fbc67d2fdb1c8deb0c7a/LICENSE_MIT"
+        },
+        {
+          "file": "rust/tauri-plugin-2.6.3/LICENSE_APACHE-2.0",
+          "bytes": 10174,
+          "sha256": "0D542E0C8804E39AA7F37EB00DA5A762149DC682D7829451287E11B938E94594",
+          "source": "https://raw.githubusercontent.com/tauri-apps/tauri/6f6ab1207bb3923c2721fbc67d2fdb1c8deb0c7a/LICENSE_APACHE-2.0"
         }
       ],
-      "source_url": "https://crates.io/api/v1/crates/tauri-runtime/2.11.3/download",
-      "crate_sha256": "B0B4BC95AED361B0019067D189A1174A603D460D0F6C72606512D59FC9C12EC8",
+      "source_url": "https://crates.io/api/v1/crates/tauri-plugin/2.6.3/download",
+      "crate_sha256": "74BE5DD4BED9AFBD145E5716B5FA2EC28CBC29C34FFA61C258C9273D896C8020",
       "status": "NOTICE_TEXT_COLLECTED"
     },
     {
@@ -5188,6 +5360,30 @@
       ],
       "source_url": "https://crates.io/api/v1/crates/tauri-runtime-wry/2.11.4/download",
       "crate_sha256": "4E6FAC707727B7A2F48E4DED90976324267371073EDBB415FFB73BB0458D203F",
+      "status": "NOTICE_TEXT_COLLECTED"
+    },
+    {
+      "ecosystem": "rust",
+      "name": "tauri-runtime",
+      "version": "2.11.3",
+      "windows_normal_dependency": true,
+      "declared_license": "Apache-2.0 OR MIT",
+      "files": [
+        {
+          "file": "rust/tauri-runtime-2.11.3/LICENSE_APACHE-2.0",
+          "bytes": 10174,
+          "sha256": "0D542E0C8804E39AA7F37EB00DA5A762149DC682D7829451287E11B938E94594",
+          "source": "locked crate package tauri-runtime 2.11.3"
+        },
+        {
+          "file": "rust/tauri-runtime-2.11.3/LICENSE_MIT",
+          "bytes": 1090,
+          "sha256": "9DD42EA92CFF2EDE5CD477CBFCCE051B2D0115C0AC7F368EE88CB545055DFF1D",
+          "source": "locked crate package tauri-runtime 2.11.3"
+        }
+      ],
+      "source_url": "https://crates.io/api/v1/crates/tauri-runtime/2.11.3/download",
+      "crate_sha256": "B0B4BC95AED361B0019067D189A1174A603D460D0F6C72606512D59FC9C12EC8",
       "status": "NOTICE_TEXT_COLLECTED"
     },
     {
@@ -5234,6 +5430,30 @@
     },
     {
       "ecosystem": "rust",
+      "name": "tauri",
+      "version": "2.11.5",
+      "windows_normal_dependency": true,
+      "declared_license": "Apache-2.0 OR MIT",
+      "files": [
+        {
+          "file": "rust/tauri-2.11.5/LICENSE_APACHE-2.0",
+          "bytes": 10174,
+          "sha256": "0D542E0C8804E39AA7F37EB00DA5A762149DC682D7829451287E11B938E94594",
+          "source": "locked crate package tauri 2.11.5"
+        },
+        {
+          "file": "rust/tauri-2.11.5/LICENSE_MIT",
+          "bytes": 1090,
+          "sha256": "9DD42EA92CFF2EDE5CD477CBFCCE051B2D0115C0AC7F368EE88CB545055DFF1D",
+          "source": "locked crate package tauri 2.11.5"
+        }
+      ],
+      "source_url": "https://crates.io/api/v1/crates/tauri/2.11.5/download",
+      "crate_sha256": "667B20E2726D572DEA2DE7370DA16E188EB06008FAF9A92FAB7CDC46791190B5",
+      "status": "NOTICE_TEXT_COLLECTED"
+    },
+    {
+      "ecosystem": "rust",
       "name": "tendril",
       "version": "0.5.1",
       "windows_normal_dependency": true,
@@ -5254,54 +5474,6 @@
       ],
       "source_url": "https://crates.io/api/v1/crates/tendril/0.5.1/download",
       "crate_sha256": "5FED54709C5B3A53D09BB1C113EA4F5CEAFD1E772DDCB0030A82E1D56C087B08",
-      "status": "NOTICE_TEXT_COLLECTED"
-    },
-    {
-      "ecosystem": "rust",
-      "name": "thiserror",
-      "version": "1.0.69",
-      "windows_normal_dependency": true,
-      "declared_license": "MIT OR Apache-2.0",
-      "files": [
-        {
-          "file": "rust/thiserror-1.0.69/LICENSE-APACHE",
-          "bytes": 9723,
-          "sha256": "62C7A1E35F56406896D7AA7CA52D0CC0D272AC022B5D2796E7D6905DB8A3636A",
-          "source": "locked crate package thiserror 1.0.69"
-        },
-        {
-          "file": "rust/thiserror-1.0.69/LICENSE-MIT",
-          "bytes": 1023,
-          "sha256": "23F18E03DC49DF91622FE2A76176497404E46CED8A715D9D2B67A7446571CCA3",
-          "source": "locked crate package thiserror 1.0.69"
-        }
-      ],
-      "source_url": "https://crates.io/api/v1/crates/thiserror/1.0.69/download",
-      "crate_sha256": "B6AAF5339B578EA85B50E080FEB250A3E8AE8CFCDFF9A461C9EC2904BC923F52",
-      "status": "NOTICE_TEXT_COLLECTED"
-    },
-    {
-      "ecosystem": "rust",
-      "name": "thiserror",
-      "version": "2.0.20",
-      "windows_normal_dependency": true,
-      "declared_license": "MIT OR Apache-2.0",
-      "files": [
-        {
-          "file": "rust/thiserror-2.0.20/LICENSE-APACHE",
-          "bytes": 9723,
-          "sha256": "62C7A1E35F56406896D7AA7CA52D0CC0D272AC022B5D2796E7D6905DB8A3636A",
-          "source": "locked crate package thiserror 2.0.20"
-        },
-        {
-          "file": "rust/thiserror-2.0.20/LICENSE-MIT",
-          "bytes": 1023,
-          "sha256": "23F18E03DC49DF91622FE2A76176497404E46CED8A715D9D2B67A7446571CCA3",
-          "source": "locked crate package thiserror 2.0.20"
-        }
-      ],
-      "source_url": "https://crates.io/api/v1/crates/thiserror/2.0.20/download",
-      "crate_sha256": "EC86235F5FCC2A73650310756D2AC5B138A5780BBBDFAE3EECCEC992C435BA4F",
       "status": "NOTICE_TEXT_COLLECTED"
     },
     {
@@ -5354,26 +5526,50 @@
     },
     {
       "ecosystem": "rust",
-      "name": "time",
-      "version": "0.3.45",
+      "name": "thiserror",
+      "version": "1.0.69",
       "windows_normal_dependency": true,
       "declared_license": "MIT OR Apache-2.0",
       "files": [
         {
-          "file": "rust/time-0.3.45/LICENSE-Apache",
-          "bytes": 10174,
-          "sha256": "0D542E0C8804E39AA7F37EB00DA5A762149DC682D7829451287E11B938E94594",
-          "source": "locked crate package time 0.3.45"
+          "file": "rust/thiserror-1.0.69/LICENSE-APACHE",
+          "bytes": 9723,
+          "sha256": "62C7A1E35F56406896D7AA7CA52D0CC0D272AC022B5D2796E7D6905DB8A3636A",
+          "source": "locked crate package thiserror 1.0.69"
         },
         {
-          "file": "rust/time-0.3.45/LICENSE-MIT",
-          "bytes": 1057,
-          "sha256": "2537228D9A1B44A5DC595241349CAE7090B326C8DE165AAF89BFDDEF4A00D0FC",
-          "source": "locked crate package time 0.3.45"
+          "file": "rust/thiserror-1.0.69/LICENSE-MIT",
+          "bytes": 1023,
+          "sha256": "23F18E03DC49DF91622FE2A76176497404E46CED8A715D9D2B67A7446571CCA3",
+          "source": "locked crate package thiserror 1.0.69"
         }
       ],
-      "source_url": "https://crates.io/api/v1/crates/time/0.3.45/download",
-      "crate_sha256": "F9E442FC33D7FDB45AA9BFEB312C095964ABDF596F7567261062B2A7107AAABD",
+      "source_url": "https://crates.io/api/v1/crates/thiserror/1.0.69/download",
+      "crate_sha256": "B6AAF5339B578EA85B50E080FEB250A3E8AE8CFCDFF9A461C9EC2904BC923F52",
+      "status": "NOTICE_TEXT_COLLECTED"
+    },
+    {
+      "ecosystem": "rust",
+      "name": "thiserror",
+      "version": "2.0.20",
+      "windows_normal_dependency": true,
+      "declared_license": "MIT OR Apache-2.0",
+      "files": [
+        {
+          "file": "rust/thiserror-2.0.20/LICENSE-APACHE",
+          "bytes": 9723,
+          "sha256": "62C7A1E35F56406896D7AA7CA52D0CC0D272AC022B5D2796E7D6905DB8A3636A",
+          "source": "locked crate package thiserror 2.0.20"
+        },
+        {
+          "file": "rust/thiserror-2.0.20/LICENSE-MIT",
+          "bytes": 1023,
+          "sha256": "23F18E03DC49DF91622FE2A76176497404E46CED8A715D9D2B67A7446571CCA3",
+          "source": "locked crate package thiserror 2.0.20"
+        }
+      ],
+      "source_url": "https://crates.io/api/v1/crates/thiserror/2.0.20/download",
+      "crate_sha256": "EC86235F5FCC2A73650310756D2AC5B138A5780BBBDFAE3EECCEC992C435BA4F",
       "status": "NOTICE_TEXT_COLLECTED"
     },
     {
@@ -5422,6 +5618,30 @@
       ],
       "source_url": "https://crates.io/api/v1/crates/time-macros/0.2.25/download",
       "crate_sha256": "71E552D1249BF61AC2A52DB88179FD0673DEF1E1AD8243A00D9EC9ED71FEE3DD",
+      "status": "NOTICE_TEXT_COLLECTED"
+    },
+    {
+      "ecosystem": "rust",
+      "name": "time",
+      "version": "0.3.45",
+      "windows_normal_dependency": true,
+      "declared_license": "MIT OR Apache-2.0",
+      "files": [
+        {
+          "file": "rust/time-0.3.45/LICENSE-Apache",
+          "bytes": 10174,
+          "sha256": "0D542E0C8804E39AA7F37EB00DA5A762149DC682D7829451287E11B938E94594",
+          "source": "locked crate package time 0.3.45"
+        },
+        {
+          "file": "rust/time-0.3.45/LICENSE-MIT",
+          "bytes": 1057,
+          "sha256": "2537228D9A1B44A5DC595241349CAE7090B326C8DE165AAF89BFDDEF4A00D0FC",
+          "source": "locked crate package time 0.3.45"
+        }
+      ],
+      "source_url": "https://crates.io/api/v1/crates/time/0.3.45/download",
+      "crate_sha256": "F9E442FC33D7FDB45AA9BFEB312C095964ABDF596F7567261062B2A7107AAABD",
       "status": "NOTICE_TEXT_COLLECTED"
     },
     {
@@ -5606,24 +5826,6 @@
     },
     {
       "ecosystem": "rust",
-      "name": "tracing",
-      "version": "0.1.44",
-      "windows_normal_dependency": true,
-      "declared_license": "MIT",
-      "files": [
-        {
-          "file": "rust/tracing-0.1.44/LICENSE",
-          "bytes": 1062,
-          "sha256": "898B1AE9821E98DAF8964C8D6C7F61641F5F5AA78AD500020771C0939EE0DEA1",
-          "source": "locked crate package tracing 0.1.44"
-        }
-      ],
-      "source_url": "https://crates.io/api/v1/crates/tracing/0.1.44/download",
-      "crate_sha256": "63E71662FA4B2A2C3A26F570F037EB95BB1F85397F3CD8076CAED2F026A6D100",
-      "status": "NOTICE_TEXT_COLLECTED"
-    },
-    {
-      "ecosystem": "rust",
       "name": "tracing-core",
       "version": "0.1.36",
       "windows_normal_dependency": true,
@@ -5644,6 +5846,24 @@
       ],
       "source_url": "https://crates.io/api/v1/crates/tracing-core/0.1.36/download",
       "crate_sha256": "DB97CAF9D906FBDE555DD62FA95DDBA9EECFD14CB388E4F491A66D74CD5FB79A",
+      "status": "NOTICE_TEXT_COLLECTED"
+    },
+    {
+      "ecosystem": "rust",
+      "name": "tracing",
+      "version": "0.1.44",
+      "windows_normal_dependency": true,
+      "declared_license": "MIT",
+      "files": [
+        {
+          "file": "rust/tracing-0.1.44/LICENSE",
+          "bytes": 1062,
+          "sha256": "898B1AE9821E98DAF8964C8D6C7F61641F5F5AA78AD500020771C0939EE0DEA1",
+          "source": "locked crate package tracing 0.1.44"
+        }
+      ],
+      "source_url": "https://crates.io/api/v1/crates/tracing/0.1.44/download",
+      "crate_sha256": "63E71662FA4B2A2C3A26F570F037EB95BB1F85397F3CD8076CAED2F026A6D100",
       "status": "NOTICE_TEXT_COLLECTED"
     },
     {
@@ -5912,24 +6132,6 @@
     },
     {
       "ecosystem": "rust",
-      "name": "untrusted",
-      "version": "0.9.0",
-      "windows_normal_dependency": true,
-      "declared_license": "ISC",
-      "files": [
-        {
-          "file": "rust/untrusted-0.9.0/LICENSE.txt",
-          "bytes": 769,
-          "sha256": "7ABD9B6960DCF7D4D0A48606A5B71BFE37D472DB68D70637F3A58A56785F1621",
-          "source": "locked crate package untrusted 0.9.0"
-        }
-      ],
-      "source_url": "https://crates.io/api/v1/crates/untrusted/0.9.0/download",
-      "crate_sha256": "8ECB6DA28B8A351D773B68D5825AC39017E680750F980F3A1A85CD8DD28A47C1",
-      "status": "NOTICE_TEXT_COLLECTED"
-    },
-    {
-      "ecosystem": "rust",
       "name": "url",
       "version": "2.5.8",
       "windows_normal_dependency": true,
@@ -6050,24 +6252,6 @@
     },
     {
       "ecosystem": "rust",
-      "name": "vswhom",
-      "version": "0.1.0",
-      "windows_normal_dependency": false,
-      "declared_license": "MIT",
-      "files": [
-        {
-          "file": "rust/vswhom-0.1.0/LICENSE",
-          "bytes": 1082,
-          "sha256": "B9B7E5D4BF8857061FBECAB39EF1923644EBA639337AF22D7AD0BB9B3CE59C49",
-          "source": "locked crate package vswhom 0.1.0"
-        }
-      ],
-      "source_url": "https://crates.io/api/v1/crates/vswhom/0.1.0/download",
-      "crate_sha256": "BE979B7F07507105799E854203B470FF7C78A1639E330A58F183B5FEA574608B",
-      "status": "NOTICE_TEXT_COLLECTED"
-    },
-    {
-      "ecosystem": "rust",
       "name": "vswhom-sys",
       "version": "0.1.3",
       "windows_normal_dependency": false,
@@ -6082,6 +6266,24 @@
       ],
       "source_url": "https://crates.io/api/v1/crates/vswhom-sys/0.1.3/download",
       "crate_sha256": "FB067E4CBD1FF067D1DF46C9194B5DE0E98EFD2810BBC95C5D5E5F25A3231150",
+      "status": "NOTICE_TEXT_COLLECTED"
+    },
+    {
+      "ecosystem": "rust",
+      "name": "vswhom",
+      "version": "0.1.0",
+      "windows_normal_dependency": false,
+      "declared_license": "MIT",
+      "files": [
+        {
+          "file": "rust/vswhom-0.1.0/LICENSE",
+          "bytes": 1082,
+          "sha256": "B9B7E5D4BF8857061FBECAB39EF1923644EBA639337AF22D7AD0BB9B3CE59C49",
+          "source": "locked crate package vswhom 0.1.0"
+        }
+      ],
+      "source_url": "https://crates.io/api/v1/crates/vswhom/0.1.0/download",
+      "crate_sha256": "BE979B7F07507105799E854203B470FF7C78A1639E330A58F183B5FEA574608B",
       "status": "NOTICE_TEXT_COLLECTED"
     },
     {
@@ -6134,24 +6336,6 @@
     },
     {
       "ecosystem": "rust",
-      "name": "webview2-com",
-      "version": "0.38.2",
-      "windows_normal_dependency": true,
-      "declared_license": "MIT",
-      "files": [
-        {
-          "file": "rust/webview2-com-0.38.2/LICENSE",
-          "bytes": 1067,
-          "sha256": "0DCF41516E608BBCB6CDC5229FEB7B86FE4A643B85E7DF251133C93408FDAC73",
-          "source": "https://raw.githubusercontent.com/wravery/webview2-rs/b74dc5e2b394044bea5191052868ce7a106c202c/LICENSE"
-        }
-      ],
-      "source_url": "https://crates.io/api/v1/crates/webview2-com/0.38.2/download",
-      "crate_sha256": "7130243A7A5B33C54A444E54842E6A9E133DE08B5AD7B5861CD8ED9A6A5BC96A",
-      "status": "NOTICE_TEXT_COLLECTED"
-    },
-    {
-      "ecosystem": "rust",
       "name": "webview2-com-macros",
       "version": "0.8.1",
       "windows_normal_dependency": true,
@@ -6184,6 +6368,24 @@
       ],
       "source_url": "https://crates.io/api/v1/crates/webview2-com-sys/0.38.2/download",
       "crate_sha256": "381336CFFFD772377D291702245447A5251A2FFA5BAD679C99E61BC48BACBF9C",
+      "status": "NOTICE_TEXT_COLLECTED"
+    },
+    {
+      "ecosystem": "rust",
+      "name": "webview2-com",
+      "version": "0.38.2",
+      "windows_normal_dependency": true,
+      "declared_license": "MIT",
+      "files": [
+        {
+          "file": "rust/webview2-com-0.38.2/LICENSE",
+          "bytes": 1067,
+          "sha256": "0DCF41516E608BBCB6CDC5229FEB7B86FE4A643B85E7DF251133C93408FDAC73",
+          "source": "https://raw.githubusercontent.com/wravery/webview2-rs/b74dc5e2b394044bea5191052868ce7a106c202c/LICENSE"
+        }
+      ],
+      "source_url": "https://crates.io/api/v1/crates/webview2-com/0.38.2/download",
+      "crate_sha256": "7130243A7A5B33C54A444E54842E6A9E133DE08B5AD7B5861CD8ED9A6A5BC96A",
       "status": "NOTICE_TEXT_COLLECTED"
     },
     {
@@ -6238,30 +6440,6 @@
       ],
       "source_url": "https://crates.io/api/v1/crates/window-vibrancy/0.6.0/download",
       "crate_sha256": "D9BEC5A31F3F9362F2258FD0E9C9DD61A9CA432E7306CC78C444258F0DCE9A9C",
-      "status": "NOTICE_TEXT_COLLECTED"
-    },
-    {
-      "ecosystem": "rust",
-      "name": "windows",
-      "version": "0.61.3",
-      "windows_normal_dependency": true,
-      "declared_license": "MIT OR Apache-2.0",
-      "files": [
-        {
-          "file": "rust/windows-0.61.3/license-apache-2.0",
-          "bytes": 11351,
-          "sha256": "C16F8DCF1A368B83BE78D826EA23DE4079FE1B4469A0AB9EE20563F37FF3D44B",
-          "source": "locked crate package windows 0.61.3"
-        },
-        {
-          "file": "rust/windows-0.61.3/license-mit",
-          "bytes": 1141,
-          "sha256": "C2CFCCB812FE482101A8F04597DFC5A9991A6B2748266C47AC91B6A5AAE15383",
-          "source": "locked crate package windows 0.61.3"
-        }
-      ],
-      "source_url": "https://crates.io/api/v1/crates/windows/0.61.3/download",
-      "crate_sha256": "9BABD3A767A4C1AEF6900409F85F5D53CE2544CCDFAA86DAD48C91782C6D6893",
       "status": "NOTICE_TEXT_COLLECTED"
     },
     {
@@ -6674,6 +6852,30 @@
     },
     {
       "ecosystem": "rust",
+      "name": "windows",
+      "version": "0.61.3",
+      "windows_normal_dependency": true,
+      "declared_license": "MIT OR Apache-2.0",
+      "files": [
+        {
+          "file": "rust/windows-0.61.3/license-apache-2.0",
+          "bytes": 11351,
+          "sha256": "C16F8DCF1A368B83BE78D826EA23DE4079FE1B4469A0AB9EE20563F37FF3D44B",
+          "source": "locked crate package windows 0.61.3"
+        },
+        {
+          "file": "rust/windows-0.61.3/license-mit",
+          "bytes": 1141,
+          "sha256": "C2CFCCB812FE482101A8F04597DFC5A9991A6B2748266C47AC91B6A5AAE15383",
+          "source": "locked crate package windows 0.61.3"
+        }
+      ],
+      "source_url": "https://crates.io/api/v1/crates/windows/0.61.3/download",
+      "crate_sha256": "9BABD3A767A4C1AEF6900409F85F5D53CE2544CCDFAA86DAD48C91782C6D6893",
+      "status": "NOTICE_TEXT_COLLECTED"
+    },
+    {
+      "ecosystem": "rust",
       "name": "windows_x86_64_msvc",
       "version": "0.52.6",
       "windows_normal_dependency": true,
@@ -6824,24 +7026,6 @@
     },
     {
       "ecosystem": "rust",
-      "name": "yoke",
-      "version": "0.8.3",
-      "windows_normal_dependency": true,
-      "declared_license": "Unicode-3.0",
-      "files": [
-        {
-          "file": "rust/yoke-0.8.3/LICENSE",
-          "bytes": 2195,
-          "sha256": "F367C1B8E1AA262435251E442901DA4607B4650E0E63A026F5044473ECFB90F2",
-          "source": "locked crate package yoke 0.8.3"
-        }
-      ],
-      "source_url": "https://crates.io/api/v1/crates/yoke/0.8.3/download",
-      "crate_sha256": "709FE23A0424B6A435D82152B1BD3FDFB0833487D5FA90D05D42762A9891FEF5",
-      "status": "NOTICE_TEXT_COLLECTED"
-    },
-    {
-      "ecosystem": "rust",
       "name": "yoke-derive",
       "version": "0.8.2",
       "windows_normal_dependency": true,
@@ -6860,20 +7044,20 @@
     },
     {
       "ecosystem": "rust",
-      "name": "zerofrom",
-      "version": "0.1.8",
+      "name": "yoke",
+      "version": "0.8.3",
       "windows_normal_dependency": true,
       "declared_license": "Unicode-3.0",
       "files": [
         {
-          "file": "rust/zerofrom-0.1.8/LICENSE",
+          "file": "rust/yoke-0.8.3/LICENSE",
           "bytes": 2195,
           "sha256": "F367C1B8E1AA262435251E442901DA4607B4650E0E63A026F5044473ECFB90F2",
-          "source": "locked crate package zerofrom 0.1.8"
+          "source": "locked crate package yoke 0.8.3"
         }
       ],
-      "source_url": "https://crates.io/api/v1/crates/zerofrom/0.1.8/download",
-      "crate_sha256": "0EC05A11813EA801FF6D75110AD09CD0824DDBA17DFE17128EA0D5F68E6C5272",
+      "source_url": "https://crates.io/api/v1/crates/yoke/0.8.3/download",
+      "crate_sha256": "709FE23A0424B6A435D82152B1BD3FDFB0833487D5FA90D05D42762A9891FEF5",
       "status": "NOTICE_TEXT_COLLECTED"
     },
     {
@@ -6896,6 +7080,24 @@
     },
     {
       "ecosystem": "rust",
+      "name": "zerofrom",
+      "version": "0.1.8",
+      "windows_normal_dependency": true,
+      "declared_license": "Unicode-3.0",
+      "files": [
+        {
+          "file": "rust/zerofrom-0.1.8/LICENSE",
+          "bytes": 2195,
+          "sha256": "F367C1B8E1AA262435251E442901DA4607B4650E0E63A026F5044473ECFB90F2",
+          "source": "locked crate package zerofrom 0.1.8"
+        }
+      ],
+      "source_url": "https://crates.io/api/v1/crates/zerofrom/0.1.8/download",
+      "crate_sha256": "0EC05A11813EA801FF6D75110AD09CD0824DDBA17DFE17128EA0D5F68E6C5272",
+      "status": "NOTICE_TEXT_COLLECTED"
+    },
+    {
+      "ecosystem": "rust",
       "name": "zerotrie",
       "version": "0.2.5",
       "windows_normal_dependency": true,
@@ -6914,24 +7116,6 @@
     },
     {
       "ecosystem": "rust",
-      "name": "zerovec",
-      "version": "0.11.8",
-      "windows_normal_dependency": true,
-      "declared_license": "Unicode-3.0",
-      "files": [
-        {
-          "file": "rust/zerovec-0.11.8/LICENSE",
-          "bytes": 2195,
-          "sha256": "F367C1B8E1AA262435251E442901DA4607B4650E0E63A026F5044473ECFB90F2",
-          "source": "locked crate package zerovec 0.11.8"
-        }
-      ],
-      "source_url": "https://crates.io/api/v1/crates/zerovec/0.11.8/download",
-      "crate_sha256": "BB0464E17806C1D976D5CBA29399C7F08E516E279E2BA493F63123B5FCA67DD8",
-      "status": "NOTICE_TEXT_COLLECTED"
-    },
-    {
-      "ecosystem": "rust",
       "name": "zerovec-derive",
       "version": "0.11.6",
       "windows_normal_dependency": true,
@@ -6946,6 +7130,24 @@
       ],
       "source_url": "https://crates.io/api/v1/crates/zerovec-derive/0.11.6/download",
       "crate_sha256": "34DF6FC39DBD26DDC9C10E6A2984476E13ACCE22E64E4487636EF494369225DA",
+      "status": "NOTICE_TEXT_COLLECTED"
+    },
+    {
+      "ecosystem": "rust",
+      "name": "zerovec",
+      "version": "0.11.8",
+      "windows_normal_dependency": true,
+      "declared_license": "Unicode-3.0",
+      "files": [
+        {
+          "file": "rust/zerovec-0.11.8/LICENSE",
+          "bytes": 2195,
+          "sha256": "F367C1B8E1AA262435251E442901DA4607B4650E0E63A026F5044473ECFB90F2",
+          "source": "locked crate package zerovec 0.11.8"
+        }
+      ],
+      "source_url": "https://crates.io/api/v1/crates/zerovec/0.11.8/download",
+      "crate_sha256": "BB0464E17806C1D976D5CBA29399C7F08E516E279E2BA493F63123B5FCA67DD8",
       "status": "NOTICE_TEXT_COLLECTED"
     },
     {
@@ -6988,23 +7190,63 @@
   "node": [
     {
       "ecosystem": "node",
-      "name": "dompurify",
-      "version": "3.4.15",
-      "declared_license": "MPL-2.0 OR Apache-2.0 (Apache-2.0 selected)",
-      "integrity": "sha512-EUBjM+B+lkDE41iE82DDSCfkoPGfXx8IxFxPMjNzm/Uk4xDet77rTN9wqlxlVg71kK7XGuUMv6wUxJUwwv+Xyw==",
-      "source_url": "https://registry.npmjs.org/dompurify/-/dompurify-3.4.15.tgz",
+      "name": "@tauri-apps/api",
+      "version": "2.11.1",
+      "declared_license": "Apache-2.0 OR MIT",
+      "source_url": "https://registry.npmjs.org/@tauri-apps/api/-/api-2.11.1.tgz",
+      "integrity": "sha512-M2FPuYND2m+wh5hfW9ZpSdxMPdEJovPBWwoHJmwUpysTYNHaOkVFN419m/K0LIgjb/7KU2vBgsUepJWugQCvAA==",
       "files": [
         {
-          "file": "node/dompurify-3.4.15/LICENSE",
-          "bytes": 11358,
-          "sha256": "CFC7749B96F63BD31C3C42B5C471BF756814053E847C10F3EB003417BC523D30",
-          "source": "production package-lock entry dompurify"
+          "file": "node-3.1/@tauri-apps__api/2.11.1/LICENSE_APACHE-2.0",
+          "bytes": 10174,
+          "sha256": "0D542E0C8804E39AA7F37EB00DA5A762149DC682D7829451287E11B938E94594",
+          "source": "https://registry.npmjs.org/@tauri-apps/api/-/api-2.11.1.tgz"
         },
         {
-          "file": "node/dompurify-3.4.15/LICENSE-MPL",
+          "file": "node-3.1/@tauri-apps__api/2.11.1/LICENSE_MIT",
+          "bytes": 1090,
+          "sha256": "9DD42EA92CFF2EDE5CD477CBFCCE051B2D0115C0AC7F368EE88CB545055DFF1D",
+          "source": "https://registry.npmjs.org/@tauri-apps/api/-/api-2.11.1.tgz"
+        }
+      ],
+      "status": "NOTICE_TEXT_COLLECTED"
+    },
+    {
+      "ecosystem": "node",
+      "name": "@types/trusted-types",
+      "version": "2.0.7",
+      "declared_license": "MIT",
+      "source_url": "https://registry.npmjs.org/@types/trusted-types/-/trusted-types-2.0.7.tgz",
+      "integrity": "sha512-ScaPdn1dQczgbl0QFTeTOmVHFULt394XJgOQNoyVhZ6r2vLnMLJfBPd53SB52T/3G36VI1/g2MZaX0cwDuXsfw==",
+      "files": [
+        {
+          "file": "node-3.1/@types__trusted-types/2.0.7/LICENSE",
+          "bytes": 1141,
+          "sha256": "C2CFCCB812FE482101A8F04597DFC5A9991A6B2748266C47AC91B6A5AAE15383",
+          "source": "https://registry.npmjs.org/@types/trusted-types/-/trusted-types-2.0.7.tgz"
+        }
+      ],
+      "status": "NOTICE_TEXT_COLLECTED"
+    },
+    {
+      "ecosystem": "node",
+      "name": "dompurify",
+      "version": "3.4.15",
+      "declared_license": "(MPL-2.0 OR Apache-2.0)",
+      "source_url": "https://registry.npmjs.org/dompurify/-/dompurify-3.4.15.tgz",
+      "integrity": "sha512-EUBjM+B+lkDE41iE82DDSCfkoPGfXx8IxFxPMjNzm/Uk4xDet77rTN9wqlxlVg71kK7XGuUMv6wUxJUwwv+Xyw==",
+      "files": [
+        {
+          "file": "node-3.1/dompurify/3.4.15/LICENSE",
+          "bytes": 11358,
+          "sha256": "CFC7749B96F63BD31C3C42B5C471BF756814053E847C10F3EB003417BC523D30",
+          "source": "https://registry.npmjs.org/dompurify/-/dompurify-3.4.15.tgz"
+        },
+        {
+          "file": "node-3.1/dompurify/3.4.15/LICENSE-MPL",
           "bytes": 16726,
           "sha256": "FAB3DD6BDAB226F1C08630B1DD917E11FCB4EC5E1E020E2C16F83A0A13863E85",
-          "source": "production package-lock entry dompurify; alternate license retained"
+          "source": "https://registry.npmjs.org/dompurify/-/dompurify-3.4.15.tgz"
         }
       ],
       "status": "NOTICE_TEXT_COLLECTED"
@@ -7014,14 +7256,14 @@
       "name": "marked",
       "version": "14.0.0",
       "declared_license": "MIT",
-      "integrity": "sha512-uIj4+faQ+MgHgwUW1l2PsPglZLOLOT1uErt06dAPtx2kjteLAkbsd/0FiYg/MGS+i7ZKLb7w2WClxHkzOOuryQ==",
       "source_url": "https://registry.npmjs.org/marked/-/marked-14.0.0.tgz",
+      "integrity": "sha512-uIj4+faQ+MgHgwUW1l2PsPglZLOLOT1uErt06dAPtx2kjteLAkbsd/0FiYg/MGS+i7ZKLb7w2WClxHkzOOuryQ==",
       "files": [
         {
-          "file": "node/marked-14.0.0/LICENSE.md",
+          "file": "node-3.1/marked/14.0.0/LICENSE.md",
           "bytes": 2942,
           "sha256": "8E3A3F82F59A60958F56CA08F445647C32A4733DC7CA6C2C46F6EB898471AB9C",
-          "source": "production package-lock entry marked"
+          "source": "https://registry.npmjs.org/marked/-/marked-14.0.0.tgz"
         }
       ],
       "status": "NOTICE_TEXT_COLLECTED"
@@ -7031,43 +7273,14 @@
       "name": "monaco-editor-core",
       "version": "0.57.0",
       "declared_license": "MIT",
-      "integrity": "sha512-qmrTRcRS4xlxEE+uTf0FivFudji0I87rvpQzGyzf2VZhbf2Q29PSs0ksaaZAIQoC6LOHpvJOBMpBa6u0zWQlmw==",
       "source_url": "https://registry.npmjs.org/monaco-editor-core/-/monaco-editor-core-0.57.0.tgz",
+      "integrity": "sha512-qmrTRcRS4xlxEE+uTf0FivFudji0I87rvpQzGyzf2VZhbf2Q29PSs0ksaaZAIQoC6LOHpvJOBMpBa6u0zWQlmw==",
       "files": [
         {
-          "file": "node/monaco-editor-core-0.57.0/LICENSE",
+          "file": "node-3.1/monaco-editor-core/0.57.0/LICENSE",
           "bytes": 1098,
           "sha256": "33E4FF1A06EF62BA21788EA162564EE8165269A24A9CE6EF301837447EAB0AC6",
-          "source": "production package-lock entry monaco-editor-core"
-        },
-        {
-          "file": "node/monaco-editor-core-0.57.0/ThirdPartyNotices.txt",
-          "bytes": 3038,
-          "sha256": "3451AB38EA19F7823D468863FC6016A27F81CB60CA6A241100ED1CBD4CB8260C",
-          "source": "production package-lock entry monaco-editor-core"
-        }
-      ],
-      "status": "NOTICE_TEXT_COLLECTED"
-    },
-    {
-      "ecosystem": "node",
-      "name": "@tauri-apps/api",
-      "version": "2.11.1",
-      "declared_license": "Apache-2.0 OR MIT",
-      "integrity": "sha512-M2FPuYND2m+wh5hfW9ZpSdxMPdEJovPBWwoHJmwUpysTYNHaOkVFN419m/K0LIgjb/7KU2vBgsUepJWugQCvAA==",
-      "source_url": "https://registry.npmjs.org/@tauri-apps/api/-/api-2.11.1.tgz",
-      "files": [
-        {
-          "file": "node/@tauri-apps__api-2.11.1/LICENSE_APACHE-2.0",
-          "bytes": 10174,
-          "sha256": "0D542E0C8804E39AA7F37EB00DA5A762149DC682D7829451287E11B938E94594",
-          "source": "production package-lock entry @tauri-apps/api"
-        },
-        {
-          "file": "node/@tauri-apps__api-2.11.1/LICENSE_MIT",
-          "bytes": 1090,
-          "sha256": "9DD42EA92CFF2EDE5CD477CBFCCE051B2D0115C0AC7F368EE88CB545055DFF1D",
-          "source": "production package-lock entry @tauri-apps/api"
+          "source": "https://registry.npmjs.org/monaco-editor-core/-/monaco-editor-core-0.57.0.tgz"
         }
       ],
       "status": "NOTICE_TEXT_COLLECTED"
@@ -7077,14 +7290,14 @@
       "name": "react",
       "version": "19.1.1",
       "declared_license": "MIT",
-      "integrity": "sha512-w8nqGImo45dmMIfljjMwOGtbmC/mk4CMYhWIicdSflH91J9TyCyczcPFXJzrZ/ZXcgGRFeP6BU0BEJTw6tZdfQ==",
       "source_url": "https://registry.npmjs.org/react/-/react-19.1.1.tgz",
+      "integrity": "sha512-w8nqGImo45dmMIfljjMwOGtbmC/mk4CMYhWIicdSflH91J9TyCyczcPFXJzrZ/ZXcgGRFeP6BU0BEJTw6tZdfQ==",
       "files": [
         {
-          "file": "node/react-19.1.1/LICENSE",
+          "file": "node-3.1/react/19.1.1/LICENSE",
           "bytes": 1088,
           "sha256": "DA6D3703ED11CBE42BD212C725957C98DA23CBFF1998C05FA4B3D976D1A58E93",
-          "source": "production package-lock entry react"
+          "source": "https://registry.npmjs.org/react/-/react-19.1.1.tgz"
         }
       ],
       "status": "NOTICE_TEXT_COLLECTED"
@@ -7094,14 +7307,14 @@
       "name": "react-dom",
       "version": "19.1.1",
       "declared_license": "MIT",
-      "integrity": "sha512-Dlq/5LAZgF0Gaz6yiqZCf6VCcZs1ghAJyrsu84Q/GT0gV+mCxbfmKNoGRKBYMJ8IEdGPqu49YWXD02GCknEDkw==",
       "source_url": "https://registry.npmjs.org/react-dom/-/react-dom-19.1.1.tgz",
+      "integrity": "sha512-Dlq/5LAZgF0Gaz6yiqZCf6VCcZs1ghAJyrsu84Q/GT0gV+mCxbfmKNoGRKBYMJ8IEdGPqu49YWXD02GCknEDkw==",
       "files": [
         {
-          "file": "node/react-dom-19.1.1/LICENSE",
+          "file": "node-3.1/react-dom/19.1.1/LICENSE",
           "bytes": 1088,
           "sha256": "DA6D3703ED11CBE42BD212C725957C98DA23CBFF1998C05FA4B3D976D1A58E93",
-          "source": "production package-lock entry react-dom"
+          "source": "https://registry.npmjs.org/react-dom/-/react-dom-19.1.1.tgz"
         }
       ],
       "status": "NOTICE_TEXT_COLLECTED"
@@ -7111,14 +7324,14 @@
       "name": "scheduler",
       "version": "0.26.0",
       "declared_license": "MIT",
-      "integrity": "sha512-NlHwttCI/l5gCPR3D1nNXtWABUmBwvZpEQiD4IXSbIDq8BzLIK/7Ir5gTFSGZDUu37K5cMNp0hFtzO38sC7gWA==",
       "source_url": "https://registry.npmjs.org/scheduler/-/scheduler-0.26.0.tgz",
+      "integrity": "sha512-NlHwttCI/l5gCPR3D1nNXtWABUmBwvZpEQiD4IXSbIDq8BzLIK/7Ir5gTFSGZDUu37K5cMNp0hFtzO38sC7gWA==",
       "files": [
         {
-          "file": "node/scheduler-0.26.0/LICENSE",
+          "file": "node-3.1/scheduler/0.26.0/LICENSE",
           "bytes": 1088,
           "sha256": "DA6D3703ED11CBE42BD212C725957C98DA23CBFF1998C05FA4B3D976D1A58E93",
-          "source": "production package-lock entry scheduler"
+          "source": "https://registry.npmjs.org/scheduler/-/scheduler-0.26.0.tgz"
         }
       ],
       "status": "NOTICE_TEXT_COLLECTED"
@@ -12549,5 +12762,23 @@
     "sha256": "FEE5E3735AB0DBF3D4929453697D82D16E7C9F114877B8EF791D99BA9922787F",
     "version": "3.4.4",
     "binary_build_provenance": "Independent MinGW-w64 build from CPython source-deps libffi-3.4.4 archive SHA-256 9D802681ADFEA27D84CAE0487A785FB9CAA925BDAD44C401B364C59AB2B8EDDA; candidate DLL SHA-256 17ACEDB4D86F630438BBA70F349F982A9A387C068C8F0D72F2DD1E73B2C92C49. Historical OpenAI-signed DLL provenance remains unknown."
-  }
+  },
+  "product_version": "3.1.0",
+  "independent_legal_approval": "NOT_PERFORMED",
+  "public_release_approved": false,
+  "build_lock_sha256": "676237ec65024fa739b04d8bc2fdd8fc35436d3bcb89882a5e7364c10ef6d74d",
+  "first_party": [
+    {
+      "file": "first-party/LICENSE",
+      "bytes": 11358,
+      "sha256": "CFC7749B96F63BD31C3C42B5C471BF756814053E847C10F3EB003417BC523D30",
+      "source": "SKY Workbench owned source"
+    }
+  ],
+  "rust_resolution": {
+    "platform": "x86_64-pc-windows-msvc",
+    "target_packages": 257,
+    "cargo_lock_sha256": "701bbfbe499ab970de5b2ce3052e5d8098ef1aa015c90b119836d1785889cd7d"
+  },
+  "frontend_lock_sha256": "d7def1f098583ef1664861c372ae44b10a17accc443fe085e944912459ce1fe9"
 }
