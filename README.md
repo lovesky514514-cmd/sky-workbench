@@ -1,6 +1,6 @@
 <p align="center"><img src="frontend/src/assets/brand/workbench-icon-256.png" alt="SKY Workbench" width="96"></p>
 
-# SKY Workbench 3.1
+# <p align="center"> SKY Workbench 3.1
 
 面向有限元、分子动力学、第一性原理和数学计算的本地桌面助手：从自然语言草案、候选参数审核，到受控执行、模型读回和结果证据。草案、预检通过、显式 RUN 与求解完成分别判断。
 
