@@ -1,8 +1,8 @@
 <p align="center"><img src="frontend/src/assets/brand/workbench-icon-256.png" alt="SKY Workbench" width="96"></p>
 
-# SKY Workbench 4.0（源码审阅候选）
+# SKY Workbench 4.0
 
-本分支用于 4.0 公开源码审阅。Windows 安装包的发布状态见[官网进展](https://lovesky514514-cmd.github.io/scientific-workbench-beta/releases/4.0/)。
+4.0.0 源码与构建说明在本仓库公开。Windows 安装包用于内部部署和验收。功能及验证范围见[官网 4.0 页面](https://lovesky514514-cmd.github.io/scientific-workbench-beta/releases/4.0/)。
 
 4.0 由 `ResearchController` 统一组织科研任务，复用 N01 契约、N02 调度隔离、N03 独立审核、N04 定向返工以及既有执行器、RUN 审批与运行账本。真实模型专家通过受限证据工具协作；确定性检查由程序完成，Recovery 只负责诊断和受控提案。实现与调用链见[4.0 架构记录](docs/ARCHITECTURE_4.0.md)。
 
@@ -37,7 +37,7 @@
 - [换电脑同步](docs/MODELING_HANDOFF_3.1.md)：源码、项目、环境配置与重新审核。
 - [审核处理记录](docs/AUDIT_RESOLUTION_3.1.md)、[四领域设计](docs/FOUR_DOMAIN_WORKBENCH.md)、[致谢](docs/ACKNOWLEDGEMENTS.md)。历史阶段的测试计数不替代最新验证记录。
 
-React/TypeScript 实现界面，Tauri/Rust 管理桌面进程，Python 承担 Scientific Runtime，Java Bridge 靠近用户本机 COMSOL API。当前开发分支的桌面产品版本为 **4.0.0**，科学 Runtime 使用独立的 `1.1.0-rc5.2` API 版本。
+React/TypeScript 实现界面，Tauri/Rust 管理桌面进程，Python 承担 Scientific Runtime，Java Bridge 接入用户本机 COMSOL API。桌面源码版本为 **4.0.0**，科学 Runtime 使用独立的 `1.1.0-rc5.2` API 版本。
 
 ## 许可与联系
 
