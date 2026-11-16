@@ -56,7 +56,8 @@ jobs:
           exit $LASTEXITCODE
 
       - name: Install hash-locked Python dependencies
-        run: python -m pip install --require-hashes --only-binary=:all: -r packaging/requirements-win-py312.lock
+        run: |
+          python -m pip install --require-hashes --only-binary=:all: -r packaging/requirements-win-py312.lock
 
       - name: Run selected backend and local trust-boundary tests
         env:
