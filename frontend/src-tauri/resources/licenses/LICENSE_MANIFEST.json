@@ -7426,10 +7426,11 @@
     {
       "ecosystem": "python",
       "name": "certifi",
-      "version": "2026.7.22",
-      "file": "covered_sources/certifi-2026.7.22.tar.gz",
-      "sha256": "741E2C3B351DDF169A738DA9F2C048608FF7F2C5CC02F1EBC6B118BB090D5D55",
-      "url": "https://files.pythonhosted.org/packages/a3/c2/24167ea9858356b47a87a50d39908bfdb72ceeefe0041586e704e5376b3a/certifi-2026.7.22.tar.gz"
+      "version": "2026.10.23",
+      "file": "covered_sources/certifi-2026.10.23.tar.gz",
+      "bytes": 136225,
+      "sha256": "A9895E6E2758B371E0545E321A3A8FD1FCFD9829ADA8824A936DFB16AAAF36CD",
+      "url": "https://files.pythonhosted.org/packages/fd/11/b524cbd9bbdaca58608e4cf4053fd463417549e1959fa8d3aa18319f9555/certifi-2026.10.23.tar.gz"
     }
   ],
   "source_fetch_failures": [],

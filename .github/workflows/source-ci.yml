@@ -1,0 +1,98 @@
+name: Source CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  source:
+    runs-on: windows-2025
+    timeout-minutes: 25
+    env:
+      COMSOL_WORKBENCH_APP_DATA_DIR: ${{ runner.temp }}\sky-appdata
+      COMSOL_WORKBENCH_WORKSPACE_DIR: ${{ runner.temp }}\sky-workspace
+      PYTHONPATH: ${{ github.workspace }}\backend
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Scan source and reachable history without printing secrets
+        shell: pwsh
+        run: |
+          $name = 'gitleaks_8.30.1_windows_x64.zip'
+          $zip = Join-Path $env:RUNNER_TEMP $name
+          $dir = Join-Path $env:RUNNER_TEMP 'sky-gitleaks'
+          $uri = "https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/$name"
+          Invoke-WebRequest -Uri $uri -OutFile $zip
+          $expected = 'D29144DEFF3A68AA93CED33DDDF84B7FDC26070ADD4AA0F4513094C8332AFC4E'
+          if ((Get-FileHash -LiteralPath $zip).Hash -ne $expected) { throw 'Scanner checksum mismatch' }
+          Expand-Archive -LiteralPath $zip -DestinationPath $dir
+          & (Join-Path $dir 'gitleaks.exe') dir . --redact=100 --no-banner
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & (Join-Path $dir 'gitleaks.exe') git . --log-opts='--all --full-history -m' --redact=100 --no-banner
+          exit $LASTEXITCODE
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Check docs and corresponding source
+        run: |
+          python scripts/check_doc_links.py
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python scripts/verify_license_manifest.py
+          exit $LASTEXITCODE
+
+      - name: Install hash-locked Python dependencies
+        run: python -m pip install --require-hashes --only-binary=:all: -r packaging/requirements-win-py312.lock
+
+      - name: Run selected backend and local trust-boundary tests
+        run: >-
+          python -m pytest -q
+          backend/tests/test_expert_scheduler.py
+          backend/tests/test_research_controller.py
+          backend/tests/test_scientific_transfer.py
+          backend/tests/test_scientific_delivery.py
+          backend/tests/test_recovery_http_policy.py
+          backend/tests/test_comsol_visualization.py
+          tests/test_worker_utf8.py tests/test_external_trust.py
+
+      - name: Check and build the frontend
+        working-directory: frontend
+        run: |
+          npm ci
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          npm run build
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          node --test --test-isolation=none tests/*.test.mjs
+          exit $LASTEXITCODE
+
+      - name: Test Rust when the verified sidecar is available
+        shell: pwsh
+        run: |
+          $sidecar = 'frontend/src-tauri/binaries/scientific-runtime-x86_64-pc-windows-msvc.exe'
+          if (-not (Test-Path -LiteralPath $sidecar -PathType Leaf)) {
+            Write-Output 'Rust requires the pinned internal sidecar. See VALIDATION_4.0.md for the separate run.'
+            exit 0
+          }
+          $profile = Get-Content -Raw frontend/src-tauri/resources/knowledge_base/build_profile.json | ConvertFrom-Json
+          if ((Get-FileHash -LiteralPath $sidecar).Hash -ne $profile.runtime_binary_sha256) { throw 'Sidecar checksum mismatch' }
+          $contract = 'frontend/src-tauri/resources/vnext/3d'
+          New-Item -ItemType Directory -Force -Path $contract | Out-Null
+          Copy-Item -LiteralPath 'vnext/3d/minimal_3d_contracts.json' -Destination $contract
+          cargo test --manifest-path frontend/src-tauri/Cargo.toml --release --locked
+          exit $LASTEXITCODE

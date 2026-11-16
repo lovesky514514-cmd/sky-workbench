@@ -1,0 +1,11 @@
+title = "SKY Workbench source secret scanning"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "SQLite column aliases in the peer UPSERT are not credential values"
+condition = "AND"
+regexTarget = "line"
+paths = ['''(^|/)external_trust/gateway\.py$''']
+regexes = ['''^\s*\+?\s*inbound_key=excluded\.inbound_key,outbound_key=excluded\.outbound_key(\'\'\')?,?\s*$''']

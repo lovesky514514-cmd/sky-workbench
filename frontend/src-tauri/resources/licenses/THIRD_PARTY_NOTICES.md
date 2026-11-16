@@ -1,10 +1,12 @@
-# Third-party notices — SKY Workbench V3.0
+# Third-party notices — SKY Workbench
 
 Product contact: SuKoYa — swbtest001@yeah.net
 
 This index collects third-party notices and is not third-party legal approval. First-party code license text is included separately in FIRST_PARTY_APACHE_2_0.txt and the repository root LICENSE. Exact upstream notices and copyright statements are preserved in `licenses/`. Their upstream authors, addresses and required notices have not been removed.
 
 COMSOL® is a trademark of COMSOL AB. Users require their own COMSOL installation and license. No COMSOL binaries, model files or private knowledge base are licensed or included here.
+
+The tables retain the original component inventory for reference. The current locked dependency versions are recorded in `LICENSE_MANIFEST.json`. The 4.0 Windows build uses certifi 2026.10.23 under MPL-2.0. Its corresponding archive is listed in [Source availability](SOURCE_AVAILABILITY.md).
 
 The Rust inventory distinguishes Windows normal dependencies from conservative build-only closure entries. Native-wheel SBOM components are separately listed and are not the application's Cargo.lock dependencies. Retaining alternative license texts does not force an OR-license copyleft option.
 

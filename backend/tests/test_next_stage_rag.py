@@ -1,4 +1,5 @@
 import json
+import os
 from pathlib import Path
 
 from app.config import COMPILED_KB_ROOT
@@ -86,13 +87,23 @@ Thermal Insulation specifies no heat flux across the boundary.
     return CompiledKnowledgeStore(root, tmp_path / "index.sqlite3")
 
 
-def test_real_source_index_is_readable_without_building_or_modifying_it() -> None:
-    store = CompiledKnowledgeStore(COMPILED_KB_ROOT, Path("missing-never-created.sqlite3"))
+def test_source_index_is_readable_without_building_or_modifying_it(tmp_path: Path) -> None:
+    # 公共克隆使用夹具，显式配置时覆盖内部索引 / Use a fixture unless an internal index is configured.
+    configured = os.environ.get("COMSOL_WORKBENCH_KB_DIR")
+    if configured:
+        store = CompiledKnowledgeStore(COMPILED_KB_ROOT, tmp_path / "missing.sqlite3")
+        expected_counts = (108, 14210)
+    else:
+        store = mini_store(tmp_path)
+        expected_counts = (1, 1)
+
+    original_index = store.source_index_path.read_bytes()
     status = store.status()
-    assert status["documents"] == 108
-    assert status["knowledge_units"] == 14210
+    assert (status["documents"], status["knowledge_units"]) == expected_counts
     assert all(status["required_files"].values())
     assert status["readonly"] is True
+    assert store.source_index_path.read_bytes() == original_index
+    assert not store.db_path.exists()
 
 
 def test_compiled_store_indexes_real_units_and_skips_unchanged_hashes(tmp_path) -> None:
