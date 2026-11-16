@@ -4,7 +4,7 @@
 
 4.0.0 源码与构建说明在本仓库公开。Windows 安装包用于内部部署和验收。
 
-[4.0 更新说明](RELEASE_NOTES_4.0.0.md) · [4.0 使用指南](docs/USER_GUIDE_4.0_CN.md) · [4.0 验证记录](docs/VALIDATION_4.0.md) · [官网](https://lovesky514514-cmd.github.io/scientific-workbench-beta/releases/4.0/)
+[4.0 更新说明](RELEASE_NOTES_4.0.0.md) · [4.0 使用指南](docs/USER_GUIDE_4.0_CN.md) · [4.0 验证记录](docs/VALIDATION_4.0.md) · [安全攻防测试汇总（脱敏版）](docs/SECURITY_ATTACK_LOG_4.0_PUBLIC.md) · [官网](https://lovesky514514-cmd.github.io/scientific-workbench-beta/releases/4.0/)
 
 4.0 由 `ResearchController` 统一组织科研任务，复用 N01 契约、N02 调度隔离、N03 独立审核、N04 定向返工以及既有执行器、RUN 审批与运行账本。真实模型专家通过受限证据工具协作；确定性检查由程序完成，Recovery 只负责诊断和受控提案。实现与调用链见[4.0 架构记录](docs/ARCHITECTURE_4.0.md)。
 
