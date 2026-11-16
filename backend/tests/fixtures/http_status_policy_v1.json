@@ -1,0 +1,258 @@
+[
+  {
+    "status": 100,
+    "initial_action": "PASS_THROUGH"
+  },
+  {
+    "status": 101,
+    "initial_action": "PASS_THROUGH"
+  },
+  {
+    "status": 102,
+    "initial_action": "PASS_THROUGH"
+  },
+  {
+    "status": 103,
+    "initial_action": "PASS_THROUGH"
+  },
+  {
+    "status": 104,
+    "initial_action": "COMPATIBILITY_ONLY"
+  },
+  {
+    "status": 200,
+    "initial_action": "PASS_THROUGH"
+  },
+  {
+    "status": 201,
+    "initial_action": "PASS_THROUGH"
+  },
+  {
+    "status": 202,
+    "initial_action": "WAIT_AND_POLL"
+  },
+  {
+    "status": 203,
+    "initial_action": "PASS_THROUGH"
+  },
+  {
+    "status": 204,
+    "initial_action": "PASS_THROUGH"
+  },
+  {
+    "status": 205,
+    "initial_action": "PASS_THROUGH"
+  },
+  {
+    "status": 206,
+    "initial_action": "PASS_THROUGH"
+  },
+  {
+    "status": 207,
+    "initial_action": "PASS_THROUGH"
+  },
+  {
+    "status": 208,
+    "initial_action": "PASS_THROUGH"
+  },
+  {
+    "status": 226,
+    "initial_action": "PASS_THROUGH"
+  },
+  {
+    "status": 300,
+    "initial_action": "REQUIRE_USER"
+  },
+  {
+    "status": 301,
+    "initial_action": "REVALIDATE"
+  },
+  {
+    "status": 302,
+    "initial_action": "REVALIDATE"
+  },
+  {
+    "status": 303,
+    "initial_action": "REVALIDATE"
+  },
+  {
+    "status": 304,
+    "initial_action": "PASS_THROUGH"
+  },
+  {
+    "status": 305,
+    "initial_action": "COMPATIBILITY_ONLY"
+  },
+  {
+    "status": 306,
+    "initial_action": "COMPATIBILITY_ONLY"
+  },
+  {
+    "status": 307,
+    "initial_action": "REVALIDATE"
+  },
+  {
+    "status": 308,
+    "initial_action": "REVALIDATE"
+  },
+  {
+    "status": 400,
+    "initial_action": "FIX_REQUEST"
+  },
+  {
+    "status": 401,
+    "initial_action": "REFRESH_AUTH_ONCE"
+  },
+  {
+    "status": 402,
+    "initial_action": "REQUIRE_USER"
+  },
+  {
+    "status": 403,
+    "initial_action": "HARD_STOP"
+  },
+  {
+    "status": 404,
+    "initial_action": "FIX_REQUEST"
+  },
+  {
+    "status": 405,
+    "initial_action": "FIX_REQUEST"
+  },
+  {
+    "status": 406,
+    "initial_action": "FIX_REQUEST"
+  },
+  {
+    "status": 407,
+    "initial_action": "REQUIRE_USER"
+  },
+  {
+    "status": 408,
+    "initial_action": "RETRY_SAFE"
+  },
+  {
+    "status": 409,
+    "initial_action": "READBACK_FIRST"
+  },
+  {
+    "status": 410,
+    "initial_action": "HARD_STOP"
+  },
+  {
+    "status": 411,
+    "initial_action": "FIX_REQUEST"
+  },
+  {
+    "status": 412,
+    "initial_action": "REVALIDATE"
+  },
+  {
+    "status": 413,
+    "initial_action": "FIX_REQUEST"
+  },
+  {
+    "status": 414,
+    "initial_action": "FIX_REQUEST"
+  },
+  {
+    "status": 415,
+    "initial_action": "FIX_REQUEST"
+  },
+  {
+    "status": 416,
+    "initial_action": "REVALIDATE"
+  },
+  {
+    "status": 417,
+    "initial_action": "FIX_REQUEST"
+  },
+  {
+    "status": 418,
+    "initial_action": "COMPATIBILITY_ONLY"
+  },
+  {
+    "status": 421,
+    "initial_action": "RECONNECT"
+  },
+  {
+    "status": 422,
+    "initial_action": "FIX_REQUEST"
+  },
+  {
+    "status": 423,
+    "initial_action": "WAIT_AND_POLL"
+  },
+  {
+    "status": 424,
+    "initial_action": "READBACK_FIRST"
+  },
+  {
+    "status": 425,
+    "initial_action": "RETRY_SAFE"
+  },
+  {
+    "status": 426,
+    "initial_action": "REQUIRE_USER"
+  },
+  {
+    "status": 428,
+    "initial_action": "REVALIDATE"
+  },
+  {
+    "status": 429,
+    "initial_action": "COOLDOWN"
+  },
+  {
+    "status": 431,
+    "initial_action": "FIX_REQUEST"
+  },
+  {
+    "status": 451,
+    "initial_action": "HARD_STOP"
+  },
+  {
+    "status": 500,
+    "initial_action": "READBACK_FIRST"
+  },
+  {
+    "status": 501,
+    "initial_action": "HARD_STOP"
+  },
+  {
+    "status": 502,
+    "initial_action": "READBACK_FIRST"
+  },
+  {
+    "status": 503,
+    "initial_action": "COOLDOWN"
+  },
+  {
+    "status": 504,
+    "initial_action": "READBACK_FIRST"
+  },
+  {
+    "status": 505,
+    "initial_action": "REQUIRE_USER"
+  },
+  {
+    "status": 506,
+    "initial_action": "HARD_STOP"
+  },
+  {
+    "status": 507,
+    "initial_action": "REQUIRE_USER"
+  },
+  {
+    "status": 508,
+    "initial_action": "HARD_STOP"
+  },
+  {
+    "status": 510,
+    "initial_action": "COMPATIBILITY_ONLY"
+  },
+  {
+    "status": 511,
+    "initial_action": "REQUIRE_USER"
+  }
+]

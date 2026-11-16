@@ -7,23 +7,58 @@ import os
 import subprocess
 from collections import OrderedDict
 from pathlib import Path
-from threading import RLock
+from queue import Empty, Queue
+from threading import RLock, Thread
 from typing import Any
+from uuid import uuid4
 
 import numpy as np
 
 from app.app_paths import app_paths
+from app.execution.scientific_transfer import decode_object
 
 
 EMBEDDING_MODEL_ID = "Qwen/Qwen3-Embedding-0.6B"
 RERANKER_MODEL_ID = "Qwen/Qwen3-Reranker-0.6B"
 EMBEDDING_NAMESPACE = "qwen3-embedding-0.6b-1024"
+REQUEST_LIMIT = 512_000
+RESPONSE_LIMIT = 1_000_000
+BATCH_LIMIT = 32
+
+
+def _request_frame(payload: dict) -> bytes:
+    encoder = json.JSONEncoder(ensure_ascii=False, allow_nan=False, separators=(',', ':'))
+    frame = bytearray()
+    for piece in encoder.iterencode(payload):
+        if len(piece) >= REQUEST_LIMIT:
+            raise ValueError('semantic_request_limit')
+        data = piece.encode('utf-8')
+        if len(frame) + len(data) >= REQUEST_LIMIT:
+            raise ValueError('semantic_request_limit')
+        frame.extend(data)
+    return bytes(frame) + b'\n'
+
+
+def _read_frame(pipe) -> dict:
+    # 限制字节数并要求换行 / Bound bytes and require a newline terminator.
+    raw = pipe.readline(RESPONSE_LIMIT + 1)
+    if not raw:
+        raise ValueError('semantic_worker_exited_without_response')
+    if len(raw) > RESPONSE_LIMIT:
+        raise ValueError('semantic_response_limit')
+    if not raw.endswith(b'\n'):
+        raise ValueError('semantic_response_truncated')
+    value = decode_object(raw)
+    if type(value.get('ok')) is not bool or (value['ok'] and not isinstance(value.get('result'), dict)):
+        raise ValueError('semantic_response_invalid')
+    return value
 
 
 class SemanticRuntimeClient:
     def __init__(self) -> None:
         self._lock = RLock()
-        self._process: subprocess.Popen[str] | None = None
+        self._process: subprocess.Popen[bytes] | None = None
+        self._timeout = 240
         self._embedding_state = "Unavailable"
         self._reranker_state = "Unavailable"
         self._error: str | None = None
@@ -96,10 +131,12 @@ class SemanticRuntimeClient:
             "error": self._error,
         }
 
-    def _start(self) -> subprocess.Popen[str]:
+    def _start(self) -> subprocess.Popen[bytes]:
         with self._lock:
             if self._process is not None and self._process.poll() is None:
                 return self._process
+            if self._process is not None:
+                self._discard(self._process)
             status = self.status()
             if not status["runtime_available"]:
                 raise RuntimeError("Optional semantic Python runtime or worker is unavailable")
@@ -114,33 +151,60 @@ class SemanticRuntimeClient:
                 ],
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-                encoding="utf-8",
-                errors="replace",
-                bufsize=1,
+                stderr=subprocess.DEVNULL,
                 creationflags=flags,
             )
             return self._process
 
     def _call(self, payload: dict[str, Any]) -> dict[str, Any]:
+        request_id = uuid4().hex
+        frame = _request_frame({**payload, 'request_id': request_id})
         with self._lock:
             process = self._start()
             assert process.stdin is not None and process.stdout is not None
-            process.stdin.write(json.dumps(payload, ensure_ascii=False, separators=(",", ":")) + "\n")
-            process.stdin.flush()
-            raw = process.stdout.readline()
-            if not raw:
-                stderr = process.stderr.read()[-4000:] if process.stderr is not None else ""
-                self._process = None
-                raise RuntimeError(f"Semantic runtime exited without a response: {stderr}")
-            response = json.loads(raw)
-            if not response.get("ok"):
-                detail = str(response.get("error") or "Semantic runtime request failed")
-                if response.get("traceback"):
-                    detail += "\n" + str(response["traceback"])
-                raise RuntimeError(detail)
-            return dict(response.get("result") or {})
+            result = Queue(maxsize=1)
+
+            def exchange():
+                try:
+                    process.stdin.write(frame)
+                    process.stdin.flush()
+                    response = _read_frame(process.stdout)
+                    if response.get('request_id') != request_id:
+                        raise ValueError('semantic_response_identity_mismatch')
+                    result.put(response)
+                except Exception as error:
+                    result.put(error)
+
+            thread = Thread(target=exchange, daemon=True, name='qwen-bounded-stdio')
+            thread.start()
+            try:
+                response = result.get(timeout=self._timeout)
+            except Empty:
+                response = TimeoutError('semantic_worker_response_timeout')
+            if isinstance(response, Exception):
+                self._discard(process, thread)
+                raise RuntimeError(str(response)) from response
+            if not response['ok']:
+                raise RuntimeError('Semantic runtime rejected the request')
+            return response['result']
+
+    def _discard(self, process, thread=None):
+        self._process = None
+        self._verified = None
+        self._embedding_state = self._reranker_state = 'Unavailable'
+        self._embedding_cache.clear()
+        if process.poll() is None:
+            process.kill()
+        process.wait(timeout=5)
+        if thread is not None:
+            thread.join(timeout=2)
+        if thread is None or not thread.is_alive():
+            for pipe in (process.stdin, process.stdout):
+                if pipe is not None:
+                    try:
+                        pipe.close()
+                    except OSError:
+                        pass
 
     def verify(self) -> dict[str, Any]:
         self._embedding_state = "Loading"
@@ -161,6 +225,8 @@ class SemanticRuntimeClient:
             raise
 
     def embed(self, texts: list[str], *, query: bool = False, max_length: int = 512) -> np.ndarray:
+        if not 1 <= len(texts) <= BATCH_LIMIT or any(len(text) > 65_536 for text in texts):
+            raise ValueError('semantic_embedding_batch_limit')
         if len(texts) == 1:
             key = (texts[0], query, max_length)
             cached = self._embedding_cache.get(key)
@@ -186,6 +252,10 @@ class SemanticRuntimeClient:
             raise
 
     def rerank(self, query: str, documents: list[str]) -> list[float]:
+        if not documents:
+            return []
+        if len(documents) > BATCH_LIMIT or len(query) > 65_536 or any(len(text) > 65_536 for text in documents):
+            raise ValueError('semantic_rerank_batch_limit')
         self._reranker_state = "Loading"
         try:
             result = self._call({"operation": "rerank", "query": query, "documents": documents})
@@ -208,10 +278,11 @@ class SemanticRuntimeClient:
             try:
                 self._call({"operation": "shutdown"})
                 self._process.wait(timeout=10)
-            except Exception:
-                self._process.terminate()
+            except (OSError, RuntimeError, subprocess.TimeoutExpired):
+                pass
             finally:
-                self._process = None
+                if self._process is not None:
+                    self._discard(self._process)
 
 
 semantic_runtime = SemanticRuntimeClient()

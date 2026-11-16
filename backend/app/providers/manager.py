@@ -7,15 +7,16 @@ import json
 import time
 from dataclasses import asdict, dataclass
 from typing import Any, AsyncIterator
-from urllib.parse import urlsplit
 
 import httpx
 
 from app.config import SettingsStore, settings_store
 from app.providers import cloud_protocols
 from app.providers.deepseek import chat_payload as deepseek_payload
+from app.providers.endpoints import LOCAL_PROVIDERS, provider_endpoint
 from app.scientific.schemas import ScientificPlan
 from app.services.model_manager import ollama_executable
+from app.providers.metering import CompletionTrace, active_trace, request_started, response_received
 
 
 LABELS = {
@@ -30,8 +31,6 @@ LABELS = {
     "gemini": "Gemini API",
     "openrouter": "OpenRouter",
 }
-LOCAL_PROVIDERS = {"ollama", "lm_studio", "openai_compatible"}
-
 
 @dataclass(frozen=True, slots=True)
 class ModelCapability:
@@ -94,6 +93,11 @@ class ProviderManager:
         self.store = store
         self.transport = transport
 
+    def for_capability(self, role):
+        from app.providers.routing import settings_for_role
+        selected = settings_for_role(self.store, role)
+        return ProviderManager(selected, self.transport) if selected is not None else self
+
     async def detect(self) -> list[dict[str, Any]]:
         configs = self.store.load()["providers"]
         tasks = [self._detect_one(name, config) for name, config in configs.items()]
@@ -119,6 +123,7 @@ class ProviderManager:
         temperature: float = 0.2,
         json_mode: bool = False,
         json_schema: dict[str, Any] | None = None,
+        allow_json_retry: bool = True,
     ) -> CompletionResult | None:
         preferred = await self.preferred()
         if preferred is None:
@@ -128,10 +133,29 @@ class ProviderManager:
                 preferred.name, messages, temperature=temperature,
                 json_mode=json_mode, detected_model=preferred.model,
                 json_schema=json_schema,
+                allow_json_retry=allow_json_retry,
             )
             return CompletionResult(text, preferred.name, preferred.label, preferred.model)
         except (httpx.HTTPError, KeyError, ValueError, TypeError, IndexError, json.JSONDecodeError):
             return None
+
+    async def complete_metered(self, messages, *, json_schema, max_output_tokens=1200, observe=None):
+        """复用同一 Provider 调用；专家路径禁止隐含重试和跨端点降级。"""
+        if type(max_output_tokens) is not int or not 64 <= max_output_tokens <= 8192:
+            raise ValueError('invalid_expert_output_budget')
+        trace = CompletionTrace(max_output_tokens)
+        token = active_trace.set(trace)
+        started = time.perf_counter()
+        try:
+            result = await self.complete(messages, temperature=0., json_mode=True,
+                                         json_schema=json_schema, allow_json_retry=False)
+            return result, {**trace.as_dict(), 'latency_ms': round((time.perf_counter()-started)*1000, 3)}
+        finally:
+            try:
+                if observe is not None:
+                    observe({**trace.as_dict(), 'latency_ms': round((time.perf_counter()-started)*1000, 3)})
+            finally:
+                active_trace.reset(token)
 
     async def stream_completion(
         self,
@@ -322,16 +346,13 @@ class ProviderManager:
             return ProviderStatus(name, label, kind, False, "Disabled", "Disabled in settings", base_url, configured_model, capabilities=empty_capability)
         if not base_url:
             return ProviderStatus(name, label, kind, True, "Not configured", "Endpoint is empty", base_url, configured_model, capabilities=empty_capability)
-        if kind == "local":
-            endpoint = urlsplit(base_url)
-            if endpoint.scheme not in {"http", "https"} or endpoint.hostname not in {"127.0.0.1", "localhost", "::1"} or endpoint.username or endpoint.password or endpoint.query or endpoint.fragment:
-                return ProviderStatus(name, label, kind, True, "Not configured", "Local provider must use a loopback endpoint", base_url, configured_model, capabilities=empty_capability)
-        if kind == "cloud" and not self.store.secret(name):
-            return ProviderStatus(name, label, kind, True, "Not configured", "API key not set", base_url, configured_model, capabilities=empty_capability)
+        try:
+            provider_endpoint(name, base_url)
+        except ValueError as exc:
+            return ProviderStatus(name, label, kind, True, "Not configured", str(exc), base_url, configured_model, capabilities=empty_capability)
         if kind == "cloud":
-            endpoint = urlsplit(base_url)
-            if endpoint.scheme != "https" or not endpoint.hostname or endpoint.username or endpoint.password or endpoint.query or endpoint.fragment:
-                return ProviderStatus(name, label, kind, True, "Not configured", "Cloud endpoint must be HTTPS without embedded credentials", base_url, configured_model, capabilities=empty_capability)
+            if not self.store.secret(name, base_url):
+                return ProviderStatus(name, label, kind, True, "Not configured", "Enter the API key for this endpoint", base_url, configured_model, capabilities=empty_capability)
             if not configured_model:
                 return ProviderStatus(name, label, kind, True, "Not configured", "Select an exact model ID", base_url, configured_model, capabilities=empty_capability)
             # Avoid paid probe traffic during routine environment polling.
@@ -347,7 +368,7 @@ class ProviderManager:
                     model_records = response.json().get("models", [])
                     models = [str(item.get("name", "")) for item in model_records if item.get("name")]
                 else:
-                    response = await client.get(f"{base_url}/models", headers=self._headers(name))
+                    response = await client.get(f"{base_url}/models", headers=self._headers(name, self._key(name, base_url)))
                     response.raise_for_status()
                     model_records = response.json().get("data", [])
                     models = [str(item.get("id", "")) for item in model_records if item.get("id")]
@@ -417,22 +438,28 @@ class ProviderManager:
         json_mode: bool,
         detected_model: str,
         json_schema: dict[str, Any] | None = None,
+        allow_json_retry: bool = True,
     ) -> str:
         config = self.store.load()["providers"][name]
         base_url = str(config["base_url"]).rstrip("/")
+        key = self._key(name, base_url)
         model = str(config.get("model", "")) or detected_model
         if not model:
             raise ValueError("No model selected")
         timeout = httpx.Timeout(180, connect=5)
         async with self._client(timeout) as client:
             if name in {"claude", "gemini"}:
-                return await cloud_protocols.complete(client, name, base_url, model, self.store.secret(name), messages, temperature, json_mode)
+                return await cloud_protocols.complete(client, name, base_url, model, key, messages, temperature, json_mode)
             if name == "ollama":
                 payload: dict[str, Any] = {"model": model, "messages": messages, "stream": False, "options": {"temperature": temperature}}
                 if json_mode:
                     payload["format"] = json_schema or "json"
+                if (trace := active_trace.get()) is not None:
+                    payload['options']['num_predict'] = trace.output_limit
+                request_started()
                 response = await client.post(f"{base_url}/api/chat", json=payload)
                 response.raise_for_status()
+                response_received(response.json())
                 content = response.json()["message"]["content"]
                 if not isinstance(content, str) or not content.strip():
                     raise ValueError("Ollama returned no text")
@@ -446,15 +473,22 @@ class ProviderManager:
                     if json_schema
                     else {"type": "json_object"}
                 )
-            for attempt in range(2 if name == "deepseek" and json_mode else 1):
-                response = await client.post(f"{base_url}/chat/completions", headers=self._headers(name), json=payload)
+            if (trace := active_trace.get()) is not None:
+                payload['max_tokens'] = trace.output_limit
+                if name == 'deepseek':
+                    # 已有 JSON 截断补救参数前置到专家单次请求，不隐含多发一次。
+                    payload['reasoning_effort'] = 'none'
+            for attempt in range(2 if name == "deepseek" and json_mode and allow_json_retry else 1):
+                request_started()
+                response = await client.post(f"{base_url}/chat/completions", headers=self._headers(name, key), json=payload)
                 response.raise_for_status()
+                response_received(response.json())
                 choice = response.json()["choices"][0]
                 content = choice.get("message", {}).get("content")
                 incomplete = choice.get("finish_reason") == "length" or (
                     choice.get("finish_reason") == "stop" and isinstance(content, str) and not content.strip()
                 )
-                if name == "deepseek" and json_mode and attempt == 0 and incomplete:
+                if name == "deepseek" and json_mode and allow_json_retry and attempt == 0 and incomplete:
                     # Discard the incomplete JSON and retry once with the same
                     # model/endpoint, reserving the token budget for the answer.
                     payload = {**payload, "reasoning_effort": "none"}
@@ -474,10 +508,11 @@ class ProviderManager:
         temperature: float,
     ) -> AsyncIterator[str]:
         timeout = httpx.Timeout(180, connect=5)
+        key = self._key(status.name, status.base_url)
         async with self._client(timeout) as client:
             if status.name in {"claude", "gemini"}:
                 async for token in cloud_protocols.stream(client, status.name, status.base_url, status.model,
-                                                          self.store.secret(status.name), messages, temperature):
+                                                          key, messages, temperature):
                     yield token
                 return
             if status.name == "ollama":
@@ -492,7 +527,7 @@ class ProviderManager:
                 return
             payload = (deepseek_payload(status.model, messages, temperature, stream=True) if status.name == "deepseek"
                        else {"model": status.model, "messages": messages, "temperature": temperature, "stream": True})
-            async with client.stream("POST", f"{status.base_url}/chat/completions", headers=self._headers(status.name), json=payload) as response:
+            async with client.stream("POST", f"{status.base_url}/chat/completions", headers=self._headers(status.name, key), json=payload) as response:
                 response.raise_for_status()
                 async for line in response.aiter_lines():
                     if not line.startswith("data:"):
@@ -508,8 +543,14 @@ class ProviderManager:
                     if isinstance(content, str):
                         yield content
 
-    def _headers(self, name: str) -> dict[str, str]:
-        key = self.store.secret(name)
+    def _key(self, name: str, base_url: str) -> str:
+        provider_endpoint(name, base_url)
+        key = self.store.secret(name, base_url)
+        if name not in LOCAL_PROVIDERS and not key:
+            raise ValueError("provider_credential_reentry_required")
+        return key
+
+    def _headers(self, name: str, key: str) -> dict[str, str]:
         headers = {"Content-Type": "application/json"}
         if key:
             headers["Authorization"] = f"Bearer {key}"
@@ -519,7 +560,7 @@ class ProviderManager:
         return headers
 
     def _client(self, timeout: httpx.Timeout) -> httpx.AsyncClient:
-        return httpx.AsyncClient(timeout=timeout, transport=self.transport)
+        return httpx.AsyncClient(timeout=timeout, transport=self.transport, follow_redirects=False)
 
     @staticmethod
     def _status_kwargs(item: dict[str, Any]) -> dict[str, Any]:

@@ -1,4 +1,8 @@
 export type AgentMode = 'ASK' | 'PLAN' | 'RUN'
+export interface IntentConfirmationInput {
+  study?: 'stationary' | 'transient' | 'undecided'
+  details: string
+}
 export interface IntentParameter { name: string; symbol: string; value: number | string | null; unit: string; original: string; resolved: boolean }
 export interface IntentBoundary { location: string; condition: string; value: number | null; unit: string; resolved: boolean }
 export interface ScientificIntent {
@@ -81,6 +85,7 @@ export interface Message {
   citations?: Citation[]; artifacts?: Record<string, string>; evidence_contract?: EvidenceContract; structured?: Plan; visible_reasoning_summary?: string
   validation?: Record<string, unknown>; validation_report?: ValidationReport; command_success?: boolean; model_state_verified?: boolean; scientific_validation_success?: boolean; evidence_contract_passed?: boolean; execution_verdict?: ExecutionVerdict
   run_id?: string
+  intent_confirmation?: IntentConfirmationInput & { source: 'user_intent_confirmation' }
 }
 export interface TimelineItem {
   id: string; category?: 'LLM' | 'RAG' | 'COMSOL' | 'VALIDATION' | 'SYSTEM' | string; phase: string; label: string
@@ -136,7 +141,7 @@ export interface JavaBridgeStatus {
   bridge_mode: string; connection_mode: string; detection_method: string; poll_interval_ms: number
   process?: Record<string, unknown>; environment?: Record<string, unknown>
 }
-export type InspectorTab = 'environment' | 'live' | 'overview' | 'geometry' | 'materials' | 'physics' | 'boundaries' | 'mesh' | 'solver' | 'parameters' | 'validation' | 'sources'
+export type InspectorTab = 'environment' | 'live' | 'overview' | 'geometry' | 'materials' | 'physics' | 'boundaries' | 'mesh' | 'solver' | 'parameters' | 'validation' | 'sources' | 'recovery' | 'heatSimulation'
 
 // RC4.2 is a read-only projection of authoritative runtime facts. Missing fields stay missing in the UI.
 export interface RuntimeDomain {
@@ -155,7 +160,7 @@ export interface RuntimeDomain {
   }
   runState: { runId: string; attemptId: string; phase: string; headline: string; pauseCapability: string; safePointState: string; estimatedSecondsRemaining?: number } | null
   reviewRequest: { id: string; reviewId: string; runId: string; attemptId: string; objectId: string; objectLabel: string; current: string; proposed: string; unit: string; reason: string; impact: string; state: string; options: Array<{ id: string; label: string; consequence: string }> } | null
-  resultArtifacts: Array<{ id: string; runId: string; attemptId: string; title: string; evidenceState: string; metadata?: Record<string, unknown> }>
+  resultArtifacts: Array<{ id: string; runId: string; attemptId: string; title: string; evidenceState: string; uri?: string; metadata?: Record<string, unknown> }>
   evidenceState: string
   authoritativeVerdict: ExecutionVerdict | null
   contractGaps: string[]

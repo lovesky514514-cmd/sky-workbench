@@ -3,14 +3,14 @@ import { translate, type Locale } from '../i18n'
 import { ModelingBriefView } from './ModelingBriefView'
 
 // Read-only projection of the saved plan; no warning is promoted to a verdict.
-export function WarmPlanOverview({ plan, locale }: { plan: Plan; locale: Locale }) {
+export function WarmPlanOverview({ plan, locale, historical = false }: { plan: Plan; locale: Locale; historical?: boolean }) {
   const t = (text: string) => translate(locale, text)
   const parameters = Object.entries(plan.parameters)
   const critical = plan.missing_information
   const review = [...plan.assumptions, ...plan.warnings]
 
   return <section className="warm-plan-overview" aria-label={t('Scientific plan review')}>
-    <div className="warm-plan-overview-title"><div><span>{t('SCIENTIFIC PLAN')}</span><h2>{plan.title}</h2></div><strong className={plan.runnable ? 'is-ready' : 'is-blocked'}>{plan.completion ? (locale === 'zh-CN' ? '草案待确认 · 可继续补全' : 'Draft · review suggestions to continue') : (plan.runnable ? (locale === 'zh-CN' ? '预检通过 · 等待显式 RUN' : 'Preflight passed · awaiting RUN') : t('Missing information · RUN unavailable'))}</strong></div>
+    <div className="warm-plan-overview-title"><div><span>{t('SCIENTIFIC PLAN')}</span><h2>{plan.title}</h2></div><strong className={!historical && plan.runnable ? 'is-ready' : 'is-blocked'}>{historical ? (locale === 'zh-CN' ? '历史计划 · 本次运行已结束' : 'Historical plan · run finished') : plan.completion ? (locale === 'zh-CN' ? '草案待确认 · 可继续补全' : 'Draft · review suggestions to continue') : (plan.runnable ? (locale === 'zh-CN' ? '预检通过 · 等待显式 RUN' : 'Preflight passed · awaiting RUN') : t('Missing information · RUN unavailable'))}</strong></div>
     <p className="warm-plan-goal">{plan.research_goal}</p>
     <div className="warm-plan-essentials"><PlanFacts label={t('Physics')} values={plan.physics} /><PlanFacts label={t('Geometry')} values={plan.geometry} /><PlanFacts label={t('Materials')} values={plan.materials} /><PlanFacts label={t('Boundary Conditions')} values={plan.boundary_conditions} /></div>
     <ModelingBriefView plan={plan} zh={locale === 'zh-CN'} />

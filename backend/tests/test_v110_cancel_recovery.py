@@ -307,8 +307,13 @@ def test_attempt_workspaces_never_overwrite(tmp_path, monkeypatch):
         requests.append(request)
         model = Path(request['workspace']) / 'models' / 'same-name.mph'
         model.parent.mkdir(parents=True); model.write_bytes(request['attempt_id'].encode())
+        from app.execution.scientific_transfer import publish_transfer
+        identity = {key: request[key] for key in ('run_id', 'attempt_id')}
+        descriptor = publish_transfer(Path(command[-1]).parent / 'data',
+            {'success': True, **identity, 'artifacts': {'model': str(model)}},
+            **identity, producer='controlled', data_type='worker-result.v1')
         reader = asyncio.StreamReader()
-        reader.feed_data(('WORKBENCH_RESULT:' + json.dumps({'success': True, 'run_id': request['run_id'], 'artifacts': {'model': str(model)}}) + '\n').encode())
+        reader.feed_data(('WORKBENCH_RESULT:' + json.dumps({'success': True, 'data': descriptor.model_dump()}) + '\n').encode())
         reader.feed_eof()
         async def wait(): return 0
         async def terminate(): return {'reaped': True}
@@ -390,7 +395,8 @@ def test_shutdown_before_task_enters_runtime_is_reconciled(tmp_path):
     asyncio.run(exercise())
 
 
-def test_retry_callback_keeps_original_attempt_identity(tmp_path, monkeypatch):
+@pytest.mark.parametrize('submission_phase', [None, 'before_submit', 'after_send'])
+def test_controller_does_not_automatically_replay_failed_solver(tmp_path, monkeypatch, submission_phase):
     import app.agent.runtime as module
     import app.agent.model_card as cards
     store, sid = setup_store(tmp_path)
@@ -403,7 +409,14 @@ def test_retry_callback_keeps_original_attempt_identity(tmp_path, monkeypatch):
         def process_ids(self, sid): return {}
         async def execute(self, name, args, callback, retries):
             calls.append(args); callbacks.append(callback)
-            if len(calls) == 1: raise RuntimeError('controlled retryable failure')
+            if len(calls) == 1:
+                error=RuntimeError('controlled retryable failure')
+                if submission_phase:
+                    from app.recovery.ingest import Signal
+                    from app.recovery.schemas import Facts, Origin
+                    error._sky_failure_signal=Signal(Origin.BRIDGE,'bridge_request','read_timeout',method='POST',
+                                                    route='/model/study/run',facts=Facts(phase=submission_phase))
+                raise error
             # A retained callback without self-reported IDs is still bound to attempt 1.
             with pytest.raises(RuntimeError):
                 await callbacks[0]({'phase': 'Solve', 'status': 'success'})
@@ -426,9 +439,21 @@ def test_retry_callback_keeps_original_attempt_identity(tmp_path, monkeypatch):
     plan = ScientificPlan.model_validate(extract_heat_transfer_plan('2D stationary Heat Transfer 10 mm x 5 mm aluminum left 373 K right 293 K insulated'))
     store.commit_plan_revision(sid,plan.model_dump(mode='json'),0)
     asyncio.run(AgentRuntime(sessions=store, tools=Tools())._execute_run(sid, plan))
-    assert len(calls) == 2 and calls[0]['attempt_id'] != calls[1]['attempt_id']
-    assert store.get(sid)['state'] == 'COMPLETED'
-    assert [a['outcome'] for a in store.get_run(calls[0]['run_id'])['attempts']] == ['RetryableFailure', 'Completed']
+    if submission_phase == 'after_send':
+        assert len(calls)==1 and store.get(sid)['state']=='FAILED'
+        run=store.get_run(calls[0]['run_id'])
+        assert len(run['attempts'])==1 and run['attempts'][0]['cleanup']['commit_state']=='UNKNOWN_COMMIT'
+        restarted=SessionStore(store.path)
+        restarted.initialize()
+        restarted.reconcile_active_runs()
+        with pytest.raises(RuntimeError,match='COMSOL_OWNER_BUSY'):
+            restarted.begin_run(sid,'must-not-resubmit',{})
+        return
+    # 4.0 将失败后的决策收回总控；旧 max_repairs 不再隐含新的 RUN 授权。
+    assert len(calls) == 1 and store.get(sid)['state'] == 'FAILED'
+    assert len(store.get_run(calls[0]['run_id'])['attempts']) == 1
+    with pytest.raises(RuntimeError):
+        asyncio.run(callbacks[0]({'phase': 'Solve', 'status': 'success'}))
 
 
 def test_pending_cancel_survives_restart_before_worker_returns(tmp_path):

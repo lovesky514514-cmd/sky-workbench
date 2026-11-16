@@ -17,7 +17,9 @@ export function canRunReviewedPlan(
   reviewedPlanId: string,
   busy: boolean,
   pendingIntent: boolean,
+  sessionState?: string,
 ): boolean {
+  if (sessionState === 'COMPLETED' || sessionState === 'PAUSED' || sessionState === 'CANCEL_REQUESTED' || isExecutionActive(sessionState)) return false
   if (!plan?.runnable || !sessionId || busy || pendingIntent || !plan.plan_id || !plan.updated_at) return false
   return reviewedPlanId === `${sessionId}:${plan.plan_id}:${plan.updated_at}`
 }

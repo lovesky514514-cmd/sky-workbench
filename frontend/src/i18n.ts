@@ -4,6 +4,8 @@ export type Translate = (source: string) => string
 export const localeStorageKey = 'comsol-workbench-locale'
 
 const zhCN: Record<string, string> = {
+  'Failure diagnostics': '故障诊断',
+  'Heat simulation': '模拟 Heat',
   'Literature modeling': '文献模型提取', 'Literature-to-model proposal': '文献建模候选',
   'Optional extension': '可选扩展', 'Source literature': '来源文献',
   'arXiv or PMC article URL': 'arXiv 或 PMC 文章链接',

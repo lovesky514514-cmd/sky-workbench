@@ -86,7 +86,8 @@ def main():
         pair=(package['name'],package['version'])
         if pair not in old_rust:raise ValueError('Collect exact crate notices before building: '+str(pair))
         rust.append(old_rust[pair])
-    manifest.update(schema='sky-candidate-license-collection-v2',product_version='3.1.0',
+    product_version=json.loads((ROOT/'frontend/package.json').read_text(encoding='utf-8'))['version']
+    manifest.update(schema='sky-candidate-license-collection-v2',product_version=product_version,
                     status='NOTICE_COLLECTION_VERIFIED' if not unknown else 'NOTICE_COLLECTION_INCOMPLETE',
                     python=rows,node=nodes,rust=rust,unknown_components=unknown,
                     independent_legal_approval='NOT_PERFORMED',public_release_approved=False,

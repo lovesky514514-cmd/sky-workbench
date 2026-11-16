@@ -7335,6 +7335,23 @@
         }
       ],
       "status": "NOTICE_TEXT_COLLECTED"
+    },
+    {
+      "ecosystem": "node",
+      "name": "three",
+      "version": "0.187.0",
+      "declared_license": "MIT",
+      "source_url": "https://registry.npmjs.org/three/-/three-0.187.0.tgz",
+      "integrity": "sha512-Qiu7R+Cmh8CstZsY1uJOSWnVlfo7ZtNLV7mF8Jltk3LB3AtDu9cRZlcnRKkAk8Y4z6KKw35z7Y7Urd7jWY8etA==",
+      "files": [
+        {
+          "file": "node-3.1/three/0.187.0/LICENSE",
+          "bytes": 1081,
+          "sha256": "8B378EBE60E2FE500158CB0AC71CB5E8B7D92953C2ABCC63A0EB90499653B5BC",
+          "source": "https://registry.npmjs.org/three/-/three-0.187.0.tgz"
+        }
+      ],
+      "status": "NOTICE_TEXT_COLLECTED"
     }
   ],
   "unknown_components": [],
@@ -12763,7 +12780,7 @@
     "version": "3.4.4",
     "binary_build_provenance": "Independent MinGW-w64 build from CPython source-deps libffi-3.4.4 archive SHA-256 9D802681ADFEA27D84CAE0487A785FB9CAA925BDAD44C401B364C59AB2B8EDDA; candidate DLL SHA-256 17ACEDB4D86F630438BBA70F349F982A9A387C068C8F0D72F2DD1E73B2C92C49. Historical OpenAI-signed DLL provenance remains unknown."
   },
-  "product_version": "3.1.0",
+  "product_version": "4.0.0",
   "independent_legal_approval": "NOT_PERFORMED",
   "public_release_approved": false,
   "build_lock_sha256": "676237ec65024fa739b04d8bc2fdd8fc35436d3bcb89882a5e7364c10ef6d74d",
@@ -12778,7 +12795,7 @@
   "rust_resolution": {
     "platform": "x86_64-pc-windows-msvc",
     "target_packages": 257,
-    "cargo_lock_sha256": "701bbfbe499ab970de5b2ce3052e5d8098ef1aa015c90b119836d1785889cd7d"
+    "cargo_lock_sha256": "2e47eebb847cd1f4611a318276b4f80b55db52d102bc480720b07222831aa96d"
   },
-  "frontend_lock_sha256": "d7def1f098583ef1664861c372ae44b10a17accc443fe085e944912459ce1fe9"
+  "frontend_lock_sha256": "02f28e0d3899bd02ad6689852c4cfab09ca59dcd0454c716916854bdfd038563"
 }

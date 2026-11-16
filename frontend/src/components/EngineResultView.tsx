@@ -42,7 +42,14 @@ export function EngineResultView({ result, zh }: { result: EngineResult; zh: boo
     {frame && <><AtomStructureView atoms={frame.atoms} caption={`Trajectory · step ${frame.step}`} />
       <label>{zh ? '轨迹帧' : 'Trajectory frame'} <input type="range" min="0" max={frames.length - 1} value={Math.min(frameIndex, frames.length - 1)} onChange={(event) => setFrameIndex(Number(event.target.value))} /></label></>}
     {result.structure && <AtomStructureView atoms={result.structure.atoms} caption={zh ? '引擎输出结构 · Å' : 'Engine output structure · Å'} />}
-    {result.energy != null && <p className="engine-energy">{result.energy.toPrecision(8)} {result.units}</p>}
+    {result.energy != null && <p className="engine-energy">{result.kind === 'first_principles'
+      ? result.energy.toFixed(8) : result.energy.toPrecision(8)} {result.units}</p>}
+    {result.kind === 'first_principles' && result.electronic_iterations != null && <p>
+      {zh ? '最终电子迭代' : 'Final electronic iterations'} {result.electronic_iterations} ·
+      {' '}{result.scf_converged ? (zh ? '有 SCF 收敛证据' : 'SCF convergence recorded') : (zh ? 'SCF 收敛未确认' : 'SCF convergence unverified')}
+    </p>}
+    {result.solver_elapsed_seconds != null && <p>{zh ? '求解耗时' : 'Solver elapsed time'} {result.solver_elapsed_seconds} s</p>}
+    {!!result.error_codes?.length && <p>{zh ? '错误代码' : 'Error codes'} {result.error_codes.join(', ')}</p>}
     {finite.length > 0 && <figure className="engine-chart">
       <select aria-label={zh ? '选择曲线' : 'Choose curve'} value={yColumn} onChange={(event) => setColumn(Number(event.target.value))}>
         {columns.slice(1).map((label, i) => <option key={label} value={i + 1}>{label}</option>)}

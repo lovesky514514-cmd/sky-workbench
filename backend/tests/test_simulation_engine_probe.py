@@ -1,6 +1,7 @@
 """Optional engines may prove a local handshake, never scientific execution."""
 
 import asyncio
+import os
 from pathlib import Path
 
 import pytest
@@ -10,7 +11,9 @@ from app import simulation_adapters as adapters
 
 def test_probe_command_is_fixed_and_local():
     matlab = adapters.probe_command("MATLAB", "C:/MATLAB/bin/matlab.exe")
-    assert matlab == ["C:/MATLAB/bin/matlab.exe", "-batch", "disp('SWB_ENGINE_PROBE_OK')"]
+    assert matlab[0] == "C:/MATLAB/bin/matlab.exe"
+    assert matlab[-2:] == ["-batch", "disp('SWB_ENGINE_PROBE_OK')"]
+    assert ("-wait" in matlab) == (os.name == "nt")
     with pytest.raises(ValueError):
         adapters.probe_command("Wolfram", "C:/Wolfram/wolframscript.exe")
     with pytest.raises(ValueError):
@@ -50,7 +53,7 @@ def test_handshake_never_certifies_science(monkeypatch, tmp_path):
     }])
 
     async def fake_handshake(command):
-        assert command[1:] == ["-batch", "disp('SWB_ENGINE_PROBE_OK')"]
+        assert command[-2:] == ["-batch", "disp('SWB_ENGINE_PROBE_OK')"]
         return "HANDSHAKE_PASSED", 17
 
     monkeypatch.setattr(adapters, "_handshake", fake_handshake)

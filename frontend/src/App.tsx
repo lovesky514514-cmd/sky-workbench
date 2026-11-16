@@ -12,7 +12,7 @@ import { WarmOnboarding, warmOnboardingStorageKey } from './components/WarmOnboa
 import { WarmHelp } from './components/WarmHelp'
 import { initialLocale, localeStorageKey, translate, type Locale } from './i18n'
 import type {
-  AgentMode, EnvironmentItem, ExecutionEta, InspectorTab, JavaBridgeEvent,
+  AgentMode, EnvironmentItem, ExecutionEta, InspectorTab, IntentConfirmationInput, JavaBridgeEvent,
   JavaBridgeStatus, Plan, Project, Provider, ProviderSettings, RuntimeDomain,
   ScientificIntent, Session,
 } from './types'
@@ -253,9 +253,13 @@ function App() {
 
   // Explicit mode avoids a stale React state read when a warm-page button
   // switches from PLAN review to RUN in the same user interaction.
-  const send = async (requestedMode: AgentMode = mode) => {
+  const send = async (requestedMode: AgentMode = mode, intentConfirmation?: IntentConfirmationInput) => {
     if (!session || busy || (requestedMode !== 'RUN' && !prompt.trim())) return
     const ticket = selectionRef.current
+    if (requestedMode === 'PLAN' && activeStates.has(session.state)) {
+      setWarning(locale === 'zh-CN' ? '当前任务仍在执行。可先询问进展，结束后再修改计划。' : 'The task is active. Ask about progress, then revise the plan after execution ends.')
+      return
+    }
     if (requestedMode === 'RUN' && !activePlan?.runnable) { setWarning(t('RUN requires a saved Phase 2 ScientificPlan that is Ready To Run.')); return }
     setBusy(true); setWarning('')
     try {
@@ -279,10 +283,11 @@ function App() {
         }, controller.signal)
       } else {
         const content = requestedMode === 'RUN' ? `Execute saved ScientificPlan ${activePlan?.plan_id}` : pendingIntent?.original_text ?? prompt.trim()
-        next = await api.sendMessage(session.id, requestedMode, content)
+        next = await api.sendMessage(session.id, requestedMode, content, intentConfirmation)
       }
       if (!isCurrentSelection(ticket, selectionRef.current)) return
       sessionRef.current = next; setSession(next); setPendingIntent(null)
+      if (requestedMode !== 'RUN') setPrompt('')
       const refreshed = await api.sessions()
       if (isCurrentSelection(ticket, selectionRef.current)) setSessions(refreshed.sessions)
     } catch (cause) {
@@ -379,7 +384,7 @@ function App() {
     await refreshBridge()
   }
   const startBridge = async () => {
-    setWarning(''); setInspectorTab('live'); const accepted = await api.startBridge()
+    setWarning(''); setInspectorTab('live'); const accepted = await api.startBridge(sessionRef.current?.id)
     setBridgeView((current) => ({ status: { ...current.status, process: accepted, status: 'Starting' }, readback: null, loading: true }))
     for (let attempt = 0; attempt < 90; attempt += 1) {
       await new Promise((resolve) => window.setTimeout(resolve, 1000))
@@ -535,7 +540,9 @@ function App() {
   const taskHistory = <div className="task-history-list">
     {session?.messages.map((message, index) => <TaskHistoryMessage locale={locale}
       key={message.created_at + '-' + String(index)} message={message}
-      currentPlan={activePlan} onSavePlan={savePlan} />)}
+      currentPlan={activePlan} onSavePlan={savePlan} onReviseIntent={busy ? undefined : () => {
+        setPrompt(message.content); setPendingIntent(null); setMode('PLAN')
+      }} />)}
     {streaming && <article className="message assistant streaming-message">
       <div className="message-meta">
         <span>{t('Scientific Agent')}</span><em>ASK · STREAMING</em>
@@ -555,10 +562,10 @@ function App() {
     sessionRef.current = next; setSession(next)
     setSessions((current) => current.map((item) => item.id === next.id ? next : item))
   }
-  const planReview = activePlan ? <PlanCard locale={locale} plan={activePlan} editable onSave={savePlan} /> : null
+  const planReview = activePlan ? <PlanCard locale={locale} plan={activePlan} editable={activePlan.source !== 'heat-simulation'} onSave={savePlan} /> : null
   const intentConfirmation = pendingIntent
-    ? <IntentConfirmation locale={locale} intent={pendingIntent}
-      onContinue={() => void send()}
+    ? <IntentConfirmation locale={locale} intent={pendingIntent} busy={busy}
+      onContinue={(answers) => void send('PLAN', answers)}
       onModify={() => { setPrompt(pendingIntent.original_text); setPendingIntent(null) }}
       onReset={() => { setPrompt(''); setPendingIntent(null) }} />
     : null
@@ -705,7 +712,7 @@ function App() {
         <BrandIcon size={96} className="about-icon" label="SKY Workbench" />
         <span className="eyebrow">V3.0</span>
         <h2>SKY Workbench</h2>
-        <p><b>v3.1.0</b><br />{t('Build signature')}: <b>{t('Unsigned')}</b></p>
+        <p><b>v4.0.0</b><br />{t('Build signature')}: <b>{t('Unsigned')}</b></p>
         <p>{t('Independent third-party scientific modeling workbench. Not affiliated with, endorsed by, or sponsored by COMSOL AB.')}</p>
         <p>{t('COMSOL® is a trademark of COMSOL AB. Official COMSOL software and a valid license are required for real model execution.')}</p>
         <p>{t('Local and cloud AI are optional. No model is downloaded or substituted silently.')}</p>

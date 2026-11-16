@@ -56,7 +56,10 @@ export function verifiedImageArtifacts(session: Session | null, currentRunId?: s
       const record = evidence.artifacts?.[key]
       const filename = basename(path)
       if (!record || !filename.toLowerCase().endsWith('.png') || basename(record.path) !== filename || !record.sha256) return []
-      const metadata = IMAGE_ARTIFACTS[key] ?? { name: filename, quantity: '', unit: '' }
+      const metadata = key === 'temperature_image' && filename === 'temperature_final.png' &&
+        verdict.workflow_id === 'heat_transfer_3d_cooling'
+        ? { ...IMAGE_ARTIFACTS.temperature_image, unit: '°C' }
+        : IMAGE_ARTIFACTS[key] ?? { name: filename, quantity: '', unit: '' }
       return [{ key, ...metadata, filename, record, message }]
     })
   }

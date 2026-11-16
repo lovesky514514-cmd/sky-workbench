@@ -10,6 +10,7 @@ import subprocess
 import sys
 import threading
 import time
+from contextlib import nullcontext
 from pathlib import Path
 
 from app.redaction import RedactingLogFilter
@@ -96,7 +97,7 @@ def _watch_parent(pid: int, owned_ollama_pid: int, stop: callable) -> None:
     stop()
 
 
-def _run_worker(name: str, request: Path) -> int:
+def _run_worker(name: str, request: Path, *, leased: bool = False) -> int:
     # PyInstaller's windowed child can keep the Windows ANSI code page even
     # when PYTHONIOENCODING was supplied by the parent. The line-oriented
     # WORKBENCH_EVENT/RESULT protocol is decoded as UTF-8 by ToolRegistry;
@@ -106,6 +107,10 @@ def _run_worker(name: str, request: Path) -> int:
     sys.stdout.reconfigure(encoding="utf-8")
     if name == "heat_worker":
         from app.comsol.heat_worker import main
+    elif name == 'heat_readback_worker':
+        from app.comsol.heat_readback_worker import main
+    elif name == 'cooling_readback_worker':
+        from app.comsol.cooling_readback_worker import main
     elif name == "cooling_worker":
         from app.comsol.cooling_worker import main
     elif name == 'transient_diffusion_worker':
@@ -122,7 +127,13 @@ def _run_worker(name: str, request: Path) -> int:
         from app.comsol.multiphysics_worker import main
     else:
         raise SystemExit(f"Unknown worker: {name}")
-    return int(main(request))
+    from app.execution.scientific_transfer import worker_scope
+    with worker_scope(request, name):
+        if leased:
+            from app.comsol.worker_lease import reserve_start
+            if not reserve_start(request.parent):
+                return 1
+        return int(main(request))
 
 
 def main() -> int:
@@ -142,11 +153,14 @@ def main() -> int:
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument(
         "--worker",
-        choices=("heat_worker", "cooling_worker", "tds_worker", "transient_diffusion_worker", "solid_worker", "electrochem_worker", "battery_worker", "multiphysics_worker"),
+        choices=("heat_worker", "heat_readback_worker", "cooling_readback_worker", "cooling_worker", "tds_worker", "transient_diffusion_worker", "solid_worker", "electrochem_worker", "battery_worker", "multiphysics_worker"),
     )
     mode.add_argument("--native-self-test-report", type=Path)
     parser.add_argument("--request", type=Path)
+    parser.add_argument("--leased-worker", action="store_true")
     arguments = parser.parse_args()
+    if arguments.leased_worker and not arguments.worker:
+        parser.error("--leased-worker requires --worker")
     if arguments.native_self_test_report is not None:
         # This CLI-only mode runs before settings/logging/API initialization. It cannot
         # accept worker/server context, arbitrary imports or model execution requests.
@@ -157,12 +171,29 @@ def main() -> int:
             parser.error("Native diagnostics cannot be combined with Runtime or scientific execution")
         from app.diagnostics.native_selftest import run
         return run(arguments.native_self_test_report)
-    _apply_environment(arguments)
-    _configure_logging(arguments)
     if arguments.worker:
         if arguments.request is None:
             parser.error("--request is required with --worker")
-        return _run_worker(arguments.worker, arguments.request)
+        from app.comsol.worker_lease import heartbeat
+        try:
+            with heartbeat(arguments.request.parent) if arguments.leased_worker else nullcontext():
+                _apply_environment(arguments)
+                _configure_logging(arguments)
+                result = _run_worker(arguments.worker, arguments.request, leased=arguments.leased_worker)
+        except Exception as exc:
+            logging.getLogger(__name__).error('worker_unhandled_error type=%s', type(exc).__name__)
+            result = 1
+        if result != 0:
+            # 错误回执必须写完；异常后不等待 Python 或本机线程的退出钩子。
+            try:
+                for stream in (sys.stdout, sys.stderr):
+                    if stream is not None:
+                        stream.flush()
+            finally:
+                os._exit(1)
+        return result
+    _apply_environment(arguments)
+    _configure_logging(arguments)
     if arguments.host not in {"127.0.0.1", "localhost", "::1"}:
         parser.error("Scientific Runtime must stay on loopback")
 
@@ -176,6 +207,7 @@ def main() -> int:
         access_log=False,
         log_level="info",
         log_config=None,
+        timeout_graceful_shutdown=1,
     )
     server = uvicorn.Server(config)
     app.state.request_shutdown = lambda: setattr(server, "should_exit", True)

@@ -33,17 +33,227 @@ for (const name of ['window', 'document', 'navigator', 'HTMLElement', 'Node', 'M
 }
 globalThis.IS_REACT_ACT_ENVIRONMENT = true
 const React = await import('react')
-const { render, fireEvent, screen, cleanup, waitFor } = await import('@testing-library/react')
+const { render, fireEvent, screen, cleanup, waitFor, act } = await import('@testing-library/react')
 const { PlanCompletionReview } = await import('../src/components/PlanCompletionReview.tsx')
 const { PlanCard } = await import('../src/components/PlanCard.tsx')
+const { WarmPlanOverview } = await import('../src/components/WarmPlanOverview.tsx')
 const { ModelingBriefView } = await import('../src/components/ModelingBriefView.tsx')
 const { factSourceText } = await import('../src/sourceFacts.ts')
 const { EngineTaskWorkspace } = await import('../src/components/EngineTaskWorkspace.tsx')
 const { ScientificTaskForm } = await import('../src/components/ScientificTaskForm.tsx')
 const { KnowledgeSearchPanel } = await import('../src/components/KnowledgeSearchPanel.tsx')
+const { RecoveryPanel } = await import('../src/components/RecoveryPanel.tsx')
+const { HeatSimulationPanel } = await import('../src/components/HeatSimulationPanel.tsx')
 const { api } = await import('../src/api.ts')
+const { ResearchStatus } = await import('../src/components/ResearchStatus.tsx')
+const { IntentConfirmation } = await import('../src/components/IntentConfirmation.tsx')
+const { ExpertWorkflow } = await import('../src/components/ExpertWorkflow.tsx')
 const originalApi = { ...api }
 afterEach(() => { cleanup(); Object.assign(api, originalApi) })
+
+test('intent confirmation sends only an explicit study choice and user-supplied conditions', () => {
+  const submissions = []
+  const intent = { goal: 'Heat transfer', physics: ['Heat Transfer in Solids'], geometry: [], study: [],
+    boundary_conditions: [], unknowns: ['Study type'], validation_issues: [], original_text: 'Study a plate' }
+  const props = { locale: 'en-US', intent, onContinue: (input) => submissions.push(input),
+    onModify: () => {}, onReset: () => {} }
+  const view = render(React.createElement(IntentConfirmation, props))
+  assert.equal(screen.getAllByRole('radio').some((radio) => radio.checked), false)
+  fireEvent.click(screen.getByRole('radio', { name: /Undecided/ }))
+  fireEvent.change(screen.getByLabelText('Add known conditions with units'), { target: { value: '2 m x 1 m' } })
+  fireEvent.click(screen.getByRole('button', { name: /Continue with draft/ }))
+  assert.deepEqual(submissions, [{ study: 'undecided', details: '2 m x 1 m' }])
+  view.rerender(React.createElement(IntentConfirmation, { ...props, intent: { ...intent, study: ['Stationary'] } }))
+  assert.equal(screen.queryByRole('radio'), null)
+})
+
+test('expert workflow loads only a matching checkpoint and shows its dependencies on selection', async () => {
+  const scope = { session_id: 's1', project_id: 'p1', case_id: 'c1', plan_revision: 2, run_id: 'r1', attempt_id: 'a1' }
+  const budget = { agent_calls: 0, solver_runs: 0 }
+  const node = { capability: 'review', objective: 'Check solver evidence', tools: ['evidence.read'],
+    inputs: [], outputs: [], budget, state: 'waiting', waiting_for: ['execute'], dependencies: ['execute'] }
+  const session = { id: 's1', project_id: 'p1', events: [
+    { id: 'e1', sequence: 1, type: 'experts.checkpoint_created', payload: { scope } },
+    { id: 'other', sequence: 2, type: 'experts.checkpoint_created', payload: { scope: { ...scope, project_id: 'p2' } } },
+  ] }
+  const requests = []
+  api.expertWorkflow = async (...args) => {
+    requests.push(args)
+    return { scope, limit: budget, spent: budget, stop_reason: null, status: 'ACTIVE', tasks: [
+      { ...node, id: 'audit' }, { ...node, id: 'execute', dependencies: [], waiting_for: [], state: 'running', capability: 'execution' },
+    ] }
+  }
+  render(React.createElement(ExpertWorkflow, { session, locale: 'en-US' }))
+  fireEvent.click(await screen.findByRole('button', { name: /audit/ }))
+  assert.deepEqual(requests, [['s1', 'c1']])
+  assert.equal(screen.getByText('Check solver evidence').tagName, 'DD')
+  assert.equal(screen.getByText('evidence.read').tagName, 'DD')
+  assert.equal(screen.getByRole('button', { name: /execute/ }).getAttribute('aria-pressed'), 'false')
+})
+
+test('research discussion displays actual usage and keeps scientific certification separate', async () => {
+  api.researchStudy = async () => ({ status: 'NEEDS_EVIDENCE', calls: [{ task_id: 'physical_modeling', status: 'COMPLETED',
+    receipt: { requests: 1, usage_known: true, input_tokens: 100, output_tokens: 50, model: 'fixture-model' } }],
+    outcome: { scientific_status: 'NOT_RUN', issues: [{ kind: 'boundary_conflict', required: 'Resolve source applicability' }] } })
+  const exports = []
+  api.downloadResearchReport = async sid => { exports.push(sid) }
+  const view = render(React.createElement(ResearchStatus, { sessionId: 'research-session', eventCount: 1, locale: 'en-US' }))
+  await waitFor(() => assert.match(view.container.textContent, /Model requests: 1.*Token: 150/))
+  assert.match(view.container.textContent, /does not certify/)
+  assert.match(view.container.textContent, /Resolve source applicability/)
+  fireEvent.click(screen.getByRole('button', { name: 'Export research report' }))
+  assert.deepEqual(exports, ['research-session'])
+})
+
+test('completed plan display preserves assumptions and identifies historical execution', () => {
+  const plan = { title: 'Reviewed heat', research_goal: 'heat', parameters: {}, missing_information: [],
+    assumptions: ['Constant k'], warnings: [], physics: ['Heat'], geometry: [], materials: [],
+    boundary_conditions: [], runnable: true }
+  const view = render(React.createElement(WarmPlanOverview, { plan, locale: 'zh-CN', historical: true }))
+  assert.match(view.container.textContent, /历史计划 · 本次运行已结束/)
+  assert.doesNotMatch(view.container.textContent, /等待显式 RUN/)
+  assert.match(view.container.textContent, /Constant k/)
+  view.rerender(React.createElement(WarmPlanOverview, { plan, locale: 'zh-CN', historical: false }))
+  assert.match(view.container.textContent, /等待显式 RUN/)
+})
+
+test('VASP WSL submits local potential references only after input review and explicit consent', async () => {
+  api.engineConfiguration = async () => ({ executables: {} })
+  api.engineRuns = async () => ({ runs: [] })
+  api.vaspWslConfiguration = async () => ({ profile: null })
+  api.vaspSiliconDraft = async () => ({ files: { INCAR: 'ENCUT=400', POSCAR: 'Si', KPOINTS: 'Gamma' } })
+  api.previewEngineTask = async payload => {
+    assert.equal(payload.inputs.kind, 'vasp_wsl')
+    assert.deepEqual(Object.keys(payload.inputs.files).sort(), ['INCAR', 'KPOINTS', 'POSCAR'])
+    assert.equal(payload.review_ticket, undefined)
+    return { files: {}, structure: null, review_ticket: 'fixture-review', wsl_review: {
+      variant: 'vasp_std', vasp_version: '6.4.3', ranks: 2, potential_sha256: 'a'.repeat(64), input_hashes: {},
+    } }
+  }
+  let submitted = 0
+  const saved = { run_id: 'fixture', engine: 'VASP', state: 'COLLECTED', created_at: 1,
+    scientific_validation: 'NEEDS_REVIEW', assumptions: [], artifacts: [], request: { inputs: {} }, elapsed_ms: 3 }
+  api.startEngineTask = async payload => {
+    assert.equal(payload.review_ticket, 'fixture-review')
+    assert.equal(payload.confirmed, true)
+    submitted++
+    return saved
+  }
+  api.engineRun = async () => saved
+  render(React.createElement(EngineTaskWorkspace, { engine: 'VASP', projectId: 'project', locale: 'zh-CN' }))
+  assert.equal(screen.getByRole('button', { name: '开始计算' }).disabled, true)
+  assert.equal(screen.queryByLabelText(/^POTCAR/), null)
+  fireEvent.click(screen.getByRole('button', { name: '生成 Si 静态 SCF 草案' }))
+  assert.ok(await screen.findByText('INCAR ✓'))
+  fireEvent.click(screen.getByRole('button', { name: '预览结构与检查输入' }))
+  const consent = screen.getByRole('checkbox', { name: /授权本机运行/ })
+  await waitFor(() => assert.equal(consent.disabled, false))
+  assert.equal(submitted, 0)
+  fireEvent.click(consent)
+  fireEvent.click(screen.getByRole('button', { name: '开始计算' }))
+  await waitFor(() => assert.equal(submitted, 1))
+})
+
+test('Heat simulation starts explicitly and distinguishes a perfect score from a blocked physical check', async () => {
+  let run = { mode: 'simulation', scientific_validation_passed: false, state: 'IDLE', can_start: true }
+  api.heatSimulation = async () => run
+  api.heatSimulationAction = async (sid, action, payload) => {
+    assert.equal(sid, 'empty-session')
+    assert.equal(action, 'start')
+    assert.deepEqual(payload, { scenario: 'wrong_boundary' })
+    run = { ...run, state: 'BLOCKED', version: 2, can_start: false, report: {
+      score_total: 100, revision: null,
+      evidence: [{ evidence_id: 'readback-id', source_ref: 'heat.model_readback.v1' }],
+      claims: [{ claim: { claim_id: 'boundary_selection', evidence_refs: ['readback-id'] }, status: 'FAIL' }],
+    } }
+    return run
+  }
+  render(React.createElement(HeatSimulationPanel, { locale: 'zh-CN', sessionId: 'empty-session' }))
+  fireEvent.change(await screen.findByLabelText('验收场景'), { target: { value: 'wrong_boundary' } })
+  fireEvent.click(screen.getByRole('button', { name: '启动模拟' }))
+  assert.ok(await screen.findByText('物理检查失败，交付已阻断'))
+  assert.ok(screen.getByText('模拟审核分数 100/100'))
+  assert.ok(screen.getByText('边界选择 · FAIL'))
+  assert.equal(screen.queryByText('模拟验收通过'), null)
+})
+
+test('Heat simulation waits for the matching revision approval before showing a simulated pass', async () => {
+  let run = { mode: 'simulation', scientific_validation_passed: false, state: 'REVISION_REQUIRED',
+    version: 3, can_start: false, report: { score_total: 94, evidence: [], claims: [],
+      revision: { revision_id: 'review-1', issues: [{ issue_id: 'resample', reason: '重新取样' }] } } }
+  let approvals = 0
+  api.heatSimulation = async () => run
+  api.heatSimulationAction = async (_sid, action, payload) => {
+    approvals++
+    assert.equal(action, 'approve')
+    assert.deepEqual(payload, { version: 3, proposal_id: 'review-1' })
+    run = { ...run, state: 'PASSED', version: 5, report: { score_total: 100, claims: [], evidence: [], revision: null } }
+    return run
+  }
+  render(React.createElement(HeatSimulationPanel, { locale: 'zh-CN', sessionId: 'revision-session' }))
+  assert.ok(await screen.findByText('等待批准模拟返工'))
+  assert.equal(approvals, 0)
+  fireEvent.click(screen.getByRole('button', { name: '批准模拟返工并复验' }))
+  assert.ok(await screen.findByText('模拟验收通过'))
+  assert.equal(approvals, 1)
+})
+
+test('recovery keeps simulation approval explicit and labels simulated verification', async () => {
+  const failure = { event_id: 'case', origin: 'API', route_template: '/api/sessions/{session_id}/plan',
+    method: 'PUT', occurred_at_utc: '2026-11-06T01:00:00Z', http_status: 409, error_code: 'plan_revision' }
+  const item = { case_id: 'case', state: 'PROPOSED', failure }
+  const start = { ...item, report: { rule: { classification: 'PLAN_REVISION_CONFLICT',
+    safe_next_probe: '刷新计划', counter_evidence: [] }, missing_evidence: [], evidence_refs: ['case'],
+    knowledge_refs: [], candidates: [], model_status: 'NOT_NEEDED' },
+  proposal: { action: 'SIMULATE_STATUS_REFRESH', digest: 'a'.repeat(64), approval_required: true,
+    verification_plan: [] }, review_decision: null, events: [] }
+  let record = start
+  const calls = []
+  api.recoveryCases = async () => ({ cases: [item], capture_drops: 0 })
+  api.recoveryCase = async () => record
+  api.recoveryAction = async (session, id, action, useModel, digest) => {
+    calls.push({ session, id, action, useModel, digest })
+    if (action === 'submit') record = { ...record, state: 'WAITING_APPROVAL' }
+    if (action === 'approve') record = { ...record, review_decision: 'approve' }
+    if (action === 'simulate') record = { ...record, state: 'RESOLVED' }
+    return record
+  }
+  render(React.createElement(RecoveryPanel, { locale: 'zh-CN', sessionId: 'session', eventCount: 1 }))
+  fireEvent.click(await screen.findByRole('button', { name: /409/ }))
+  assert.equal(screen.queryByRole('button', { name: '运行模拟并独立复验' }), null)
+  fireEvent.click(await screen.findByRole('button', { name: '提交模拟审批' }))
+  fireEvent.click(await screen.findByRole('button', { name: '批准这次模拟' }))
+  fireEvent.click(await screen.findByRole('button', { name: '运行模拟并独立复验' }))
+  assert.ok(await screen.findByText(/模拟复验通过；实际故障仍未确认修复/))
+  assert.deepEqual(calls.map(call => call.action), ['submit', 'approve', 'simulate'])
+  assert.equal(calls[1].digest, 'a'.repeat(64))
+  assert.equal(calls[1].useModel, false)
+})
+
+test('recovery cancellation preserves the visible state when a diagnosis responds late', async () => {
+  const failure = { event_id: 'case', origin: 'API', occurred_at_utc: '2026-11-06T01:00:00Z',
+    http_status: 409, error_code: 'unknown' }
+  const start = { case_id: 'case', state: 'DETECTED', failure, report: null, proposal: null, events: [] }
+  let current = start
+  let finishDiagnosis
+  api.recoveryCases = async () => ({ cases: [start], capture_drops: 0 })
+  api.recoveryCase = async () => current
+  api.recoveryAction = async (_session, _id, action) => {
+    if (action === 'diagnose') return new Promise(resolve => { finishDiagnosis = resolve })
+    assert.equal(action, 'cancel')
+    current = { ...start, state: 'CANCELLED' }
+    return current
+  }
+
+  render(React.createElement(RecoveryPanel, { locale: 'zh-CN', sessionId: 'session', eventCount: 1 }))
+  fireEvent.click(await screen.findByRole('button', { name: /409/ }))
+  fireEvent.click(await screen.findByRole('button', { name: '开始只读诊断' }))
+  fireEvent.click(await screen.findByRole('button', { name: '停止当前诊断或模拟' }))
+  assert.ok(await screen.findByText(/CANCELLED/))
+  await act(async () => finishDiagnosis({ ...start, state: 'PROPOSED' }))
+  assert.ok(screen.getByText(/CANCELLED/))
+  assert.equal(screen.queryByText(/PROPOSED/), null)
+})
 
 function plan() {
   return { schema_version: '2.0', plan_id: 'plan-fixture', revision: 3, title: 'Heat draft', research_goal: 'Heat',

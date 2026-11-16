@@ -1,10 +1,16 @@
-import type { AgentMode, EnvironmentItem, ExecutionEta, ImportedMph, ImportedMphPreview, JavaBridgeStatus, LiteratureModelCandidate, Plan, Project, Provider, ProviderAcceptanceResult, ProviderConfig, ProviderSettings, ProviderTestResult, RetrievalMode, RuntimeDomain, ScientificIntent, Session, TreeNode } from './types'
+import type { AgentMode, EnvironmentItem, ExecutionEta, ImportedMph, ImportedMphPreview, IntentConfirmationInput, JavaBridgeStatus, LiteratureModelCandidate, Plan, Project, Provider, ProviderAcceptanceResult, ProviderConfig, ProviderSettings, ProviderTestResult, RetrievalMode, RuntimeDomain, ScientificIntent, Session, TreeNode } from './types'
 import { responseError } from './safeUiError'
+import { decodeResponse } from './httpError'
 import { openEventStream, type EventStreamOptions } from './eventStream'
 import { readMessageStream } from './messageStream'
-import type { EngineRun, EngineTaskPayload } from './engineTasks'
+import type { EngineRun, EngineTaskPayload, WslVaspProbe, WslVaspProfile, WslVaspReview } from './engineTasks'
 import type { CompletionSubmission } from './planCompletion'
 import type { KnowledgeReply } from './components/KnowledgeSearchPanel'
+import type { RecoveryCase, RecoveryCaseSummary } from './recoveryTypes'
+import type { HeatScenario, HeatSimulation } from './heatSimulationTypes'
+import type { ResearchStudy } from './researchTypes'
+import type { Workflow } from './components/ExpertWorkflow'
+import { MAX_TOPOLOGY_BYTES, verifyTopology, type ModelSource, type ModelVisualization } from './comsolTopology'
 
 export interface DesktopBootstrap {
   desktop: boolean
@@ -54,8 +60,7 @@ function requestHeaders(init?: RequestInit): HeadersInit {
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(endpoint(path), { ...init, headers: requestHeaders(init) })
-  if (!response.ok) throw new Error(responseError(await response.text(), response.status))
-  return response.json() as Promise<T>
+  return decodeResponse<T>(response, init?.method)
 }
 
 async function initialize(): Promise<DesktopBootstrap | null> {
@@ -154,6 +159,41 @@ async function importMph(file: File): Promise<ImportedMph> {
   return response.json() as Promise<ImportedMph>
 }
 
+async function modelVisualization(source: ModelSource, signal: AbortSignal) {
+  const route = `/api/model-visualization/${source.kind}/${encodeURIComponent(source.id)}`
+  const manifest = await request<ModelVisualization>(route, { method: source.kind === 'checkpoint' ? 'GET' : 'POST', signal })
+  const length = manifest.artifact?.bytes
+  if (!Number.isSafeInteger(length) || length <= 0 || length > MAX_TOPOLOGY_BYTES ||
+      !/^[a-f0-9]{64}$/.test(manifest.source_model_revision)) throw new Error('Invalid topology descriptor')
+  const response = await fetch(endpoint(`${route}/${manifest.source_model_revision}`), { headers: requestHeaders(), signal })
+  if (!response.ok) throw new Error(responseError(await response.text(), response.status))
+  if (!response.body || response.headers.get('Content-Type') !== 'application/octet-stream') throw new Error('Topology body unavailable')
+  const bytes = new Uint8Array(length)
+  const reader = response.body.getReader()
+  let offset = 0
+  try {
+    while (true) {
+      const { value, done } = await reader.read()
+      if (done) break
+      if (offset + value.byteLength > length) throw new Error('Topology exceeded its descriptor')
+      bytes.set(value, offset)
+      offset += value.byteLength
+    }
+    if (offset !== length) throw new Error('Topology transfer truncated')
+  } finally {
+    await reader.cancel().catch(() => undefined)
+    reader.releaseLock()
+  }
+  const topology = await verifyTopology(manifest, source, bytes.buffer)
+  return { manifest, ...topology }
+}
+
+async function checkModelVisualization(source: ModelSource, revision: string, signal: AbortSignal) {
+  const route = `/api/model-visualization/${source.kind}/${encodeURIComponent(source.id)}/${revision}`
+  const response = await fetch(endpoint(route), { method: 'HEAD', headers: requestHeaders(), signal, cache: 'no-store' })
+  return response.status === 204
+}
+
 async function extractLiteraturePdf(file: File): Promise<LiteratureModelCandidate> {
   const response = await fetch(endpoint('/api/extensions/literature-modeling/pdf'), {
     method: 'POST', body: file, headers: {
@@ -165,7 +205,61 @@ async function extractLiteraturePdf(file: File): Promise<LiteratureModelCandidat
   return response.json() as Promise<LiteratureModelCandidate>
 }
 
+function recoveryPath(sessionId: string, caseId?: string, action = '') {
+  return '/api/recovery/cases' + (caseId ? '/' + encodeURIComponent(caseId) : '')
+    + (action ? '/' + action : '') + '?session_id=' + encodeURIComponent(sessionId)
+}
+
+async function downloadRecoveryCase(sessionId: string, caseId: string) {
+  const response = await fetch(endpoint(recoveryPath(sessionId, caseId, 'export')), { headers: requestHeaders() })
+  if (!response.ok) throw new Error(responseError(await response.text(), response.status))
+  const url = URL.createObjectURL(await response.blob())
+  const link = document.createElement('a')
+  link.href = url
+  link.download = 'recovery-' + caseId + '.json'
+  link.click()
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000)
+}
+
 export const api = {
+  downloadScientificResult: async (runId: string) => {
+    const response = await fetch(endpoint(`/api/scientific-runs/${encodeURIComponent(runId)}/delivery`), { headers: requestHeaders() })
+    if (!response.ok) throw new Error(responseError(await response.text(), response.status))
+    const url = URL.createObjectURL(await response.blob())
+    const link = document.createElement('a')
+    link.href = url; link.download = 'scientific-result.zip'; link.click()
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000)
+  },
+  researchStudy: (sessionId: string, signal: AbortSignal) =>
+    request<ResearchStudy>(`/api/sessions/${encodeURIComponent(sessionId)}/research`, { signal }),
+  cancelResearch: (sessionId: string) => request<ResearchStudy>(`/api/sessions/${encodeURIComponent(sessionId)}/research/cancel`, { method: 'POST' }),
+  downloadResearchReport: async (sessionId: string) => {
+    const response = await fetch(endpoint(`/api/sessions/${encodeURIComponent(sessionId)}/research/report`), { headers: requestHeaders() })
+    if (!response.ok) throw new Error(responseError(await response.text(), response.status))
+    const url = URL.createObjectURL(await response.blob())
+    const link = document.createElement('a')
+    link.href = url; link.download = 'research-report.md'; link.click()
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000)
+  },
+  heatSimulation: (sessionId: string, signal: AbortSignal) =>
+    request<HeatSimulation>(`/api/sessions/${encodeURIComponent(sessionId)}/heat-simulation`, { signal }),
+  heatSimulationAction: (sessionId: string, action: 'start' | 'cancel' | 'resume' | 'approve',
+    payload: { scenario: HeatScenario } | { version?: number; proposal_id?: string }) =>
+    request<HeatSimulation>(`/api/sessions/${encodeURIComponent(sessionId)}/heat-simulation/${action}`,
+      { method: 'POST', body: JSON.stringify(payload) }),
+  recoveryCases: (sessionId: string, signal: AbortSignal) =>
+    request<{ cases: RecoveryCaseSummary[]; capture_drops: number }>(recoveryPath(sessionId), { signal }),
+  recoveryCase: (sessionId: string, caseId: string, signal: AbortSignal) =>
+    request<RecoveryCase>(recoveryPath(sessionId, caseId), { signal }),
+  recoveryAction: (sessionId: string, caseId: string,
+    action: 'diagnose' | 'submit' | 'approve' | 'reject' | 'simulate' | 'cancel' | 'connection-check', allowModel: boolean, digest?: string) => {
+    const reviewing = action === 'approve' || action === 'reject'
+    const payload = reviewing ? { decision: action, proposal_digest: digest }
+      : action === 'diagnose' ? { allow_model: allowModel } : undefined
+    return request<RecoveryCase>(recoveryPath(sessionId, caseId, reviewing ? 'review' : action),
+      { method: 'POST', body: JSON.stringify(payload) })
+  },
+  downloadRecoveryCase,
   initialize,
   restartDesktopRuntime,
   openLogs,
@@ -177,6 +271,8 @@ export const api = {
   artifactObjectUrl,
   downloadEngineArtifact,
   importMph,
+  modelVisualization,
+  checkModelVisualization,
   importedMph: () => request<{ items: ImportedMph[] }>('/api/imported-mph'),
   startImportedMphPreview: (id: string) => request<{ preview_state: string }>(`/api/imported-mph/${encodeURIComponent(id)}/preview`, { method: 'POST' }),
   importedMphPreview: (id: string) => request<ImportedMphPreview>(`/api/imported-mph/${encodeURIComponent(id)}/preview`),
@@ -212,8 +308,11 @@ export const api = {
   session: (sessionId: string) => request<Session>(`/api/sessions/${sessionId}`),
   archiveSession: (sessionId: string) => request<{ status: string; session_id: string; records_deleted: number }>(`/api/sessions/${sessionId}/archive`, { method: 'POST' }),
   executionEta: (sessionId: string) => request<ExecutionEta>(`/api/sessions/${sessionId}/execution/eta`),
-  sendMessage: (sessionId: string, mode: AgentMode, content: string) => request<Session>(`/api/sessions/${sessionId}/messages`, { method: 'POST', body: JSON.stringify({ mode, content }) }),
+  sendMessage: (sessionId: string, mode: AgentMode, content: string, intent_confirmation?: IntentConfirmationInput) =>
+    request<Session>(`/api/sessions/${sessionId}/messages`, { method: 'POST', body: JSON.stringify({ mode, content, intent_confirmation }) }),
   compileIntent: (content: string) => request<ScientificIntent>('/api/intents/compile', { method: 'POST', body: JSON.stringify({ content }) }),
+  expertWorkflow: (sessionId: string, caseId: string) =>
+    request<Workflow>(`/api/sessions/${encodeURIComponent(sessionId)}/expert-workflows/${encodeURIComponent(caseId)}`),
   legacyStatus: () => request<Record<string, unknown>>('/api/maintenance/legacy'),
   legacyAction: (action: string, path: string, confirmed = false) => request<Record<string, unknown>>('/api/maintenance/legacy', { method: 'POST', body: JSON.stringify({ action, path, confirmed }) }),
   modelsStatus: () => request<Record<string, unknown>>('/api/models/status'),
@@ -230,7 +329,15 @@ export const api = {
   saveEngineConfiguration: (engine: string, executable: string) => request<{ executables: Record<string, string> }>('/api/engine-tasks/configuration', { method: 'PUT', body: JSON.stringify({ engine, executable }) }),
   connectEngine: (engine: string) => request<{ status: string; detail?: string }>('/api/engine-tasks/connect', { method: 'POST', body: JSON.stringify({ engine, executable: '' }) }),
   engineRuns: (projectId: string) => request<{ runs: EngineRun[] }>(`/api/engine-tasks?project_id=${encodeURIComponent(projectId)}`),
-  previewEngineTask: (payload: EngineTaskPayload) => request<{ files: Record<string, string>; assumptions: string[]; structure: { atoms: import('./engineTasks').AtomPoint[]; units: string } | null }>('/api/engine-tasks/preview', { method: 'POST', body: JSON.stringify(payload) }),
+  previewEngineTask: (payload: EngineTaskPayload) => request<{ files: Record<string, string>; assumptions: string[]; structure: { atoms: import('./engineTasks').AtomPoint[]; units: string } | null; review_ticket?: string; wsl_review?: WslVaspReview }>('/api/engine-tasks/preview', { method: 'POST', body: JSON.stringify(payload) }),
+  vaspWslConfiguration: () => request<{ profile: WslVaspProfile | null }>('/api/engine-tasks/vasp-wsl/configuration'),
+  saveVaspWslConfiguration: (profile: WslVaspProfile) => request<{ profile: WslVaspProfile }>('/api/engine-tasks/vasp-wsl/configuration', { method: 'PUT', body: JSON.stringify(profile) }),
+  vaspWslDistributions: () => request<{ distributions: string[] }>('/api/engine-tasks/vasp-wsl/distributions'),
+  probeVaspWsl: () => request<WslVaspProbe>('/api/engine-tasks/vasp-wsl/probe', { method: 'POST' }),
+  vaspSiliconDraft: (lattice_angstrom: number, cutoff_ev: number, mesh: number) =>
+    request<{ files: Record<string, string> }>('/api/engine-tasks/vasp-wsl/silicon-draft',
+      { method: 'POST', body: JSON.stringify({ lattice_angstrom, cutoff_ev, mesh }) }),
+  reconcileVaspWsl: (id: string) => request<EngineRun>(`/api/engine-tasks/${encodeURIComponent(id)}/vasp-wsl/reconcile`, { method: 'POST' }),
   startEngineTask: (payload: EngineTaskPayload) => request<EngineRun>('/api/engine-tasks', { method: 'POST', body: JSON.stringify(payload) }),
   engineRun: (runId: string) => request<EngineRun>(`/api/engine-tasks/${encodeURIComponent(runId)}`),
   cancelEngineTask: (runId: string) => request<EngineRun>(`/api/engine-tasks/${encodeURIComponent(runId)}/cancel`, { method: 'POST' }),
@@ -253,7 +360,7 @@ export const api = {
   bridgeStatus: () => request<JavaBridgeStatus>('/api/comsol/bridge/status'),
   bridgeTree: () => request<Record<string, unknown>>('/api/comsol/bridge/model-tree'),
   bridgeParameters: () => request<Record<string, unknown>>('/api/comsol/bridge/parameters'),
-  startBridge: (modelPath?: string) => request<Record<string, unknown>>('/api/comsol/bridge/start', { method: 'POST', body: JSON.stringify({ model_path: modelPath ?? null }) }),
+  startBridge: (sessionId?: string) => request<Record<string, unknown>>('/api/comsol/bridge/start', { method: 'POST', body: JSON.stringify({ session_id: sessionId ?? null }) }),
   stopBridge: () => request<Record<string, unknown>>('/api/comsol/bridge/stop', { method: 'POST' }),
   streamMessage: async (sessionId: string, mode: AgentMode, content: string, onEvent: (event: Record<string, unknown>) => void, signal?: AbortSignal): Promise<Session> => {
     const response = await fetch(endpoint(`/api/sessions/${sessionId}/messages/stream`), { method: 'POST', headers: requestHeaders(), body: JSON.stringify({ mode, content }), signal })

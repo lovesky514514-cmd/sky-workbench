@@ -24,6 +24,7 @@ if os.name == 'nt':
         ('CreateToolhelp32Snapshot', [w.DWORD, w.DWORD], w.HANDLE),
         ('GetProcessTimes', [w.HANDLE, w.LPVOID, w.LPVOID, w.LPVOID, w.LPVOID], w.BOOL),
         ('GetExitCodeProcess', [w.HANDLE, w.LPVOID], w.BOOL),
+        ('IsProcessInJob', [w.HANDLE, w.HANDLE, w.LPVOID], w.BOOL),
         ('QueryInformationJobObject', [w.HANDLE, ctypes.c_int, w.LPVOID, w.DWORD, w.LPVOID], w.BOOL),
     ]:
         fn = getattr(kernel, name); fn.argtypes = args; fn.restype = result
@@ -156,6 +157,23 @@ class OwnedProcess:
     async def terminate(self):
         async with self._termination_lock:
             return await self._terminate_locked()
+
+    def tree_is_owned(self):
+        if self.process.returncode is not None or self.identity_alive(self.identity) is not True:
+            return False
+        pid = self.process.pid
+        if os.name != 'nt':
+            return os.getpgid(pid) == pid and os.getsid(pid) == pid
+        if not self.job:
+            return False
+        handle = kernel.OpenProcess(0x1000, False, pid)
+        if not handle:
+            return False
+        try:
+            assigned = w.BOOL()
+            return bool(kernel.IsProcessInJob(handle, self.job, ctypes.byref(assigned)) and assigned.value)
+        finally:
+            kernel.CloseHandle(handle)
 
     async def _terminate_locked(self):
         if self._cleanup is not None: return self._cleanup

@@ -10,11 +10,15 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import re
 import sys
 import time
-import traceback
 from pathlib import Path
 from typing import Any
+
+REQUEST_LIMIT = 512_000
+RESPONSE_LIMIT = 1_000_000
+BATCH_LIMIT = 32
 
 
 DEFAULT_INSTRUCTION = "Given a COMSOL scientific modeling query, retrieve passages that answer the query."
@@ -178,7 +182,7 @@ class QwenSemanticRuntime:
                 "reranker_files": (self.reranker_path / "model.safetensors").is_file(),
             }
         if operation == "embed":
-            texts = [clean_text(value) for value in request.get("texts", [])]
+            texts = text_batch(request.get('texts'))
             return {"vectors": self.embed(
                 texts,
                 query=bool(request.get("query", False)),
@@ -186,7 +190,7 @@ class QwenSemanticRuntime:
                 max_length=max(64, min(int(request.get("max_length", 512)), 4096)),
             )}
         if operation == "rerank":
-            documents = [clean_text(value) for value in request.get("documents", [])]
+            documents = text_batch(request.get('documents'))
             return {"scores": self.rerank(
                 str(request.get("query", "")),
                 documents,
@@ -200,19 +204,49 @@ class QwenSemanticRuntime:
         raise ValueError(f"Unknown semantic operation: {operation}")
 
 
+def text_batch(values):
+    if (not isinstance(values, list) or not 1 <= len(values) <= BATCH_LIMIT
+            or any(not isinstance(value, str) or len(value) > 65_536 for value in values)):
+        raise ValueError('semantic_text_batch_limit')
+    return [clean_text(value) for value in values]
+
+
+def emit_frame(payload):
+    encoder = json.JSONEncoder(ensure_ascii=False, allow_nan=False, separators=(',', ':'))
+    frame = bytearray()
+    for piece in encoder.iterencode(payload):
+        if len(piece) >= RESPONSE_LIMIT:
+            raise ValueError('semantic_response_limit')
+        encoded = piece.encode('utf-8')
+        if len(frame) + len(encoded) >= RESPONSE_LIMIT:
+            raise ValueError('semantic_response_limit')
+        frame.extend(encoded)
+    sys.stdout.buffer.write(frame + b'\n')
+    sys.stdout.buffer.flush()
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--embedding", type=Path, required=True)
     parser.add_argument("--reranker", type=Path, required=True)
     arguments = parser.parse_args()
     runtime = QwenSemanticRuntime(arguments.embedding.resolve(), arguments.reranker.resolve())
-    for raw in sys.stdin:
+    while raw := sys.stdin.buffer.readline(REQUEST_LIMIT + 1):
+        if len(raw) > REQUEST_LIMIT or not raw.endswith(b'\n'):
+            return 2
         try:
             request = json.loads(raw)
-            payload = {"ok": True, "result": runtime.handle(request)}
+            request_id = request.get('request_id') if isinstance(request, dict) else None
+            if not isinstance(request_id, str) or not re.fullmatch(r'[a-f0-9]{32}', request_id):
+                return 2
+        except (ValueError, RecursionError):
+            return 2
+        try:
+            payload = {"ok": True, "request_id": request_id, "result": runtime.handle(request)}
+            emit_frame(payload)
         except Exception as exc:
-            payload = {"ok": False, "error": f"{type(exc).__name__}: {exc}", "traceback": traceback.format_exc()[-4000:]}
-        print(json.dumps(payload, ensure_ascii=False, separators=(",", ":")), flush=True)
+            emit_frame({'ok': False, 'request_id': request_id, 'error': type(exc).__name__})
+            continue
         if payload.get("result", {}).get("shutdown"):
             break
     return 0

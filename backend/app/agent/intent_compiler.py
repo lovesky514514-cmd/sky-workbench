@@ -7,6 +7,7 @@ from dataclasses import asdict
 from typing import Literal
 
 from pydantic import BaseModel, Field
+from app.models import IntentConfirmationInput
 from app.scientific.quantity import find_quantity, geometry_quantities as parse_geometry_quantities
 from app.scientific.request_schema import RequestBrief
 
@@ -330,3 +331,27 @@ def compile_intent(text: str) -> ScientificIntent:
         ensure_ascii=False,
     )
     return intent
+
+
+def confirmed_plan_input(original: str, answers: IntentConfirmationInput) -> tuple[str, dict]:
+    """Apply explicitly supplied inputs before ordinary PLAN validation and provenance."""
+    initial = compile_intent(original)
+    if answers.study is not None and initial.study:
+        raise ValueError("The research type is already specified. Edit the original request to change it.")
+    additions = []
+    if answers.study == "stationary":
+        additions.append("研究类型为稳态。" if initial.language == "zh-CN" else "Study: stationary.")
+    elif answers.study == "transient":
+        additions.append("研究类型为瞬态。" if initial.language == "zh-CN" else "Study: time dependent.")
+    details = answers.details.strip()
+    if details:
+        additions.append(details)
+    content = "\n".join((initial.original_text, *additions))
+    if not content or len(content) > 20_000:
+        raise ValueError("Confirmed request exceeds the allowed input length.")
+    resolved = compile_intent(content)
+    if set(resolved.validation_issues) - set(initial.validation_issues):
+        raise ValueError("The added conditions introduce a conflict or invalid quantity. Check the values and units.")
+    if answers.study in {"stationary", "transient"} and len(resolved.study) != 1:
+        raise ValueError("The additional conditions conflict with the selected research type.")
+    return content, {"source": "user_intent_confirmation", **answers.model_dump()}

@@ -38,6 +38,39 @@ const domain = (id, runId, attemptId) => ({ contractVersion: 'rc42-v1', studyId:
     boundaries: [{ id: 'source-left', location: 'left edge', label: 'Boundary 7' }] },
 })
 
+test('3D Heat is bound to the verified final-temperature artifact and current attempt', () => {
+  const a = session('A', 'run-A', 'attempt-A')
+  const current = domain('A', 'run-A', 'attempt-A')
+  current.authoritativeVerdict.workflow_id = 'heat_transfer_3d_cooling'
+  a.events[2].payload.execution_verdict.workflow_id = 'heat_transfer_3d_cooling'
+  current.contractGaps = ['CONTRACT_GAP:full_model_snapshot_requires_proven_geometry_mesh_solver_fields']
+  current.resultArtifacts[0].uri = '/api/artifacts/run-A/temperature_final.png'
+  assert.equal(view.verifiedCurrentCoolingResult(a, current), true)
+  assert.equal(view.verifiedCurrentResult(a, current), false)
+  assert.equal(view.verifiedCurrentCoolingResult(a, {
+    ...current, resultArtifacts: [{ ...current.resultArtifacts[0], attemptId: 'old' }],
+  }), false)
+  assert.equal(view.verifiedCurrentCoolingResult({ ...a, events: [...a.events, event(4, 'evidence.invalidated',
+    { run_id: 'run-A', attempt_id: 'attempt-A' })] }, current), false)
+})
+
+test('a frozen TDS image can display while the full model snapshot stays unavailable', () => {
+  const a = session('A', 'run-A', 'attempt-A')
+  const current = domain('A', 'run-A', 'attempt-A')
+  const workflow = 'tds_2d_stationary_diffusion'
+  current.authoritativeVerdict.workflow_id = workflow
+  a.events[2].payload.execution_verdict.workflow_id = workflow
+  current.contractGaps = ['CONTRACT_GAP:full_model_snapshot_requires_proven_geometry_mesh_solver_fields']
+  current.resultArtifacts[0].uri = '/api/artifacts/run-A/concentration.png'
+  assert.equal(view.verifiedCurrentDiffusionImage(a, current), true)
+  assert.equal(view.verifiedCurrentResult(a, current), false)
+  assert.equal(view.verifiedCurrentDiffusionImage(a, { ...current, contractGaps: [...current.contractGaps, 'another gap'] }), false)
+  assert.equal(view.verifiedCurrentDiffusionImage(a, { ...current, evidenceState: 'invalid' }), false)
+  assert.equal(view.verifiedCurrentDiffusionImage(a, {
+    ...current, resultArtifacts: [{ ...current.resultArtifacts[0], attemptId: 'old-attempt' }],
+  }), false)
+})
+
 test('A verified → new B is never verified in the render that still holds A domain', () => {
   const a = session('A', 'run-A', 'attempt-A')
   const b = { id: 'B', state: 'IDLE', messages: [], events: [] }

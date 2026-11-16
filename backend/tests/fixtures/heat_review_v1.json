@@ -1,0 +1,30 @@
+{
+  "benchmark": {
+    "schema_version": 1, "width_m": 2, "height_m": 1, "conductivity_W_m_K": 20,
+    "left_K": 373.15, "right_K": 293.15
+  },
+  "model": {
+    "schema_version": 1, "geometry_kind": "rectangle", "width_m": 2, "height_m": 1,
+    "conductivity_W_m_K": 20, "heat_source_W_m3": 0,
+    "boundaries": [
+      {"side": "left", "kind": "fixed_temperature", "temperature_K": 373.15},
+      {"side": "right", "kind": "fixed_temperature", "temperature_K": 293.15},
+      {"side": "top", "kind": "insulated"},
+      {"side": "bottom", "kind": "insulated"}
+    ]
+  },
+  "field": {
+    "schema_version": 1,
+    "samples": [
+      {"x_m": 0, "y_m": 0, "temperature_K": 373.15, "qx_W_m2": 800, "qy_W_m2": 0},
+      {"x_m": 0, "y_m": 0.5, "temperature_K": 373.15, "qx_W_m2": 800, "qy_W_m2": 0},
+      {"x_m": 0, "y_m": 1, "temperature_K": 373.15, "qx_W_m2": 800, "qy_W_m2": 0},
+      {"x_m": 1, "y_m": 0, "temperature_K": 333.15, "qx_W_m2": 800, "qy_W_m2": 0},
+      {"x_m": 1, "y_m": 0.5, "temperature_K": 333.15, "qx_W_m2": 800, "qy_W_m2": 0},
+      {"x_m": 1, "y_m": 1, "temperature_K": 333.15, "qx_W_m2": 800, "qy_W_m2": 0},
+      {"x_m": 2, "y_m": 0, "temperature_K": 293.15, "qx_W_m2": 800, "qy_W_m2": 0},
+      {"x_m": 2, "y_m": 0.5, "temperature_K": 293.15, "qx_W_m2": 800, "qy_W_m2": 0},
+      {"x_m": 2, "y_m": 1, "temperature_K": 293.15, "qx_W_m2": 800, "qy_W_m2": 0}
+    ]
+  }
+}

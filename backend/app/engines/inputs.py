@@ -4,11 +4,11 @@ import os
 import re
 from pathlib import Path
 
-from app.engines.models import LammpsInput, MaterialsStudioInput, TaskInput, VaspInput
+from app.engines.models import LammpsInput, MaterialsStudioInput, TaskInput, VaspInput, VaspWslInput
 
 
 def prepare_inputs(inputs: TaskInput) -> dict[str, str]:
-    if isinstance(inputs, VaspInput):
+    if isinstance(inputs, (VaspInput, VaspWslInput)):
         return dict(inputs.files)
     if isinstance(inputs, LammpsInput):
         # Reduced LJ units describe an exploratory fluid, not an identified material.

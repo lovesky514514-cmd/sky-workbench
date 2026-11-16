@@ -19,6 +19,11 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Callable
 
+if not __package__:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
+from app.execution.scientific_transfer import emit_result as result
+
 
 def emit(phase: str, label: str, status: str = "running", **extra: Any) -> None:
     normalized = phase.lower().replace("_", " ")
@@ -43,10 +48,6 @@ def emit(phase: str, label: str, status: str = "running", **extra: Any) -> None:
         **extra,
     }
     print("WORKBENCH_EVENT:" + json.dumps(payload, ensure_ascii=False), flush=True)
-
-
-def result(payload: dict[str, Any]) -> None:
-    print("WORKBENCH_RESULT:" + json.dumps(payload, ensure_ascii=False), flush=True)
 
 
 def parameter(plan: dict[str, Any], name: str) -> tuple[float, str]:

@@ -46,6 +46,8 @@ class RunJournalMixin:
         digest = hashlib.sha256(json.dumps(plan, sort_keys=True, ensure_ascii=False).encode('utf-8')).hexdigest()
         with self._lock, self._connect() as db:
             db.execute('BEGIN IMMEDIATE')
+            if db.execute('SELECT 1 FROM heat_simulations WHERE session_id=?', (session_id,)).fetchone():
+                raise RuntimeError('simulation_only_session')
             if 'plan_id' in plan:
                 from app.scientific.execution_contract import verify_binding
 
@@ -112,11 +114,18 @@ class RunJournalMixin:
             self._journal_event(db, row['session_id'], 'run.attempt', {'run_id': run_id, 'attempt_id': attempt_id})
         return attempt_id
 
-    def update_run(self, run_id, attempt_id, *, phase=None, worker=None, artifacts=None, cleanup=None):
+    def update_run(self, run_id, attempt_id, *, phase=None, worker=None, artifacts=None, cleanup=None,
+                   require_current=False):
         with self._lock, self._connect() as db:
             db.execute('BEGIN IMMEDIATE')
             row = db.execute('SELECT * FROM run_journal WHERE run_id=?', (run_id,)).fetchone()
             if not row or row['attempt_id'] != attempt_id: raise StaleAttempt('stale journal update')
+            if require_current:
+                self._check_run(row, attempt_id)
+                attempt = db.execute('SELECT outcome FROM run_attempts WHERE run_id=? AND attempt_id=?',
+                                     (run_id, attempt_id)).fetchone()
+                if not attempt or attempt['outcome'] is not None:
+                    raise StaleAttempt('attempt_not_active')
             # Cleanup remains recordable after cancellation; no stale phase can revive a run.
             if phase:
                 self._check_run(row, attempt_id)
@@ -127,6 +136,18 @@ class RunJournalMixin:
                     db.execute(f'UPDATE run_attempts SET {column}=? WHERE run_id=? AND attempt_id=?', (json.dumps(value), run_id, attempt_id))
             if artifacts is not None:
                 db.execute('UPDATE run_journal SET artifacts=? WHERE run_id=?', (json.dumps(artifacts), run_id))
+
+    def owns_worker_attempt(self, session_id, run_id, attempt_id, identity):
+        with self._lock, self._connect() as db:
+            row = db.execute(
+                """SELECT a.worker FROM run_attempts a
+                   JOIN run_journal j ON j.run_id=a.run_id AND j.attempt_id=a.attempt_id
+                   JOIN comsol_owner o ON o.owner_id=j.run_id
+                   WHERE j.session_id=? AND j.run_id=? AND j.attempt_id=? AND j.outcome IS NULL
+                     AND a.outcome IS NULL AND j.cancel_requested=0""",
+                (session_id, run_id, attempt_id),
+            ).fetchone()
+        return row is not None and json.loads(row['worker']) == identity
 
     def request_cancel(self, session_id, *, force=False):
         with self._lock, self._connect() as db:
@@ -166,10 +187,13 @@ class RunJournalMixin:
             db.execute('UPDATE run_journal SET outcome=?,phase=? WHERE run_id=?', (outcome, phase, run_id))
             db.execute('UPDATE run_attempts SET outcome=?,phase=? WHERE run_id=? AND attempt_id=?', (outcome, phase, run_id, attempt_id))
             attempts = db.execute('SELECT worker,cleanup FROM run_attempts WHERE run_id=?', (run_id,)).fetchall()
-            orphaned = any(json.loads(a['worker']) and not json.loads(a['cleanup']).get('reaped') for a in attempts)
+            orphaned = any(json.loads(a['cleanup']).get('commit_state') == 'UNKNOWN_COMMIT' or
+                           (json.loads(a['worker']) and not json.loads(a['cleanup']).get('reaped')) for a in attempts)
             if outcome == 'Completed' and orphaned:
                 raise StaleAttempt('owned worker cleanup not proven; completion refused')
-            if not orphaned: db.execute('DELETE FROM comsol_owner WHERE owner_id=?', (run_id,))
+            if not orphaned:
+                db.execute('DELETE FROM comsol_owner WHERE owner_id=?', (run_id,))
+                db.execute('DELETE FROM comsol_owner_identity WHERE owner_id=?', (run_id,))
             lifecycle = {'run_id': run_id, 'attempt_id': attempt_id, 'outcome': outcome, 'state': phase, 'orphaned': orphaned, 'cancel_requested': bool(row['cancel_requested'])}
             self._journal_event(db, row['session_id'], 'run.lifecycle', lifecycle)
             db.execute('UPDATE sessions SET state=? WHERE id=?', (phase, row['session_id']))
@@ -230,6 +254,11 @@ class RunJournalMixin:
                                       ('timeline.completed', {'id': 'recovery-' + rid, 'phase': 'Recovery', 'category': 'SYSTEM', 'status': 'error', 'label': state, 'run_lifecycle': lifecycle})]:
                     self._journal_event(db, sid, kind, payload)
                 if not orphaned: db.execute('DELETE FROM comsol_owner WHERE owner_id=?', (rid,))
+                from app.execution.revision_checkpoint import RevisionCheckpoint
+                for saved in db.execute('SELECT payload_json FROM expert_checkpoints WHERE session_id=?', (sid,)).fetchall():
+                    checkpoint = RevisionCheckpoint.model_validate_json(saved['payload_json'])
+                    if checkpoint.scope.run_id == rid and checkpoint.status != 'STOPPED':
+                        self._stop_checkpoint(db, checkpoint, 'cancelled' if row['cancel_requested'] else 'submission_unknown')
                 results.append(lifecycle)
             # Pre-journal versions could leave an active session behind.
             active = ('PRECHECK', 'BUILDING', 'BUILD_VALIDATION', 'SOLVING', 'SOLUTION_VALIDATION', 'VALIDATING', 'EXPORTING', 'REPORTING', 'REPAIRING', 'REVALIDATING', 'CANCEL_REQUESTED')
@@ -249,8 +278,9 @@ class RunJournalMixin:
                 elif oid != 'bridge':
                     terminal = db.execute('SELECT outcome FROM run_journal WHERE run_id=?', (oid,)).fetchone()
                     if terminal and terminal['outcome'] is not None:
-                        attempts = db.execute('SELECT worker FROM run_attempts WHERE run_id=?', (oid,)).fetchall()
-                        if all(OwnedProcess.identity_alive(json.loads(a['worker'])) is False for a in attempts):
+                        attempts = db.execute('SELECT worker,cleanup FROM run_attempts WHERE run_id=?', (oid,)).fetchall()
+                        if (not any(json.loads(a['cleanup']).get('commit_state') == 'UNKNOWN_COMMIT' for a in attempts)
+                            and all(OwnedProcess.identity_alive(json.loads(a['worker'])) is False for a in attempts)):
                             db.execute('DELETE FROM comsol_owner WHERE owner_id=?', (oid,))
                             db.execute('DELETE FROM comsol_owner_identity WHERE owner_id=?', (oid,))
         return results

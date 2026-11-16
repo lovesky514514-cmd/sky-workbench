@@ -33,6 +33,10 @@ def test_runtime_event_message_timeline_card_agree(tmp_path, monkeypatch, workfl
     class Tools:
         def process_ids(self, session_id): return {}
         async def execute(self, name, arguments, on_event, retries):
+            if name == 'comsol.read_saved_heat':
+                from controller_fixtures import saved_heat_fixture
+                return {**saved_heat_fixture(plan, payload['artifacts']['model']),
+                    'run_id':arguments['run_id'],'attempt_id':arguments['attempt_id']}
             for phase in ['Solve', 'Solution Validation']:
                 await on_event({'phase': phase, 'status': 'running', 'command_success': True, 'model_state_verified': True, 'scientific_validation_passed': True})
             return {**deepcopy(payload), 'run_id': arguments['run_id'], 'attempt_id': arguments['attempt_id']}
@@ -64,7 +68,10 @@ def test_runtime_event_message_timeline_card_agree(tmp_path, monkeypatch, workfl
     view = store.get(session['id'])
     observations = [e['payload'] for e in view['events'] if e['type'] == 'comsol.progress']
     assert observations and all(e['evidence_status'] == 'provisional' and 'scientific_validation_passed' not in e for e in observations)
-    assert (view['state'] == 'COMPLETED') == all(flags)
+    # 这个跨领域发布夹具只有二维读回；三维现在必须另外取得保存模型与原始历史，
+    # 即使三个旧布尔值全真也不能再发布成功。三维正向闭环有独立集成用例。
+    expected_completed = all(flags) and workflow != 'heat_transfer_3d_cooling'
+    assert (view['state'] == 'COMPLETED') == expected_completed
     final = view['messages'][-1]
     verdict = final['execution_verdict']
     publication = [e['payload'] for e in view['events'] if e['type'] in ('run.completed', 'run.failed')][-1]

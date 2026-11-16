@@ -87,6 +87,9 @@ def _pdf_pages(filename: str, data: bytes) -> tuple[list[tuple[int, str]], str]:
     return pages, warning
 
 
+LITERATURE_DEEPSEEK_BASE_URL = "https://api.deepseek.com/v1"
+
+
 async def extract_text_candidate_deepseek(
     source_title: str, text: str, *, api_key: str,
     transport: httpx.AsyncBaseTransport | None = None,
@@ -117,7 +120,7 @@ async def extract_text_candidate_deepseek(
         # Windows proxy must not reroute or hang the bounded source request.
         async with httpx.AsyncClient(transport=transport, timeout=30, follow_redirects=False, trust_env=False) as client:
             response = await client.post(
-                "https://api.deepseek.com/chat/completions",
+                f"{LITERATURE_DEEPSEEK_BASE_URL}/chat/completions",
                 headers={"Authorization": f"Bearer {api_key}"},
                 json={"model": DEEPSEEK_MODEL, "temperature": 0, "stream": False, "thinking":{"type":"disabled"},
                       "max_tokens": 128, "response_format": {"type": "json_object"},

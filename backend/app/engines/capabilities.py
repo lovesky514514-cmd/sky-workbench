@@ -9,6 +9,7 @@ import time
 import uuid
 
 from app.execution.files import bounded_read, reject_reparse
+from app.engines.native_installations import materials_server
 
 
 LEVELS = ("UNAVAILABLE", "DETECTED", "CONNECTED", "INPUT_SUPPORTED", "EXERCISED", "VALIDATED")
@@ -24,6 +25,11 @@ def executable_hash(path: str) -> str:
     return digest.hexdigest()
 
 
+def runtime_hash(engine: str, executable: str) -> str | None:
+    server = materials_server(executable) if engine == "Materials Studio" else None
+    return executable_hash(str(server)) if server else None
+
+
 class CapabilityRegistry:
     def __init__(self, root: Path):
         self.root = root
@@ -37,6 +43,7 @@ class CapabilityRegistry:
         reject_reparse(self.root)
         records = self.records()
         records[engine] = {"executable_sha256": executable_hash(executable),
+                           "runtime_sha256": runtime_hash(engine, executable),
                            "version": version or "UNVERIFIED", "connected_at": time.time()}
         self._write(records)
 
@@ -48,7 +55,8 @@ class CapabilityRegistry:
     def exercised(self, engine: str, module: str, executable: str, run_id: str) -> None:
         records = self.records()
         record = records.get(engine, {})
-        if record.get("executable_sha256") == executable_hash(executable):
+        if (record.get("executable_sha256") == executable_hash(executable)
+                and record.get("runtime_sha256") == runtime_hash(engine, executable)):
             record.setdefault("modules", {})[module] = {"level": "EXERCISED", "run_id": run_id}
             self._write(records)
 
@@ -58,7 +66,8 @@ class CapabilityRegistry:
         if executable and Path(executable).is_file():
             level = "DETECTED"
             record = self.records().get(engine, {})
-            if record and record.get("executable_sha256") == executable_hash(executable):
+            if (record and record.get("executable_sha256") == executable_hash(executable)
+                    and record.get("runtime_sha256") == runtime_hash(engine, executable)):
                 level = "INPUT_SUPPORTED" if module in MODULES.get(engine, set()) else "CONNECTED"
                 if module in MODULES.get(engine, set()) and record.get("modules", {}).get(module, {}).get("level") == "EXERCISED":
                     level = "EXERCISED"

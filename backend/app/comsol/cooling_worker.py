@@ -16,6 +16,7 @@ if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from app.comsol.heat_worker import emit, result
+from app.comsol.view_checkpoint import publish_checkpoint
 from app.scientific.cooling import UNITS
 from app.scientific.schemas import ScientificPlan
 from app.source_revision import source_revision
@@ -108,7 +109,7 @@ def cooling_sample_times(parameters):
     return requested, audit
 
 
-def solve(plan, workspace):
+def solve(plan, workspace, visualization_classes=None):
     import mph
     import numpy as np
 
@@ -217,6 +218,7 @@ def solve(plan, workspace):
                 java.sol("sol1").clearSolutionData()
             mesh.autoMeshSize(level)
             mesh.run()
+            publish_checkpoint(model, str(client.version), workspace, visualization_classes, index + 1)
             study.createAutoSequences("all")
             time_solver = java.sol("sol1").feature("t1")
             # Preserve the specified uniform initial field and resolve the early cooling layer.
@@ -469,6 +471,7 @@ def solve(plan, workspace):
                 },
             },
             "artifacts": {
+                **{f'convergence_{i + 1}': str(folder / record['history_file']) for i, record in enumerate(meshes)},
                 "model": str(model_path),
                 "temperature_image": str(image_path),
                 "cooling_history": str(csv_path),
@@ -504,7 +507,7 @@ def main(path):
                 "Cooling precheck rejected: "
                 + str([c.name for c in precheck.checks if c.status == "failed"])
             )
-        payload = solve(plan, Path(request["workspace"]).resolve())
+        payload = solve(plan, Path(request["workspace"]).resolve(), request.get("visualization_classes"))
         payload["run_id"] = request["run_id"]
         result(payload)
         return 0

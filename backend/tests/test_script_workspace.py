@@ -1,6 +1,7 @@
 """Script output is local scratch work, never a scientific verdict."""
 
 import asyncio
+import os
 import subprocess
 import sys
 
@@ -13,7 +14,9 @@ def test_command_contract_never_embeds_user_code_or_uses_cloud():
     assert command_for("Python", "python", "main.py") == ["python", "-I", "main.py"]
     with pytest.raises(ValueError):
         command_for("Wolfram", "wolframscript", "main.wl")
-    assert command_for("MATLAB", "matlab", "main.m") == ["matlab", "-batch", "run('main.m')"]
+    matlab = command_for("MATLAB", "matlab", "main.m")
+    assert matlab[-2:] == ["-batch", "run('main.m')"]
+    assert ("-wait" in matlab) == (os.name == "nt")
     assert command_for("Mathics3", "python", "main.wl") == ["python", "-I", str(mathics_worker_path()), "main.wl"]
     with pytest.raises(ValueError):
         command_for("Materials Studio", "studio", "main.pl")

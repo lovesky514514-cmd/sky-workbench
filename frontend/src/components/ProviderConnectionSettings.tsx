@@ -130,7 +130,7 @@ export function ProviderConnectionSettings(props: Props) {
             autoComplete="new-password" spellCheck={false} placeholder={copy('输入后不会回显', 'Never echoed after entry')} />
           <small>{credentialLabel(Boolean(selectedConfig.api_key), true) === 'current-session'
             ? copy('仅保留在当前 Runtime 会话', 'Held only in the current Runtime session')
-            : copy('本窗口未输入；也可能由运行环境提供', 'Not entered here; the Runtime may supply it')}</small>
+            : copy('更改端点后请重新输入密钥', 'Re-enter the key after changing the endpoint')}</small>
         </label>}
         <div className="warm-settings-provider-actions">
           <button type="button" onClick={() => props.onTest(selectedProvider.name)}

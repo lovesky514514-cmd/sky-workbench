@@ -1,12 +1,20 @@
 <p align="center"><img src="frontend/src/assets/brand/workbench-icon-256.png" alt="SKY Workbench" width="96"></p>
 
-# <p align="center"> SKY Workbench 3.1
+# SKY Workbench 4.0（源码审阅候选）
+
+本分支用于 4.0 公开源码审阅。Windows 安装包的发布状态见[官网进展](https://lovesky514514-cmd.github.io/scientific-workbench-beta/releases/4.0/)。
+
+4.0 由 `ResearchController` 统一组织科研任务，复用 N01 契约、N02 调度隔离、N03 独立审核、N04 定向返工以及既有执行器、RUN 审批与运行账本。真实模型专家通过受限证据工具协作；确定性检查由程序完成，Recovery 只负责诊断和受控提案。实现与调用链见[4.0 架构记录](docs/ARCHITECTURE_4.0.md)。
+
+四组同预算研究对照共发出 60 次真实 DeepSeek 请求，测量补证决策、请求量、Token 和耗时。非标准 Heat 的四次授权内部求解已保存，原 RUN 因独立读回传输错误保留为 `FAILED`。REC-048 修复后另行完成 15 项只读物理复核，原科学认证状态保留。
+
+[SKY External Trust Boundary](docs/EXTERNAL_TRUST_BOUNDARY.md) 提供独立 CLI、A2A/DSH 本地模拟文档同步、隔离审查、人工审批及外部知识版本。当前网络范围为回环模拟 Agent。
 
 面向有限元、分子动力学、第一性原理和数学计算的本地桌面助手：从自然语言草案、候选参数审核，到受控执行、模型读回和结果证据。草案、预检通过、显式 RUN 与求解完成分别判断。
 
 [官方网站](https://lovesky514514-cmd.github.io/scientific-workbench-beta/) · [3.1 更新说明](RELEASE_NOTES_3.1.0.md) · [中文使用帮助](docs/USER_GUIDE_V3_CN.md) · [版本验证记录](docs/VALIDATION_3.1.md)
 
-本仓库提供 **3.1.0 源码**。Windows 安装包的获取说明、文件名与 SHA-256 见[官网版本页](https://lovesky514514-cmd.github.io/scientific-workbench-beta/releases/3.1/#get-version)；本仓库没有上传 exe 或预编译科学运行时。商业求解器、API JAR、许可证、模型权重、私有项目、知识库和 API Key 不随源码提供。
+下述内容保留 **3.1.0 历史基线** 的说明。该版安装包的获取说明、文件名与 SHA-256 见[官网版本页](https://lovesky514514-cmd.github.io/scientific-workbench-beta/releases/3.1/#get-version)；本仓库没有上传 exe 或预编译科学运行时。商业求解器、API JAR、许可证、模型权重、私有项目、知识库和 API Key 不随源码提供。
 
 ## 3.1 的主要变化
 
@@ -16,7 +24,7 @@
 - 强化单位、计划修订、审批身份、进程清理、结果文件和证据契约；完善铁块冷却的对流/灰体辐射、独立能量积分和三维资源预估。
 - 数学工作区使用 Mathics3；商业 Wolfram/Mathematica 程序入口已移除。高级代码工作区与默认建模审核流程分开。
 
-## 已验证范围
+## 3.1 历史验收范围
 
 本轮工程验收包括 51 份真实 DeepSeek 结构化草案、冻结运行时中的三个实际 COMSOL 6.3 求解案例、受限的 LAMMPS 执行/收集和 Mathics 数学案例。后端 1415 项通过、14 项历史打包辅助项跳过；前端 108 项通过，生产构建通过。
 
@@ -29,7 +37,7 @@
 - [换电脑同步](docs/MODELING_HANDOFF_3.1.md)：源码、项目、环境配置与重新审核。
 - [审核处理记录](docs/AUDIT_RESOLUTION_3.1.md)、[四领域设计](docs/FOUR_DOMAIN_WORKBENCH.md)、[致谢](docs/ACKNOWLEDGEMENTS.md)。历史阶段的测试计数不替代最新验证记录。
 
-React/TypeScript 实现界面，Tauri/Rust 管理桌面进程，Python 承担 Scientific Runtime，Java Bridge 靠近用户本机 COMSOL API。桌面产品版本为 **3.1.0**；科学 Runtime 保留独立的 `1.1.0-rc5.2` API 版本。
+React/TypeScript 实现界面，Tauri/Rust 管理桌面进程，Python 承担 Scientific Runtime，Java Bridge 靠近用户本机 COMSOL API。当前开发分支的桌面产品版本为 **4.0.0**，科学 Runtime 使用独立的 `1.1.0-rc5.2` API 版本。
 
 ## 许可与联系
 

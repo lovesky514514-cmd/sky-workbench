@@ -139,7 +139,14 @@ export function WarmSettings({
   // Existing save, connection-test and acceptance endpoints are preserved.
   // Only the presentation and navigation around them have changed.
   const update = (name: string, field: keyof ProviderConfig, value: string | boolean) => {
-    setConfigs((current) => ({ ...current, [name]: { ...current[name], [field]: value } }))
+    setConfigs((current) => ({
+      ...current,
+      [name]: {
+        ...current[name],
+        ...(field === 'base_url' && value !== current[name].base_url ? { api_key: '' } : {}),
+        [field]: value,
+      },
+    }))
     // A previous connection test cannot certify a changed key, model or endpoint.
     setTests((current) => { const next = { ...current }; delete next[name]; return next })
     setAcceptance((current) => { const next = { ...current }; delete next[name]; return next })

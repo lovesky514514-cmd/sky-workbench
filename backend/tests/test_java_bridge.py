@@ -47,7 +47,8 @@ def test_bridge_crash_is_reported_as_unavailable_not_success() -> None:
     assert status["status"] == "Unavailable"
     assert status["bridge_running"] is False
     assert status["command_success"] is False
-    assert "bridge stopped" in status["detail"]
+    assert "unavailable" in status["detail"]
+    assert "bridge stopped" not in status["detail"]  # 不回显连接异常中的私密信息。
 
 
 def test_bridge_event_contract_normalizes_typed_events() -> None:

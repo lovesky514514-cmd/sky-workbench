@@ -22,3 +22,10 @@ test('RUN requires a current, runnable plan and explicit review', () => {
     assert.equal(canRunReviewedPlan(candidate, sessionId, reviewedId, busy, pendingIntent), expected)
   }
 })
+
+test('finished or active attempts cannot reuse a checked plan to submit another RUN', () => {
+  for (const state of ['COMPLETED', 'SOLVING', 'BUILDING', 'PAUSED', 'CANCEL_REQUESTED']) {
+    assert.equal(canRunReviewedPlan(plan, 'session-A', 'session-A:plan-1:revision-1', false, false, state), false)
+  }
+  assert.equal(canRunReviewedPlan(plan, 'session-A', 'session-A:plan-1:revision-1', false, false, 'PLAN_READY'), true)
+})

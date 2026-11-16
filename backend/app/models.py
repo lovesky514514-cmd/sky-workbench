@@ -5,7 +5,7 @@ from __future__ import annotations
 from enum import StrEnum
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class AgentMode(StrEnum):
@@ -44,9 +44,16 @@ class CreateSessionRequest(BaseModel):
     title: str | None = None
 
 
+class IntentConfirmationInput(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    study: Literal["stationary", "transient", "undecided"] | None = None
+    details: str = Field(default="", max_length=1500)
+
+
 class AgentMessageRequest(BaseModel):
     mode: AgentMode
     content: str = Field(min_length=1, max_length=20_000)
+    intent_confirmation: IntentConfirmationInput | None = None
 
 
 class IntentCompileRequest(BaseModel):
@@ -106,6 +113,7 @@ class KnowledgeSearchRequest(BaseModel):
 
 class JavaBridgeStartRequest(BaseModel):
     model_path: str | None = None
+    session_id: str | None = Field(default=None, min_length=1, max_length=100)
 
 
 class JavaBridgeParameterRequest(BaseModel):

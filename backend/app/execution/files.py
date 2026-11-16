@@ -16,7 +16,7 @@ def reject_reparse(path: Path) -> None:
             raise ValueError("Linked or reparse-point workspace paths are not supported")
 
 
-def bounded_read(root: Path, name: str, limit: int) -> bytes:
+def bounded_read(root: Path, name: str, limit: int, *, single_link: bool = False) -> bytes:
     if Path(name).name != name or name in {"", ".", ".."}:
         raise ValueError("Invalid artifact name")
     path = root / name
@@ -24,11 +24,15 @@ def bounded_read(root: Path, name: str, limit: int) -> bytes:
     reject_reparse(path)
     if path.resolve().parent != root.resolve():
         raise ValueError("Artifact leaves its run directory")
-    flags = os.O_RDONLY | getattr(os, "O_BINARY", 0) | getattr(os, "O_NOFOLLOW", 0)
+    if not stat.S_ISREG(path.lstat().st_mode):
+        raise ValueError(f"{name} is not a regular file")
+    flags = (os.O_RDONLY | getattr(os, "O_BINARY", 0) | getattr(os, "O_NOFOLLOW", 0)
+             | getattr(os, "O_NONBLOCK", 0))
     descriptor = os.open(path, flags)
     with os.fdopen(descriptor, "rb") as stream:
         before = os.fstat(stream.fileno())
-        if not stat.S_ISREG(before.st_mode) or before.st_size > limit:
+        if (not stat.S_ISREG(before.st_mode) or before.st_size > limit
+                or (single_link and before.st_nlink != 1)):
             raise ValueError(f"{name} exceeds its read limit or is not a regular file")
         data = stream.read(limit + 1)
         after = os.fstat(stream.fileno())
@@ -38,6 +42,7 @@ def bounded_read(root: Path, name: str, limit: int) -> bytes:
         if (len(data) > limit or before.st_size != len(data)
                 or (before.st_ino, before.st_dev, before.st_mtime_ns, before.st_size)
                 != (after.st_ino, after.st_dev, after.st_mtime_ns, after.st_size)
-                or (after.st_ino, after.st_dev) != (current.st_ino, current.st_dev)):
+                or (after.st_ino, after.st_dev) != (current.st_ino, current.st_dev)
+                or (single_link and (after.st_nlink != 1 or current.st_nlink != 1))):
             raise ValueError("Artifact changed while reading")
         return data

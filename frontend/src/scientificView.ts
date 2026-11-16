@@ -103,13 +103,12 @@ export function currentEvidenceState(session: Session | null, domain: RuntimeDom
 
 // Scientific success remains authored by the Runtime. The UI only withholds
 // stale/mismatched claims and requires a matching frozen message/artifact set.
-export function verifiedCurrentResult(session: Session | null, domain: RuntimeDomain | null): boolean {
+function hasVerifiedResultEvidence(session: Session | null, domain: RuntimeDomain | null): boolean {
   const current = currentScientificDomain(session, domain)
   const run = latestRun(session)
   if (!current || !run || session?.state !== 'COMPLETED' || run.completedAt < 0 ||
       currentEvidenceState(session, current) !== 'verified') return false
-  if (!completedVerdict(current.authoritativeVerdict, run.runId) ||
-      !Array.isArray(current.contractGaps) || current.contractGaps.length !== 0) return false
+  if (!completedVerdict(current.authoritativeVerdict, run.runId)) return false
   // The completion event and frozen evidence contract must identify the same
   // attempt. This is a consistency check, never a frontend-issued verdict.
   const frozenVerdict = run.completion?.execution_verdict
@@ -127,4 +126,31 @@ export function verifiedCurrentResult(session: Session | null, domain: RuntimeDo
     message.evidence_contract.run_id === run.runId &&
     message.evidence_contract.attempt_id === run.attemptId &&
     Array.isArray(message.evidence_contract.issues) && message.evidence_contract.issues.length === 0)
+}
+
+export function verifiedCurrentResult(session: Session | null, domain: RuntimeDomain | null): boolean {
+  return Array.isArray(domain?.contractGaps) && domain.contractGaps.length === 0 &&
+    hasVerifiedResultEvidence(session, domain)
+}
+
+export function verifiedCurrentCoolingResult(session: Session | null, domain: RuntimeDomain | null): boolean {
+  const run = latestRun(session)
+  const gap = 'CONTRACT_GAP:full_model_snapshot_requires_proven_geometry_mesh_solver_fields'
+  return Boolean(run && Array.isArray(domain?.contractGaps) &&
+    (domain.contractGaps.length === 0 || (domain.contractGaps.length === 1 && domain.contractGaps[0] === gap)) &&
+    domain.authoritativeVerdict?.workflow_id === 'heat_transfer_3d_cooling' &&
+    record(run.completion?.execution_verdict)?.workflow_id === 'heat_transfer_3d_cooling' &&
+    hasVerifiedResultEvidence(session, domain) && domain.resultArtifacts?.some(item =>
+      item.uri === `/api/artifacts/${run.runId}/temperature_final.png`))
+}
+
+// TDS 的二维图有独立的执行、证据和 SHA-256 记录。三维/模型快照契约仍保持原门槛。
+export function verifiedCurrentDiffusionImage(session: Session | null, domain: RuntimeDomain | null): boolean {
+  const run = latestRun(session)
+  const gap = 'CONTRACT_GAP:full_model_snapshot_requires_proven_geometry_mesh_solver_fields'
+  return Boolean(run && Array.isArray(domain?.contractGaps) && domain.contractGaps.length === 1 &&
+    domain.contractGaps[0] === gap && domain.authoritativeVerdict?.workflow_id === 'tds_2d_stationary_diffusion' &&
+    record(run.completion?.execution_verdict)?.workflow_id === 'tds_2d_stationary_diffusion' &&
+    hasVerifiedResultEvidence(session, domain) && domain.resultArtifacts?.some((item) =>
+      item.uri === `/api/artifacts/${run.runId}/concentration.png`))
 }

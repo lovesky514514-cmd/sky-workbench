@@ -6,8 +6,11 @@ import { validationDisplay } from '../ExecutionVerdictBadge'
 import { LiveComsolView } from './LiveComsolView'
 import type { ModelReadback } from '../bridgeReadback'
 import { KnowledgeSearchPanel } from './KnowledgeSearchPanel'
+import { RecoveryPanel } from './RecoveryPanel'
+import { HeatSimulationPanel } from './HeatSimulationPanel'
+import { ResearchStatus } from './ResearchStatus'
 
-export const inspectorTabs: Array<[InspectorTab, string]> = [['environment', 'Environment'], ['live', 'Live COMSOL'], ['overview', 'Overview'], ['geometry', 'Geometry'], ['materials', 'Materials'], ['physics', 'Physics'], ['boundaries', 'Boundary Conditions'], ['mesh', 'Mesh'], ['solver', 'Solver'], ['parameters', 'Parameters'], ['validation', 'Validation'], ['sources', 'Sources']]
+export const inspectorTabs: Array<[InspectorTab, string]> = [['environment', 'Environment'], ['live', 'Live COMSOL'], ['overview', 'Overview'], ['geometry', 'Geometry'], ['materials', 'Materials'], ['physics', 'Physics'], ['boundaries', 'Boundary Conditions'], ['mesh', 'Mesh'], ['solver', 'Solver'], ['parameters', 'Parameters'], ['validation', 'Validation'], ['sources', 'Sources'], ['recovery', 'Failure diagnostics'], ['heatSimulation', 'Heat simulation']]
 
 type InspectorProps = {
   locale: Locale
@@ -42,12 +45,14 @@ export function Inspector({
   onStopBridge, onPauseRun, onCorrectRun, onResumeRun,
 }: InspectorProps) {
   const t = (source: string) => translate(locale, source)
+  if (tab === 'heatSimulation') return <HeatSimulationPanel key={session?.id ?? 'none'} locale={locale} sessionId={session?.id} />
+  if (tab === 'recovery') return <RecoveryPanel key={session?.id ?? 'none'} locale={locale} sessionId={session?.id} eventCount={session?.events?.length ?? 0} />
   if (tab === 'environment') return <EnvironmentView key={session?.project_id ?? 'workbench'} locale={locale} items={items} providers={providers} knowledge={knowledge} indexTask={indexTask} semanticIndexTask={semanticIndexTask} resources={resources} capabilities={capabilities} onRefresh={onRefresh} onStartIndex={onStartIndex} onStartSemanticIndex={onStartSemanticIndex} />
   if (tab === 'live') return <LiveComsolView locale={locale} bridge={bridge} readback={bridgeReadback} loading={bridgeLoading} events={bridgeEvents} onRefresh={onRefreshBridge} onStart={onStartBridge} onStop={onStopBridge} />
   const model = session?.model
   const plan = session?.plan
   const report = lastValidation(session) ?? model?.validation
-  if (tab === 'overview') return <div className="inspector-body"><div className="model-overview"><div className="model-cube">◇</div><div><strong>{model ? t('Agent-read model state') : t('Planned model')}</strong><span>{session?.state.replaceAll('_', ' ') ?? 'IDLE'}</span></div></div><VNextFoundationPanel locale={locale} session={session} capabilities={capabilities} onPause={onPauseRun} onCorrect={onCorrectRun} onResume={onResumeRun} /><Fact title="Plan ID" values={plan ? [plan.plan_id] : []} /><Fact title={t('Physics')} values={model?.physics ?? plan?.physics ?? []} /><Fact title={t('Results')} values={model?.results ?? []} /></div>
+  if (tab === 'overview') return <div className="inspector-body"><div className="model-overview"><div className="model-cube">◇</div><div><strong>{model ? t('Agent-read model state') : t('Planned model')}</strong><span>{session?.state.replaceAll('_', ' ') ?? 'IDLE'}</span></div></div><ResearchStatus key={session?.id} sessionId={session?.id} eventCount={session?.events?.length ?? 0} locale={locale} /><VNextFoundationPanel locale={locale} session={session} capabilities={capabilities} onPause={onPauseRun} onCorrect={onCorrectRun} onResume={onResumeRun} /><Fact title="Plan ID" values={plan ? [plan.plan_id] : []} /><Fact title={t('Physics')} values={model?.physics ?? plan?.physics ?? []} /><Fact title={t('Results')} values={model?.results ?? []} /></div>
   if (tab === 'parameters') return <div className="inspector-body"><ParameterView parameters={plan?.parameters ?? {}} /></div>
   if (tab === 'validation') return <div className="inspector-body"><ValidationView locale={locale} report={report} /></div>
   if (tab === 'sources') return <div className="inspector-body"><CitationList locale={locale} citations={(model?.sources ?? plan?.sources ?? []) as Citation[]} /></div>

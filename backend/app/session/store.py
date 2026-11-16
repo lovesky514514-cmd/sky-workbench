@@ -9,16 +9,19 @@ import sqlite3
 import uuid
 from datetime import UTC, datetime
 from pathlib import Path
-from threading import RLock
+from threading import Lock, RLock
 from typing import Any
 
 from app.config import DATABASE_PATH
+from app.execution.heat_simulation_store import HEAT_SIMULATION_SCHEMA, HeatSimulationStoreMixin
+from app.execution.revision_store import CHECKPOINT_SCHEMA, RevisionStoreMixin
 from app.models import AgentMode, AgentState
 from app.session.run_journal import RUN_SCHEMA, RunJournalMixin
 from app.session.reviews import REVIEW_SCHEMA, ReviewStoreMixin
 from app.session.state_grounding import STATE_GROUNDING_SCHEMA
 from app.session.assumptions import ASSUMPTION_SCHEMA
 from app.memory.store import MEMORY_SCHEMA
+from app.recovery.store import RECOVERY_SCHEMA, RecoveryStoreMixin
 from app.scientific.execution_contract import BINDING_SCHEMA, verify_binding, write_binding
 
 
@@ -32,12 +35,14 @@ def utc_now() -> str:
     return datetime.now(UTC).isoformat()
 
 
-class SessionStore(ReviewStoreMixin, RunJournalMixin):
+class SessionStore(ReviewStoreMixin, RunJournalMixin, RecoveryStoreMixin, RevisionStoreMixin, HeatSimulationStoreMixin):
     """Store durable facts and rebuild client views from the event stream."""
 
     def __init__(self, path: Path = DATABASE_PATH) -> None:
         self.path = path
         self._lock = RLock()
+        self._recovery_drop_lock = Lock()
+        self.recovery_drops = 0
         self.recovery_status: dict[str, Any] = {"status": "not_required"}
 
     def _select_safe_database(self) -> None:
@@ -137,6 +142,10 @@ class SessionStore(ReviewStoreMixin, RunJournalMixin):
             db.executescript(ASSUMPTION_SCHEMA)
             db.executescript(MEMORY_SCHEMA)
             db.executescript(BINDING_SCHEMA)
+            db.executescript(RECOVERY_SCHEMA)
+            self.initialize_http_recovery(db)
+            db.executescript(CHECKPOINT_SCHEMA)
+            db.executescript(HEAT_SIMULATION_SCHEMA)
 
     def create(self, project_id: str, title: str | None = None) -> dict[str, Any]:
         session_id = str(uuid.uuid4())
@@ -342,6 +351,8 @@ class SessionStore(ReviewStoreMixin, RunJournalMixin):
         # Plan, approval ledger and invalidation events share one transaction.
         with self._lock, self._connect() as db:
             db.execute("BEGIN IMMEDIATE")
+            if db.execute('SELECT 1 FROM heat_simulations WHERE session_id=?', (session_id,)).fetchone():
+                raise PlanRevisionConflict('simulation_plan_is_read_only')
             row = db.execute("SELECT plan_json FROM sessions WHERE id=?", (session_id,)).fetchone()
             if row is None:
                 raise KeyError(session_id)

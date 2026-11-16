@@ -23,8 +23,11 @@ workspace/
 frontend/dist/
 frontend/src-tauri/target/
 frontend/src-tauri/binaries/
+frontend/src-tauri/resources/vnext/
 packaging/build/
 packaging/dist/
+packaging/native/
+frontend/src-tauri/gen/
 tmp/
 *.log
 *.sqlite

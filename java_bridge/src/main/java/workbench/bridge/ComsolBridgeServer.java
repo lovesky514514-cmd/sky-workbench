@@ -5,8 +5,10 @@ import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
 
 import java.io.IOException;
+import java.io.BufferedWriter;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.io.RandomAccessFile;
 import java.lang.reflect.Array;
 import java.lang.reflect.InvocationHandler;
@@ -17,10 +19,16 @@ import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
+import java.nio.channels.Channels;
+import java.nio.channels.FileChannel;
+import java.nio.file.LinkOption;
+import java.nio.file.StandardOpenOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.Files;
 import java.security.MessageDigest;
+import java.security.DigestOutputStream;
+import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -42,6 +50,9 @@ import java.util.regex.Pattern;
 /** Minimal localhost bridge. Scientific planning and validation stay in Python. */
 public final class ComsolBridgeServer {
     private static final int MAX_EVENTS = 500;
+    private static final int MAX_REQUEST_BYTES = 65_536;
+    private static final int MAX_FIELD_BYTES = 16_000_000;
+    private static final int MAX_FIELD_SAMPLES = 200_000;
     private static final AtomicLong SEQUENCE = new AtomicLong(0);
     private static final Deque<String> EVENTS = new ArrayDeque<>();
     private static final Pattern JSON_STRING = Pattern.compile("\\\"([A-Za-z0-9_]+)\\\"\\s*:\\s*\\\"([^\\\"]*)\\\"");
@@ -71,6 +82,7 @@ public final class ComsolBridgeServer {
         HttpServer server = HttpServer.create(address, 0);
         server.createContext("/health", authenticated(ComsolBridgeServer::health));
         server.createContext("/model/tree", authenticated(ComsolBridgeServer::modelTree));
+        server.createContext("/model/visualization", authenticated(ComsolBridgeServer::visualization));
         server.createContext("/model/parameters", authenticated(ComsolBridgeServer::modelParameters));
         server.createContext("/model/parameter", authenticated(ComsolBridgeServer::modelParameter));
         server.createContext("/model/boundary-feature", authenticated(ComsolBridgeServer::boundaryFeature));
@@ -97,7 +109,13 @@ public final class ComsolBridgeServer {
                 send(exchange, 401, "{" + field("detail", "Unauthorized") + "}");
                 return;
             }
-            handler.handle(exchange);
+            try {
+                if (exchange.getRequestURI().toASCIIString().length() > MAX_REQUEST_BYTES)
+                    throw new RequestTooLarge();
+                handler.handle(exchange);
+            } catch (RequestTooLarge exc) {
+                send(exchange, 413, failure("request", "Bridge request exceeds its limit"));
+            }
         };
     }
 
@@ -167,6 +185,37 @@ public final class ComsolBridgeServer {
         } catch (ReflectiveOperationException | RuntimeException exc) {
             appendEvent("critical_failure", "model_tree", "error", false, false, false, exc.toString());
             send(exchange, 500, failure("model_tree", exc.toString()));
+        }
+    }
+
+    private static void visualization(HttpExchange exchange) throws IOException {
+        if (!method(exchange, "GET")) return;
+        Map<String, String> query = query(exchange.getRequestURI());
+        String id = query.getOrDefault("request_id", "");
+        String staging = query.getOrDefault("staging", "");
+        if (!id.matches("[a-f0-9]{32}") || !staging.matches("preview-[a-z0-9_]{8}") || RUNTIME.loadedModelPath == null) {
+            send(exchange, 400, failure("visualization", "No authorized visualization scope"));
+            return;
+        }
+        Path root = RUNTIME.loadedModelPath.getParent().resolve("visualization");
+        Path directory = root.resolve(staging).resolve(id);
+        if (!Files.isDirectory(directory, LinkOption.NOFOLLOW_LINKS) || !directory.toRealPath().equals(directory)) {
+            send(exchange, 400, failure("visualization", "Invalid visualization directory"));
+            return;
+        }
+        try {
+            String descriptor = ComsolVisualization.publish(RUNTIME.currentModel(), RUNTIME.comsolVersion, directory,
+                "saved_heat".equals(query.get("field")));
+            send(exchange, 200, "{" + field("request_id", id) + "," + field("model_tag", RUNTIME.modelTag) + "," + descriptor + "}");
+        } catch (Exception exc) {
+            Throwable cause = exc.getCause() == null ? exc : exc.getCause();
+            StackTraceElement frame = java.util.Arrays.stream(exc.getStackTrace())
+                .filter(entry -> entry.getClassName().equals(ComsolVisualization.class.getName())).findFirst().orElse(null);
+            String diagnostic = cause.getClass().getSimpleName() + (frame == null ? "" : " at " + frame.getMethodName() + ":" + frame.getLineNumber());
+            System.err.println("COMSOL visualization: " + diagnostic);
+            appendEvent("command", "visualization", "unavailable", false, false, false,
+                "Visualization readback failed: " + diagnostic);
+            send(exchange, 422, failure("visualization", "COMSOL could not read built geometry or mesh"));
         }
     }
 
@@ -314,28 +363,126 @@ public final class ComsolBridgeServer {
     private static void heatField(HttpExchange exchange) throws IOException {
         if (!method(exchange, "GET")) return;
         Probe probe = Probe.detect();
-        if (!probe.connected || LAST_STUDY_DATE <= 0L) {
+        long studyDate = LAST_STUDY_DATE;
+        if (!probe.connected || studyDate <= 0L) {
             send(exchange, 503, failure("heat_field", "No current Bridge study solve is available"));
             return;
         }
         try {
+            Map<String, String> params = query(exchange.getRequestURI());
+            String runId = params.getOrDefault("run_id", "");
+            String attemptId = params.getOrDefault("attempt_id", "");
+            String requestId = params.getOrDefault("request_id", "");
+            Path directory = fieldDirectory(runId, attemptId, requestId);
+            if (directory == null) {
+                send(exchange, 409, failure("heat_field", "Field transfer directory or attempt mismatch"));
+                return;
+            }
+            try {
+                Files.createFile(directory.resolve(".claimed"));
+            } catch (java.nio.file.FileAlreadyExistsException exc) {
+                send(exchange, 409, failure("heat_field", "Duplicate field transfer request"));
+                return;
+            }
             Object model = RUNTIME.currentModel();
             Object result = invoke(model, "result", new Class<?>[]{});
             double[] x = evaluateField(result, "x");
             double[] y = evaluateField(result, "y");
             double[] temperature = evaluateField(result, "T");
-            if (x.length == 0 || x.length != y.length || x.length != temperature.length || x.length > 200_000) {
+            if (x.length == 0 || x.length != y.length || x.length != temperature.length) {
                 send(exchange, 409, failure("heat_field", "Numerical field arrays are missing or misaligned"));
                 return;
             }
-            String payload = "{" + field("status", "readback") + "," +
-                field("model_tag", probe.modelTag) + "," + number("last_computation_date", LAST_STUDY_DATE) + "," +
-                number("sample_count", x.length) + "," + doubles("x", x) + "," + doubles("y", y) + "," +
-                doubles("temperature_K", temperature) + "," + bool("command_success", true) + "," +
+            if (studyDate != LAST_STUDY_DATE) {
+                send(exchange, 409, failure("heat_field", "Study changed during field readback"));
+                return;
+            }
+            String descriptor = publishField(directory, runId, attemptId, x, y, temperature);
+            String payload = "{" + field("status", "readback") + "," + field("request_id", requestId) + "," +
+                field("model_tag", probe.modelTag) + "," + number("last_computation_date", studyDate) + "," +
+                number("sample_count", x.length) + ",\"data\":" + descriptor + "," + bool("command_success", true) + "," +
                 bool("model_state_verified", true) + "," + bool("scientific_validation_passed", false) + "}";
             send(exchange, 200, payload);
+        } catch (FieldSizeExceeded exc) {
+            send(exchange, 409, failure("heat_field", "Numerical field arrays are missing or misaligned"));
+        } catch (IOException exc) {
+            send(exchange, 500, failure("heat_field", "Scientific field file could not be published"));
         } catch (ReflectiveOperationException | RuntimeException exc) {
             send(exchange, 500, failure("heat_field", rootCause(exc)));
+        }
+    }
+
+    private static Path fieldDirectory(String runId, String attemptId, String requestId) throws IOException {
+        if (RUNTIME.loadedModelPath == null || !runId.matches("[A-Za-z0-9-]{1,100}")
+                || !attemptId.matches("[A-Za-z0-9-]{1,100}") || !requestId.matches("[a-f0-9]{32}")) return null;
+        Path scope = Paths.get("models", "attempts", runId, attemptId);
+        for (Path parent = RUNTIME.loadedModelPath.getParent(); parent != null; parent = parent.getParent()) {
+            if (!parent.endsWith(scope)) continue;
+            Path directory = parent.resolve("bridge-readbacks").resolve(requestId);
+            if (Files.isDirectory(directory, LinkOption.NOFOLLOW_LINKS) && directory.toRealPath().equals(directory))
+                return directory;
+        }
+        return null;
+    }
+
+    private static MessageDigest sha256() {
+        try { return MessageDigest.getInstance("SHA-256"); }
+        catch (NoSuchAlgorithmException exc) { throw new IllegalStateException(exc); }
+    }
+
+    private static void writeColumn(BufferedWriter writer, String name, double[] values) throws IOException {
+        writer.write("\"" + name + "\":[");
+        for (int i = 0; i < values.length; i++) {
+            if (!Double.isFinite(values[i])) throw new IllegalArgumentException("Non-finite field sample");
+            if (i != 0) writer.write(',');
+            writer.write(Double.toString(values[i]));
+        }
+        writer.write(']');
+    }
+
+    private static String publishField(Path directory, String runId, String attemptId,
+                                       double[] x, double[] y, double[] temperature) throws IOException {
+        Path result = directory.resolve("result.json");
+        if (Files.exists(result, LinkOption.NOFOLLOW_LINKS)) throw new IOException("Field data already exists");
+        Path temporary = Files.createTempFile(directory, ".result-", ".tmp");
+        MessageDigest digest = sha256();
+        try {
+            try (FileChannel channel = FileChannel.open(temporary, StandardOpenOption.WRITE);
+                 BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(
+                     new DigestOutputStream(Channels.newOutputStream(channel), digest), StandardCharsets.UTF_8))) {
+                writer.write('{'); writeColumn(writer, "x", x);
+                writer.write(','); writeColumn(writer, "y", y);
+                writer.write(','); writeColumn(writer, "temperature_K", temperature); writer.write('}');
+                writer.flush();
+                channel.force(true);
+            }
+            long size = Files.size(temporary);
+            if (size <= 0 || size > MAX_FIELD_BYTES || !directory.toRealPath().equals(directory))
+                throw new IOException("Field data size or location invalid");
+            byte[] expected = digest.digest();
+            try (InputStream stream = Files.newInputStream(temporary, LinkOption.NOFOLLOW_LINKS)) {
+                byte[] block = new byte[8192];
+                long count = 0;
+                for (int n; (n = stream.read(block)) != -1;) {
+                    count += n;
+                    if (count > size) throw new IOException("Field staging file changed");
+                    digest.update(block, 0, n);
+                }
+                if (count != size || !MessageDigest.isEqual(expected, digest.digest()))
+                    throw new IOException("Field staging file changed");
+            }
+            // 排他地公布同一目录中的完整文件，目标已存在时拒绝覆盖。
+            Files.createLink(result, temporary);
+            StringBuilder hash = new StringBuilder(64);
+            for (byte value : expected) hash.append(String.format("%02x", value & 0xff));
+            return "{" + number("schema_version", 1) + "," + field("run_id", runId) + "," +
+                field("attempt_id", attemptId) + "," + field("producer", "java_bridge") + "," +
+                field("data_type", "bridge-heat-field.v1") + "," + field("relative_path", "result.json") + "," +
+                field("media_type", "application/json") + "," + number("byte_count", size) + "," +
+                field("sha256", hash.toString()) + ",\"dimensions\":[" + x.length + ",3]," +
+                number("sample_count", x.length) + "}";
+        } finally {
+            Files.deleteIfExists(temporary);
         }
     }
 
@@ -461,24 +608,18 @@ public final class ComsolBridgeServer {
         }
     }
 
+    private static final class FieldSizeExceeded extends IllegalArgumentException {}
+
     private static void flattenFinite(Object data, List<Double> output) {
         if (data == null) throw new IllegalStateException("Null COMSOL numerical data");
         if (data.getClass().isArray()) {
             for (int i = 0; i < Array.getLength(data); i++) flattenFinite(Array.get(data, i), output);
         } else if (data instanceof Number) {
+            if (output.size() >= MAX_FIELD_SAMPLES) throw new FieldSizeExceeded();
             double number = ((Number) data).doubleValue();
             if (!Double.isFinite(number)) throw new IllegalStateException("Non-finite COMSOL numerical data");
             output.add(number);
         } else throw new IllegalStateException("Unsupported COMSOL numerical data shape");
-    }
-
-    private static String doubles(String key, double[] values) {
-        StringBuilder encoded = new StringBuilder("\"").append(escape(key)).append("\":[");
-        for (int i = 0; i < values.length; i++) {
-            if (i > 0) encoded.append(',');
-            encoded.append(values[i]);
-        }
-        return encoded.append(']').toString();
     }
 
     /** Narrow, compare-and-set Heat T0 API; no arbitrary physics/property mutation. */
@@ -706,7 +847,7 @@ public final class ComsolBridgeServer {
         return result;
     }
 
-    private static Object invoke(Object target, String name, Class<?>[] types, Object... values) throws ReflectiveOperationException {
+    static Object invoke(Object target, String name, Class<?>[] types, Object... values) throws ReflectiveOperationException {
         Method method = target.getClass().getMethod(name, types);
         return method.invoke(target, values);
     }
@@ -750,9 +891,13 @@ public final class ComsolBridgeServer {
         return values;
     }
 
+    private static final class RequestTooLarge extends IOException {}
+
     private static String readBody(HttpExchange exchange) throws IOException {
         try (InputStream input = exchange.getRequestBody()) {
-            return new String(input.readAllBytes(), StandardCharsets.UTF_8);
+            byte[] bytes = input.readNBytes(MAX_REQUEST_BYTES + 1);
+            if (bytes.length > MAX_REQUEST_BYTES) throw new RequestTooLarge();
+            return new String(bytes, StandardCharsets.UTF_8);
         }
     }
 
@@ -770,10 +915,10 @@ public final class ComsolBridgeServer {
         try (OutputStream output = exchange.getResponseBody()) { output.write(bytes); }
     }
 
-    private static String field(String key, String value) { return "\"" + escape(key) + "\":\"" + escape(value == null ? "" : value) + "\""; }
+    static String field(String key, String value) { return "\"" + escape(key) + "\":\"" + escape(value == null ? "" : value) + "\""; }
     private static String bool(String key, boolean value) { return "\"" + escape(key) + "\":" + value; }
     private static String number(String key, long value) { return "\"" + escape(key) + "\":" + value; }
-    private static String array(String key, List<String> values) {
+    static String array(String key, List<String> values) {
         List<String> encoded = new ArrayList<>();
         for (String value : values) encoded.add("\"" + escape(value) + "\"");
         return "\"" + escape(key) + "\":[" + String.join(",", encoded) + "]";

@@ -792,6 +792,12 @@ class ScientificPlanner:
         parsed["ai_model"] = model
         parsed["source"] = provider_label
         parsed["original_request"] = original_request.strip()
+        # 宿主重新计算预检、可运行状态和科学质量。模型与检索上下文只能提出草案。
+        parsed["runnable"] = False
+        parsed["planning_status"] = "DRAFT_NEEDS_INPUT"
+        parsed["precheck_summary"] = None
+        parsed["quality_report"] = None
+        parsed.pop("quality_status", None)
         # Approval belongs to the user/session, never to generated JSON.
         generated_proposal = parsed.get("completion")
         proposed = generated_proposal.get("parameters") if isinstance(generated_proposal, dict) else None
@@ -958,12 +964,21 @@ def faithful_workflow(plan, brief, prompt):
             }
         )
     if workflow == "heat_transfer_3d_cooling":
+        def proposed_value(name):
+            value = candidate.parameters.get(name)
+            if value is None and candidate.completion:
+                value = candidate.completion.parameters.get(name)
+            return value.value if value is not None else None
+        exclusions = ' '.join(brief.exclusions).lower()
+        excluded_required_flux = (
+            bool(re.search(r'对流|convection', exclusions)) and proposed_value('heat_transfer_coefficient') != 0
+            or bool(re.search(r'辐射|radiation', exclusions)) and proposed_value('emissivity') != 0)
         return brief.model_outline.get("thermal_action") != "heating" and not (
             brief.model_outline.get("comparison_requested")
             or brief.model_outline.get("contact_requested")
             or brief.model_outline.get("phase_change_requested")
             or brief.model_outline.get("environment") == "liquid"
-            or brief.exclusions
+            or excluded_required_flux
             or keys
             & {"mechanics", "battery", "flow", "electrical", "particles", "electronic"}
         )

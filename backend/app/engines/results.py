@@ -3,6 +3,7 @@ from __future__ import annotations
 import math
 import re
 from pathlib import Path
+from xml.etree import ElementTree
 
 from app.execution.files import bounded_read
 
@@ -132,7 +133,33 @@ def poscar_structure(text: str, species: list[str] | None = None) -> dict:
         raise ValueError("Incomplete POSCAR") from exc
 
 
-def vasp_result(root: Path) -> dict:
+def _vasp_number(value: str) -> float:
+    number = float(value.replace("D", "E").replace("d", "e"))
+    if not math.isfinite(number):
+        raise ValueError("Non-finite VASP numeric output")
+    return number
+
+
+def _vasp_xml(root: Path, energy: float | None) -> tuple[str, bool | None]:
+    if not (root / "vasprun.xml").exists():
+        return "NOT_COLLECTED", None
+    text = read_text(root, "vasprun.xml")
+    if re.search(r"<!\s*(?:DOCTYPE|ENTITY)\b", text, re.I):
+        return "INVALID", False
+    try:
+        root_node = ElementTree.fromstring(text)
+        if root_node.tag != "modeling":
+            return "INVALID", False
+        values = root_node.findall("./calculation/energy/i[@name='e_fr_energy']")
+        xml_energy = _vasp_number(values[-1].text) if values and values[-1].text else None
+    except (ElementTree.ParseError, ValueError):
+        return "INVALID", False
+    if xml_energy is None:
+        return "INCOMPLETE", False
+    return "PARSED", energy is not None and abs(energy - xml_energy) <= 1e-4
+
+
+def vasp_result(root: Path, *, wsl: bool = False) -> dict:
     from app.engines.vasp import incar_tags, numeric_tag
 
     outcar, oszicar = read_text(root, "OUTCAR"), read_text(root, "OSZICAR")
@@ -140,13 +167,43 @@ def vasp_result(root: Path) -> dict:
     nsw, ibrion = int(numeric_tag(tags, "NSW", 0)), int(numeric_tag(tags, "IBRION", -1))
     ionic_applicable = nsw > 0 and ibrion in {1, 2, 3}
     # A positive OUTCAR convergence marker is evidence; timing/exit status is not.
-    energies = [float(value) for value in re.findall(r"\bF=\s*([-+\d.Ee]+)", oszicar)]
+    energies = [_vasp_number(value) for value in re.findall(r"\bF=\s*([-+\d.EeDd]+)", oszicar)]
     scf = (bool(energies) and outcar.count("aborting loop because EDIFF is reached") >= len(energies)
            and "EDIFF was not reached" not in outcar and numeric_tag(tags, "EDIFF", 1e-4) > 0)
-    if not all(math.isfinite(value) for value in energies):
-        raise ValueError("Non-finite VASP energy")
+    toten = re.findall(r"\bTOTEN\s*=\s*([-+\d.EeDd]+)\s+eV", outcar, re.I)
+    energy = _vasp_number(toten[-1]) if toten else None
+    steps = re.split(r"^\s*\d+\s+(?:T=\s+.*?\s+)?F=.*$", oszicar, flags=re.M)
+    iterations = [len(re.findall(r"^\s*(?:DAV|RMM|CG|DMP|SDA)\s*:\s*\d+", block, re.M)) for block in steps]
+    final_iterations = next((value for value in reversed(iterations) if value), None)
+    wall = re.findall(r"Elapsed time\s*\(sec\)\s*:\s*([-+\d.EeDd]+)", outcar, re.I)
+    normal_end = "General timing and accounting" in outcar
+    checks = {"energy_present": bool(energies), "normal_termination": normal_end, "scf_convergence_reported": scf,
+              "ionic_accuracy_reported": "reached required accuracy" in outcar}
+    xml_status, xml_agrees = _vasp_xml(root, energy) if wsl else ("NOT_CHECKED", None)
+    if wsl:
+        checks.update(required_outputs=bool(outcar and oszicar), total_energy_reported=energy is not None,
+                      electronic_iterations_reported=final_iterations is not None,
+                      total_energy_agrees=bool(energies and energy is not None and abs(energies[-1] - energy) <= 1e-4))
+        if xml_agrees is not None:
+            checks["xml_energy_agrees"] = xml_agrees
+    warnings = []
+    if wsl:
+        log = read_text(root, "vasp.log")
+        for pattern, label in (
+            (r"ZBRENT", "electronic_line_search_error"), (r"BRMIX", "charge_mixing_error"),
+            (r"VERY BAD NEWS|internal error", "vasp_internal_error"), (r"PMIX|MPI_ABORT", "mpi_runtime_error"),
+            (r"\bnot enough slots\b", "mpi_slots_unavailable"),
+            (r'\bSKY_VASP_JSON \{"error":\s*"([a-z0-9_]+)"\}', None),
+        ):
+            match = re.search(pattern, log, re.I)
+            if match:
+                warnings.append(label or match[1])
+        checks["no_known_execution_error"] = not warnings
     structure_text = read_text(root, "CONTCAR")
     return {"kind": "first_principles", "units": "eV", "columns": ["Ionic step", "Free energy"],
+            "energy": energy, "electronic_iterations": final_iterations, "normal_termination": normal_end,
+            "solver_elapsed_seconds": _vasp_number(wall[-1]) if wall else None,
+            "xml_status": xml_status, "error_codes": warnings,
             "series": [[i + 1, value] for i, value in enumerate(energies)],
             "structure": poscar_structure(structure_text) if structure_text else None,
             "task_type": "ionic_relaxation" if ionic_applicable else "molecular_dynamics" if nsw > 0 and ibrion == 0 else "single_point",
@@ -155,20 +212,21 @@ def vasp_result(root: Path) -> dict:
             "ionic_convergence_applicable": ionic_applicable,
             "engine_version": next((line.strip()[:120] for line in outcar.splitlines()
                                     if re.search(r"\bvasp\.\d", line, re.I)), "UNVERIFIED"),
-            "checks": {"energy_present": bool(energies),
-                       "normal_termination": "General timing and accounting" in outcar,
-                       "scf_convergence_reported": scf,
-                       "ionic_accuracy_reported": "reached required accuracy" in outcar},
+            "checks": checks,
             "scientific_validation": "NEEDS_REVIEW",
             "limitations": "Review electronic convergence, ionic convergence and task-specific tolerances; termination alone is insufficient."}
 
 
-def materials_studio_result(root: Path) -> dict:
+def materials_studio_result(root: Path, *, engine_version: str = "UNVERIFIED") -> dict:
     text = read_text(root, "energy.txt").strip()
     energy = float(text) if text else None
     if energy is not None and not math.isfinite(energy):
         raise ValueError("Non-finite Forcite energy")
-    return {"kind": "molecular_energy", "units": "Forcite native energy units; verify installed unit settings",
+    # 20.1 的本机 MaterialsScript 文档明确 PotentialEnergy 使用 kcal/mol。
+    known_units = engine_version.startswith("20.1.")
+    return {"kind": "molecular_energy", "units": "kcal/mol" if known_units else "Forcite native energy units; verify installed unit settings",
+            "unit_basis": "MaterialsScript 20.1 PotentialEnergy API" if known_units else "UNVERIFIED",
+            "engine_version": engine_version,
             "energy": energy, "checks": {"energy_present": energy is not None,
                 "document_saved": bool(read_text(root, "model.xsd"))},
             "scientific_validation": "NEEDS_REVIEW",

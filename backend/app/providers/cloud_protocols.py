@@ -11,6 +11,7 @@ from typing import Any, AsyncIterator
 from urllib.parse import quote
 
 import httpx
+from app.providers.metering import active_trace, request_started, response_received
 
 
 def _claude_request(messages: list[dict[str, str]], model: str, temperature: float, key: str) -> tuple[dict[str, str], dict[str, Any]]:
@@ -62,8 +63,12 @@ async def complete(
         headers, body = _claude_request(messages, model, temperature, key)
         if json_mode:
             body["system"] = (body.get("system", "") + "\nReturn only a valid JSON object.").strip()
+        if (trace := active_trace.get()) is not None:
+            body['max_tokens'] = trace.output_limit
+        request_started()
         response = await client.post(f"{base_url}/messages", headers=headers, json=body)
         response.raise_for_status()
+        response_received(response.json())
         blocks = response.json().get("content", [])
         if not isinstance(blocks, list):
             raise ValueError("Claude returned no text")
@@ -73,8 +78,12 @@ async def complete(
         return text
     if provider == "gemini":
         headers, body = _gemini_request(messages, temperature, key, json_mode)
+        if (trace := active_trace.get()) is not None:
+            body['generationConfig']['maxOutputTokens'] = trace.output_limit
+        request_started()
         response = await client.post(f"{base_url}/models/{quote(model, safe='')}:generateContent", headers=headers, json=body)
         response.raise_for_status()
+        response_received(response.json())
         return _gemini_text(response.json())
     raise ValueError("Unsupported cloud protocol")
 

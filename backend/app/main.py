@@ -8,38 +8,48 @@ import hmac
 import json
 import os
 import shutil
+import sys
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any
 from urllib.parse import unquote
 
 from fastapi import FastAPI, Header, HTTPException, Request
+from fastapi.exception_handlers import http_exception_handler
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from httpx import HTTPError
 from pydantic import BaseModel, Field
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app import APPLICATION_VERSION, __version__
 from app.adapter.rc42_contract import project_session, project_event_batch, safe_error
 from app.app_paths import app_paths
 from app.agent.runtime import agent_runtime
-from app.agent.intent_compiler import compile_intent
+from app.agent.intent_compiler import compile_intent, confirmed_plan_input
 from app.agent.scientific_tools import scientific_tool_layer
 from app.agent.tool_registry import tool_registry
 from app.comsol.legacy_mcp import legacy_mcp_bridge
 from app.comsol.java_bridge import java_bridge_client
 from app.comsol.bridge_process import java_bridge_process_manager
+from app.comsol.bridge_preview import completed_model
+from app.comsol.visualization import router_for as visualization_router
+from app.comsol.bridge_stream import unavailable_event
 from app.comsol.discovery import discover_comsol_java
 from app.comsol.license_probe import probe_optional_modules
 from app.config import FRONTEND_DIST, PROJECT_ROOT, WORKSPACE_ROOT, ensure_workspace, settings_store
 from app.environment import detect_environment, installation_scan
+from app.execution.heat_simulation import HeatSimulationService
+from app.execution.heat_simulation_api import heat_simulation_router
 from app.knowledge.retrieval import retriever
 from app.knowledge.hybrid_rag import index_task_manager, semantic_index_task_manager
 from app.knowledge.integrity import verify_knowledge_base
 from app.knowledge.semantic_runtime import semantic_runtime
 from app.models import (
     AgentMessageRequest,
+    AgentMode,
     CancelRunRequest,
     CreateSessionRequest,
     KnowledgeRefreshRequest,
@@ -62,15 +72,19 @@ from app.models import (
     RunBoundaryCorrectionRequest,
 )
 from app.providers.manager import provider_manager
+from app.recovery.api import observe_api_failure, router_for
+from app.recovery.ingest import Signal, capture
+from app.recovery.schemas import Cause, Facts, Origin
 from app.simulation_adapters import capabilities as simulation_capabilities, probe_engine
 from app.script_workspace import ScriptRunManager
 from app.engines.manager import EngineTaskManager
-from app.engines.models import EngineTaskRequest
+from app.engines.models import EngineTaskRequest, VaspSiliconDraft, VaspWslInput
+from app.engines.vasp_wsl import WslVaspProfile
 from app.services.projects import project_service
 from app.services.legacy_migration import detect_legacy, handle_legacy
 from app.services.model_manager import local_model_manager
 from app.services.imported_mph import imported_mph_store
-from app.services.literature_modeling import extract_text_candidate, extract_pdf_candidate, extract_pdf_candidate_deepseek, extract_text_candidate_deepseek, MAX_PDF_BYTES
+from app.services.literature_modeling import extract_text_candidate, extract_pdf_candidate, extract_pdf_candidate_deepseek, extract_text_candidate_deepseek, LITERATURE_DEEPSEEK_BASE_URL, MAX_PDF_BYTES
 from app.services.literature_sources import fetch_recent_source
 from app.session.store import PlanRevisionConflict, session_store
 from app.session.execution_eta import estimate_remaining_time
@@ -85,6 +99,7 @@ from app.validators.execution_verdict import verify_artifact_integrity
 
 script_runs = ScriptRunManager(WORKSPACE_ROOT / "script_runs")
 engine_tasks = EngineTaskManager(WORKSPACE_ROOT / "engine_tasks")
+heat_simulations = HeatSimulationService(session_store)
 
 
 class ScriptRunRequest(BaseModel):
@@ -115,6 +130,7 @@ class KnowledgeUnitsRequest(BaseModel):
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
+    app.state.desktop_stopping = False
     ensure_workspace()
     session_store.initialize()
     try:
@@ -122,11 +138,13 @@ async def lifespan(_: FastAPI):
     except (OSError, ValueError):
         app.state.public_knowledge = {"status": "INVALID", "units": 0}
     app.state.run_reconciliation = await agent_runtime.reconcile()
+    session_store.recover_recovery_cases()
     engine_tasks.recover()
     app.state.kb_integrity = verify_knowledge_base(app_paths.kb_dir)
     try:
         yield
     finally:
+        await heat_simulations.shutdown()
         await script_runs.shutdown()
         await engine_tasks.shutdown()
         await agent_runtime.shutdown()
@@ -140,6 +158,47 @@ app = FastAPI(
     version=__version__,
     lifespan=lifespan,
 )
+
+
+def _diagnostic_project():
+    return next((item['id'] for item in project_service.projects() if item.get('active')), None)
+
+
+app.include_router(router_for(lambda: session_store, _diagnostic_project, provider_manager))
+app.include_router(heat_simulation_router(lambda: heat_simulations, _diagnostic_project))
+from app.orchestration.research_api import research_router
+app.include_router(research_router(lambda: agent_runtime, _diagnostic_project))
+from app.orchestration.delivery_api import delivery_router
+app.include_router(delivery_router(lambda: session_store, WORKSPACE_ROOT, _diagnostic_project))
+app.include_router(visualization_router(lambda: imported_mph_store, lambda: session_store,
+    java_bridge_process_manager, java_bridge_client, _diagnostic_project, WORKSPACE_ROOT))
+
+
+@app.exception_handler(StarletteHTTPException)
+async def capture_http_failure(request: Request, error: StarletteHTTPException):
+    correlation = await observe_api_failure(session_store, _diagnostic_project, request, error, error.status_code, error.detail)
+    from app.redaction import redact_text
+    raw = json.dumps(error.detail, ensure_ascii=False, default=lambda value: type(value).__name__)
+    if len(raw) > 8192 or redact_text(raw) != raw:
+        # 采集仍按原始受限事实分类，响应不回显命中的私密内容。
+        response = JSONResponse(status_code=error.status_code, content={'detail': {
+            'code': 'http_failure', 'title': 'Operation did not complete',
+            'summary': 'Review the scoped diagnostic record for the next step.'}}, headers=error.headers)
+    else:
+        response = await http_exception_handler(request, error)
+    if correlation:
+        response.headers['X-SKY-Diagnostic-ID'] = correlation
+    return response
+
+
+@app.exception_handler(RequestValidationError)
+async def capture_request_validation(request: Request, error: RequestValidationError):
+    # Pydantic 原始 input/ctx 可能包含凭据或私有模型，不返回或记录这些值。
+    detail = {'code': 'http_request_invalid', 'title': 'Request validation failed',
+              'summary': 'The request does not match the interface contract.'}
+    correlation = await observe_api_failure(session_store, _diagnostic_project, request, error, 422, detail)
+    return JSONResponse(status_code=422, content={'detail': detail},
+                        headers={'X-SKY-Diagnostic-ID': correlation} if correlation else {})
 
 
 @app.middleware("http")
@@ -158,7 +217,12 @@ async def require_desktop_session_token(request: Request, call_next):
         supplied = request.headers.get("X-Workbench-Token", "")
         if not hmac.compare_digest(supplied, expected):
             return JSONResponse(status_code=401, content={"detail": "Invalid Workbench desktop session token"})
-    return await call_next(request)
+        request.scope['sky_desktop_authenticated'] = True
+    try:
+        return await call_next(request)
+    except Exception as exc:
+        await observe_api_failure(session_store, _diagnostic_project, request, exc, 500)
+        raise
 
 
 app.add_middleware(
@@ -174,6 +238,7 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=['X-SKY-Diagnostic-ID', 'Retry-After'],
 )
 
 
@@ -199,6 +264,7 @@ async def health() -> dict[str, Any]:
 async def desktop_shutdown() -> dict[str, Any]:
     """Ask the owned Runtime to stop after returning an authenticated response."""
 
+    app.state.desktop_stopping = True
     if java_bridge_process_manager.status().get("running"):
         await java_bridge_process_manager.stop()
     callback = getattr(app.state, "request_shutdown", None)
@@ -392,9 +458,19 @@ async def simulation_adapters() -> dict[str, Any]:
 async def probe_simulation_adapter(engine: str) -> dict[str, Any]:
     """Explicit local handshake; it never opens a model or certifies a result."""
     try:
-        return await probe_engine(engine)
+        result = await probe_engine(engine)
     except ValueError as exc:
         raise HTTPException(status_code=404, detail="Unknown scientific engine") from exc
+    code = {
+        'LICENSE_OR_ACTIVATION_REQUIRED': Cause.LICENSE,
+        'UNAVAILABLE': Cause.ENV_MISSING, 'EXECUTABLE_UNAVAILABLE': Cause.ENV_MISSING,
+        'CONNECTOR_UNAVAILABLE': Cause.ENV_UNSUPPORTED, 'TIMED_OUT': 'read_timeout',
+        'START_FAILED': 'runtime_failed', 'HANDSHAKE_FAILED': 'runtime_failed',
+    }.get(result.get('status'))
+    if code:
+        await asyncio.to_thread(capture, session_store, Signal(Origin.ENVIRONMENT, 'environment_probe', code),
+                                project_id=_diagnostic_project())
+    return result
 
 
 @app.get("/api/script-runs/availability")
@@ -440,9 +516,63 @@ def scoped_engine_record(run_id: str) -> dict[str, Any]:
 @app.post("/api/engine-tasks/preview")
 async def preview_engine_task(request: EngineTaskRequest) -> dict[str, Any]:
     try:
+        if isinstance(request.inputs, VaspWslInput):
+            require_engine_session()
+            return await engine_tasks.review_wsl(request.model_copy(update={"project_id": active_engine_project()}))
         return engine_tasks.preview(request)
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except (OSError, RuntimeError, TimeoutError, OverflowError) as exc:
+        raise HTTPException(status_code=409, detail="WSL preflight did not complete") from exc
+
+
+@app.get("/api/engine-tasks/vasp-wsl/configuration")
+async def vasp_wsl_configuration() -> dict[str, Any]:
+    require_engine_session()
+    profile = engine_tasks.wsl_profile(active_engine_project())
+    return {"profile": profile.model_dump() if profile else None}
+
+
+@app.put("/api/engine-tasks/vasp-wsl/configuration")
+async def save_vasp_wsl_configuration(profile: WslVaspProfile) -> dict[str, Any]:
+    require_engine_session()
+    project = active_engine_project()
+    engine_tasks.configure_wsl(project, profile)
+    return {"profile": profile.model_dump()}
+
+
+@app.get("/api/engine-tasks/vasp-wsl/distributions")
+async def vasp_wsl_distributions() -> dict[str, Any]:
+    require_engine_session()
+    active_engine_project()
+    try:
+        return {"distributions": await engine_tasks.wsl.distributions()}
+    except (ValueError, OSError, RuntimeError, TimeoutError, OverflowError) as exc:
+        raise HTTPException(status_code=409, detail="WSL distributions could not be listed") from exc
+
+
+@app.post("/api/engine-tasks/vasp-wsl/probe")
+async def probe_vasp_wsl() -> dict[str, Any]:
+    require_engine_session()
+    project = active_engine_project()
+    try:
+        profile = engine_tasks.wsl_profile(project)
+        if profile is None:
+            raise ValueError("Configure a WSL VASP installation in this project first")
+        identity = await engine_tasks.wsl.probe(profile)
+        return {"status": "HANDSHAKE_PASSED", "wsl_version": 2, "identity": identity.model_dump(),
+                "scientific_validation": "UNVERIFIED"}
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except (OSError, RuntimeError, TimeoutError, OverflowError) as exc:
+        raise HTTPException(status_code=409, detail="WSL VASP probe did not complete") from exc
+
+
+@app.post("/api/engine-tasks/vasp-wsl/silicon-draft")
+async def vasp_silicon_draft(request: VaspSiliconDraft) -> dict[str, Any]:
+    require_engine_session()
+    active_engine_project()
+    return {"files": request.files()}
 
 
 @app.post("/api/engine-tasks/connect")
@@ -468,6 +598,8 @@ async def start_engine_task(request: EngineTaskRequest) -> dict[str, Any]:
         return await engine_tasks.start(request)
     except (ValueError, OSError) as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except (TimeoutError, RuntimeError, OverflowError) as exc:
+        raise HTTPException(status_code=409, detail="Engine preflight did not complete") from exc
 
 
 @app.get("/api/engine-tasks/{run_id}")
@@ -487,6 +619,18 @@ async def cancel_engine_task(run_id: str) -> dict[str, Any]:
         return await engine_tasks.cancel(run_id)
     except (KeyError, ValueError) as exc:
         raise HTTPException(status_code=404, detail="Engine task not found") from exc
+
+
+@app.post("/api/engine-tasks/{run_id}/vasp-wsl/reconcile")
+async def reconcile_vasp_wsl(run_id: str) -> dict[str, Any]:
+    require_engine_session()
+    try:
+        scoped_engine_record(run_id)
+        return await engine_tasks.reconcile_wsl(run_id)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Engine task not found") from exc
+    except (ValueError, OSError, RuntimeError, TimeoutError, OverflowError) as exc:
+        raise HTTPException(status_code=409, detail="Linux exit has not been verified") from exc
 
 
 @app.get("/api/engine-tasks/{run_id}/artifacts/{name}")
@@ -559,6 +703,8 @@ async def update_providers(request: ProviderSettingsRequest) -> dict[str, Any]:
         settings = settings_store.update(payload)
     except RuntimeError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
     return {"settings": settings, "providers": await provider_manager.detect()}
 
 
@@ -572,7 +718,7 @@ async def settings_migration() -> dict[str, Any]:
 async def literature_modeling_status() -> dict[str, bool]:
     settings = settings_store.load()["extensions"]["literature_modeling"]
     return {"enabled": bool(settings["enabled"]), "deepseek_enabled": bool(settings["deepseek_enabled"]),
-            "deepseek_available": bool(settings_store.secret("deepseek"))}
+            "deepseek_available": bool(settings_store.secret("deepseek", LITERATURE_DEEPSEEK_BASE_URL))}
 
 
 @app.put("/api/extensions/literature-modeling")
@@ -595,7 +741,7 @@ def require_literature_modeling() -> None:
 
 
 def literature_deepseek_key() -> str:
-    key = settings_store.secret("deepseek")
+    key = settings_store.secret("deepseek", LITERATURE_DEEPSEEK_BASE_URL)
     if not key:
         raise HTTPException(status_code=503, detail="deepseek_key_unavailable")
     return key
@@ -735,6 +881,17 @@ async def archive_session(session_id: str) -> dict[str, Any]:
         raise HTTPException(status_code=409, detail=safe_error('validation_failed', location='Runtime')) from exc
 
 
+@app.get("/api/sessions/{session_id}/expert-workflows/{case_id}")
+async def expert_workflow(session_id: str, case_id: str) -> dict[str, Any]:
+    from app.orchestration.workflow_view import project_workflow
+    try:
+        session = session_store.get(session_id)
+        checkpoint = session_store.load_checkpoint(session["project_id"], session_id, case_id)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Expert workflow not found") from exc
+    return project_workflow(checkpoint)
+
+
 @app.get("/api/sessions/{session_id}/execution/eta")
 async def execution_eta(session_id: str) -> dict[str, Any]:
     """Return a coarse ledger-only ETA or an explicit unknown result."""
@@ -782,10 +939,18 @@ async def vnext_skills(workflow_id: str | None = None) -> dict[str, Any]:
 
 @app.get("/api/vnext/3d-contracts")
 async def vnext_3d_contracts() -> dict[str, Any]:
-    # The source tree and one-file Runtime resolve resources differently.
-    # Serve the unchanged preparation-only contract from the selected resource root.
-    contract = app_paths.resource_dir / "vnext" / "3d" / "minimal_3d_contracts.json"
-    return json.loads(contract.read_text(encoding="utf-8"))
+    relative = Path("vnext/3d/minimal_3d_contracts.json")
+    roots = [app_paths.resource_dir, app_paths.resource_dir / "resources"]
+    if getattr(sys, "_MEIPASS", None):
+        roots.append(Path(sys._MEIPASS))
+    for root in roots:
+        contract = root / relative
+        try:
+            if contract.is_file():
+                return json.loads(contract.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+    raise HTTPException(status_code=503, detail={"code": "vnext_3d_contract_unavailable"})
 
 
 @app.get("/api/comsol/diagnostics")
@@ -842,6 +1007,15 @@ async def session_events(
 @app.post("/api/sessions/{session_id}/messages")
 async def send_message(session_id: str, request: AgentMessageRequest) -> dict[str, Any]:
     try:
+        if request.intent_confirmation is not None:
+            if request.mode != AgentMode.PLAN:
+                raise HTTPException(status_code=422, detail="Intent confirmation applies to PLAN only")
+            try:
+                content, confirmation = confirmed_plan_input(request.content, request.intent_confirmation)
+            except ValueError as exc:
+                raise HTTPException(status_code=422, detail=str(exc)) from exc
+            return await agent_runtime.handle_message(
+                session_id, request.mode, content, intent_confirmation=confirmation)
         return await agent_runtime.handle_message(session_id, request.mode, request.content)
     except KeyError as exc:
         raise HTTPException(status_code=404, detail="Session not found") from exc
@@ -898,6 +1072,9 @@ async def remove_ollama_model(request: ModelOperationRequest) -> dict[str, Any]:
 
 @app.post("/api/sessions/{session_id}/messages/stream")
 async def stream_message(session_id: str, request: AgentMessageRequest) -> StreamingResponse:
+    if request.intent_confirmation is not None:
+        raise HTTPException(status_code=422, detail="Use the PLAN message endpoint to confirm intent")
+
     async def events():
         try:
             async for event in agent_runtime.handle_message_stream(session_id, request.mode, request.content):
@@ -938,6 +1115,10 @@ async def complete_plan(
         )
     except KeyError as exc:
         raise HTTPException(status_code=404, detail="Session not found") from exc
+    except PlanRevisionConflict as exc:
+        error = HTTPException(status_code=409, detail=str(exc))
+        error._sky_failure_facts = Facts(expected_revision=request.expected_revision, reviewed_digest_matches=False)
+        raise error from exc
     except ValueError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
 
@@ -1087,6 +1268,7 @@ async def run_artifact(run_id: str, filename: str) -> FileResponse:
     allowed = {
         "concentration.png",
         "temperature.png",
+        "temperature_final.png",
         "temperature_field.csv",
         "concentration_profile.csv",
         "solid_mises.png",
@@ -1107,6 +1289,8 @@ async def run_artifact(run_id: str, filename: str) -> FileResponse:
         run = session_store.get_run(run_id)
     except KeyError:
         run = None
+    if filename == "temperature_final.png" and run is None:
+        raise HTTPException(status_code=404, detail="No completed 3D Heat artifact manifest")
     if run:
         # Journal manifest selects the final attempt. File existence is not success.
         if run['outcome'] != 'Completed':
@@ -1143,11 +1327,22 @@ async def run_artifact(run_id: str, filename: str) -> FileResponse:
             {'run_id': run_id, 'attempt_id': run['attempt_id'], 'filename': filename, **integrity},
         )
         if not integrity['passed']:
-            raise HTTPException(status_code=409, detail={
+            expected_sha = expected.get('sha256')
+            actual_sha = integrity.get('sha256')
+            facts = Facts(phase='export', artifact_sha256=actual_sha,
+                          artifact_expected_sha256=expected_sha if isinstance(expected_sha, str)
+                          and re.fullmatch(r'[0-9a-f]{64}', expected_sha) else None)
+            signal = Signal(Origin.SCIENCE, 'readback', Cause.ARTIFACT_INVALID, method='GET',
+                            route='/api/artifacts/{run_id}/{filename}', status=409, facts=facts)
+            case_id = capture(session_store, signal,
+                              session_id=run['session_id'], run_id=run_id, attempt_id=run['attempt_id'])
+            error = HTTPException(status_code=409, detail={
                 'code': 'artifact_corrupt', 'title': 'Artifact integrity lost',
                 'summary': 'The result no longer matches its frozen record.',
                 'diagnosticId': f'artifact-{run_id}-{filename}',
             })
+            error._sky_failure_captured = bool(case_id)
+            raise error
     return FileResponse(candidate)
 
 
@@ -1174,14 +1369,17 @@ async def java_bridge_environment() -> dict[str, Any]:
 @app.get("/api/imported-mph")
 async def list_imported_mph() -> dict[str, Any]:
     """List imported user models separately from Workbench-generated runs."""
-    return {"items": imported_mph_store.list()}
+    return {"items": imported_mph_store.list(project_id=_diagnostic_project() or "")}
 
 
 @app.post("/api/imported-mph", status_code=201)
 async def import_mph(request: Request, x_workbench_filename: str = Header(default="")) -> dict[str, Any]:
     """Stream raw MPH bytes; the original is immutable to Bridge operations."""
     try:
-        return await imported_mph_store.save(unquote(x_workbench_filename), request.stream())
+        project = _diagnostic_project()
+        if project != "workbench":
+            raise HTTPException(403, "MPH import requires the writable Workbench project")
+        return await imported_mph_store.save(unquote(x_workbench_filename), request.stream(), project_id=project)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
@@ -1190,8 +1388,8 @@ async def import_mph(request: Request, x_workbench_filename: str = Header(defaul
 async def start_imported_mph_preview(item_id: str) -> dict[str, Any]:
     """Load only the working copy, without interrupting another owned model."""
     try:
-        working = imported_mph_store.working_path(item_id)
-    except KeyError as exc:
+        working = imported_mph_store.working_path(item_id, project_id=_diagnostic_project() or "")
+    except (KeyError, ValueError) as exc:
         raise HTTPException(status_code=404, detail="Imported MPH unavailable") from exc
     status = java_bridge_process_manager.status()
     if (status.get("running") or status.get("state") == "starting") and Path(str(status.get("model_path", ""))).resolve() != working:
@@ -1207,8 +1405,8 @@ async def start_imported_mph_preview(item_id: str) -> dict[str, Any]:
 async def read_imported_mph_preview(item_id: str) -> dict[str, Any]:
     """A preview is verified only by a live COMSOL ModelUtil tree readback."""
     try:
-        working = imported_mph_store.working_path(item_id)
-    except KeyError as exc:
+        working = imported_mph_store.working_path(item_id, project_id=_diagnostic_project() or "")
+    except (KeyError, ValueError) as exc:
         raise HTTPException(status_code=404, detail="Imported MPH unavailable") from exc
     process = java_bridge_process_manager.status()
     common = {"model_state_verified": False, "scientific_validation_passed": False}
@@ -1232,7 +1430,18 @@ async def read_imported_mph_preview(item_id: str) -> dict[str, Any]:
 @app.post("/api/comsol/bridge/start", status_code=202)
 async def start_java_bridge(request: JavaBridgeStartRequest) -> dict[str, Any]:
     try:
-        return await java_bridge_process_manager.start(request.model_path)
+        model_path = request.model_path
+        if request.session_id:
+            if model_path is not None:
+                raise ValueError('Choose a task or an explicit model, not both')
+            model_path = str(await asyncio.to_thread(
+                completed_model, session_store, request.session_id, _diagnostic_project(), WORKSPACE_ROOT))
+            status = java_bridge_process_manager.status()
+            if (status.get('running') or status.get('state') == 'starting') and Path(str(status.get('model_path', ''))).resolve() != Path(model_path):
+                raise HTTPException(status_code=409, detail='Another COMSOL model currently owns the Bridge')
+        return await java_bridge_process_manager.start(model_path)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail='Task model unavailable') from exc
     except (ValueError, FileNotFoundError) as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
@@ -1305,8 +1514,10 @@ async def java_bridge_stream(after: int = 0, last_event_id: str | None = Header(
     async def events():
         nonlocal cursor
         last_keepalive = asyncio.get_running_loop().time()
-        unavailable_reported = False
+        unavailable_state = None
         while True:
+            if getattr(app.state, 'desktop_stopping', False):
+                return
             try:
                 payload = await java_bridge_client.events(cursor)
                 latest_sequence = int(payload.get("latest_sequence", cursor))
@@ -1315,21 +1526,13 @@ async def java_bridge_stream(after: int = 0, last_event_id: str | None = Header(
                     payload = await java_bridge_client.events(0)
                 for event in payload.get("events", []):
                     cursor = max(cursor, int(event.get("sequence", cursor)))
-                    unavailable_reported = False
+                    unavailable_state = None
                     yield f"id: {cursor}\ndata: {json.dumps(event, ensure_ascii=False)}\n\n"
             except Exception as exc:
-                if not unavailable_reported:
-                    unavailable_reported = True
-                    event = {
-                        "sequence": cursor,
-                        "event_type": "critical_failure",
-                        "phase": "bridge",
-                        "status": "unavailable",
-                        "detail": f"Java Bridge unavailable: {type(exc).__name__}: {exc}",
-                        "command_success": False,
-                        "model_state_verified": False,
-                        "scientific_validation_passed": False,
-                    }
+                event = unavailable_event(java_bridge_process_manager.status(), cursor)
+                current_unavailable = (event['event_type'], event['status'])
+                if unavailable_state != current_unavailable:
+                    unavailable_state = current_unavailable
                     yield f"data: {json.dumps(event, ensure_ascii=False)}\n\n"
             now = asyncio.get_running_loop().time()
             if now - last_keepalive >= 10:

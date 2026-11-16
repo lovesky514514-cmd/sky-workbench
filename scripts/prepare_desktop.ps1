@@ -21,6 +21,9 @@ $publicKnowledgeSource = Join-Path $workbenchRoot 'knowledge\public'
 $publicKnowledgeTarget = Join-Path $tauriRoot 'resources\public_knowledge'
 $binaryTarget = Join-Path $tauriRoot 'binaries\scientific-runtime-x86_64-pc-windows-msvc.exe'
 $runtimeArtifact = Join-Path $workbenchRoot 'packaging\dist\scientific-runtime.exe'
+$contractRelative = 'vnext\3d\minimal_3d_contracts.json'
+$contractSource = Join-Path $workbenchRoot $contractRelative
+$contractTarget = Join-Path (Join-Path $tauriRoot 'resources') $contractRelative
 
 # Compute the same SHA-256 in Windows PowerShell 5.1 without relying on
 # Microsoft.PowerShell.Utility command discovery in the nested Tauri/npm shell.
@@ -60,6 +63,15 @@ if ($BuildProfile -ne 'public') {
   throw 'Desktop packaging is public-only. Use the separate research harness for private Knowledge Base work.'
 }
 
+if (-not (Test-Path -LiteralPath $contractSource -PathType Leaf)) {
+  throw 'Required vNext 3D contract is missing from the source tree.'
+}
+New-Item -ItemType Directory -Force -Path (Split-Path -Parent $contractTarget) | Out-Null
+Copy-Item -LiteralPath $contractSource -Destination $contractTarget -Force
+if ((Get-DesktopFileSha256 -LiteralPath $contractTarget) -cne (Get-DesktopFileSha256 -LiteralPath $contractSource)) {
+  throw 'Packaged vNext 3D contract differs from source.'
+}
+
 if ($FrozenSidecarPath) {
   if ($ExpectedSidecarSha256 -cnotmatch '^[A-F0-9]{64}$') {
     throw 'A 64-character uppercase expected sidecar SHA-256 is required.'
@@ -88,7 +100,7 @@ if ($unexpectedKb.Count -ne 0) {
 }
 $profilePayload = [ordered]@{
   profile = 'public'
-  version = '3.1.0'
+  version = '4.0.0'
   runtime_version = '1.1.0-rc5.2'
   proprietary_kb_included = $false
   policy = 'public-safe-no-comsol-derived-kb'

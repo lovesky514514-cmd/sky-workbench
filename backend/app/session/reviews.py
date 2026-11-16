@@ -78,13 +78,15 @@ class ReviewStoreMixin:
 
     def get_review(self, review_id: str) -> dict[str, Any] | None:
         with self._connect() as db:
-            row = db.execute('SELECT payload_json,state FROM review_requests WHERE review_id=?',
+            row = db.execute("SELECT payload_json,state FROM review_requests WHERE review_id=? "
+                             "AND json_extract(payload_json,'$.purpose') IS NULL",
                              (review_id,)).fetchone()
         return {**json.loads(row['payload_json']), 'state': row['state']} if row else None
 
     def open_review(self, session_id: str) -> dict[str, Any] | None:
         with self._connect() as db:
             row = db.execute('SELECT payload_json FROM review_requests WHERE session_id=? AND state=? '
+                             "AND json_extract(payload_json,'$.purpose') IS NULL "
                              'ORDER BY rowid DESC LIMIT 1', (session_id, 'OPEN')).fetchone()
         return json.loads(row['payload_json']) if row else None
 
@@ -96,7 +98,7 @@ class ReviewStoreMixin:
             db.execute('BEGIN IMMEDIATE')
             row = db.execute('SELECT * FROM review_requests WHERE review_id=? AND session_id=?',
                              (review_id, session_id)).fetchone()
-            if not row:
+            if not row or json.loads(row['payload_json']).get('purpose') is not None:
                 raise KeyError(review_id)
             if row['state'] != 'OPEN':
                 raise ValueError('review already resolved')
@@ -122,3 +124,43 @@ class ReviewStoreMixin:
                        ('RESOLVED', json.dumps(resolved, ensure_ascii=False), review_id))
             self._journal_event(db, session_id, 'review.resolved', resolved)
         return resolved
+
+    def _request_recovery_review(self, db, session_id, scope, proposal):
+        # 复用审核记录，但将模拟审核与可修改模型的审核明确隔离。
+        binding = {'purpose': 'recovery_simulation', 'digest': proposal.digest,
+                   'planRevision': scope.plan_revision, 'caseId': proposal.case_id}
+        if scope.scientific_run_id is None:
+            self._journal_event(db, session_id, 'recovery.session_review_requested',
+                                {'review_id': proposal.proposal_id, 'binding': binding})
+            return
+        db.execute('INSERT INTO review_requests VALUES(?,?,?,?,?,?,NULL)',
+                   (proposal.proposal_id, session_id, scope.scientific_run_id, scope.scientific_attempt_id,
+                    'OPEN', json.dumps(binding, ensure_ascii=False)))
+        self._journal_event(db, session_id, 'recovery.review_requested', {'case_id': proposal.case_id})
+
+    @staticmethod
+    def _recovery_review(db, session_id, proposal_id):
+        run_review = db.execute("SELECT * FROM review_requests WHERE session_id=? AND review_id=? "
+                                "AND json_extract(payload_json,'$.purpose')='recovery_simulation'",
+                                (session_id, proposal_id)).fetchone()
+        if run_review is not None:
+            return run_review
+        request = db.execute("""SELECT json_extract(payload_json,'$.binding') AS binding FROM events
+                                WHERE session_id=? AND event_type='recovery.session_review_requested'
+                                AND json_extract(payload_json,'$.review_id')=? LIMIT 1""",
+                             (session_id, proposal_id)).fetchone()
+        if not request:
+            return None
+        decision = db.execute("""SELECT payload_json FROM events WHERE session_id=?
+                                 AND event_type='recovery.review_decided'
+                                 AND json_extract(payload_json,'$.review_id')=? LIMIT 1""",
+                              (session_id, proposal_id)).fetchone()
+        return {'run_id': None, 'attempt_id': None, 'payload_json': request['binding'],
+                'decision_json': decision['payload_json'] if decision else None,
+                'state': 'RESOLVED' if decision else 'OPEN'}
+
+    def _resolve_recovery_review(self, db, session_id, proposal_id, decision):
+        value = {'decision': decision, 'timestamp': _time(), 'authority': 'authenticated_desktop_session'}
+        db.execute("UPDATE review_requests SET state='RESOLVED',decision_json=? WHERE session_id=? AND review_id=?",
+                   (json.dumps(value), session_id, proposal_id))
+        self._journal_event(db, session_id, 'recovery.review_decided', {'review_id': proposal_id, **value})

@@ -1,0 +1,58 @@
+.warm-viewport.warm-comsol-native {
+  min-height: 0;
+  padding: 0;
+  overflow: visible;
+  color: var(--warm-text);
+  background: #f7f5ef;
+  border: 1px solid var(--warm-border);
+}
+.warm-science-layout.warm-model-layout {
+  min-height: 0;
+  max-height: none;
+  align-items: start;
+}
+.comsol-model-view {
+  width: 100%;
+  min-width: 0;
+  padding: 14px;
+  box-sizing: border-box;
+  align-self: start;
+}
+.comsol-model-view > header, .comsol-view-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.comsol-model-view > header { justify-content: space-between; }
+.comsol-model-view button, .comsol-model-view select {
+  border: 1px solid #b8c2b6;
+  border-radius: 6px;
+  color: #2c423b;
+  background: #faf8f1;
+  padding: 4px 8px;
+}
+.comsol-model-view button[aria-pressed="true"] { background: #dce8df; border-color: #547c6e; }
+.comsol-model-view button:disabled { opacity: .55; }
+.comsol-model-view p { margin: 6px 0; }
+.comsol-model-view [role="alert"] { color: #94391d; }
+.comsol-webgl {
+  height: clamp(235px, 42dvh, 580px);
+  margin: 8px 0;
+  border: 1px solid #d6d7cb;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.comsol-webgl canvas { display: block; }
+.comsol-section-position { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+.comsol-section-position input { flex: 1; min-width: 0; }
+.comsol-temperature { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 13px; }
+.comsol-temperature i { flex: 1 1 64px; height: 10px; border-radius: 3px; background: linear-gradient(90deg, #2570df, #b486a6, #f47027); }
+.comsol-view-facts { font-size: 13px; }
+.comsol-axes { margin-inline-start: 12px; font-weight: 700; }
+.comsol-axes i { font-style: normal; }
+.comsol-axes i:first-child { color: #a73935; }
+.comsol-axes i:nth-child(2) { color: #286b36; }
+.comsol-axes i:last-child { color: #355896; }
+.comsol-selection button { margin-inline-end: 6px; }
+.comsol-readback-id { font-size: 12px; overflow-wrap: anywhere; }

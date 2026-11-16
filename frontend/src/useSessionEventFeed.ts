@@ -32,7 +32,7 @@ export function useSessionEventFeed({ session, runtimeReady, locale, selectionRe
       if (!isCurrentSelection(ticket, selectionRef.current)) return
       // Revoke the visible claim before the debounced journal request returns.
       if (['run.started', 'run.attempt', 'evidence.invalidated',
-        'validation.invalidated_by_human_correction', 'run.canceled', 'run.failed',
+        'validation.invalidated_by_human_correction', 'run.cancel_requested', 'run.canceled', 'run.failed',
         'run.interrupted', 'artifact.integrity_failed'].includes(String(event.type))) {
         interruptionEpoch += 1
         setRuntimeDomain(null)

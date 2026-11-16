@@ -120,3 +120,29 @@ def test_http_plan_and_scope_approval(tmp_path,monkeypatch):
     accepted = response.json()['plan']
     assert accepted['runnable'] and accepted['workflow_id']==WORKFLOW
     assert accepted['parameters']['initial_temperature']['authorization']=='scope'
+def test_explicit_cooling_values_are_not_replaced_by_exploratory_defaults():
+    from app.scientific.cooling import cooling_plan
+    plan = cooling_plan('三维铁块冷却 5 mm x 5 mm x 25 mm，初温600 °C，环境20 °C，'
+        '热导率45 W/(m*K)，密度7870 kg/m^3，比热650 J/(kg*K)，h=15 W/(m^2*K)，'
+        '发射率0.65，持续180 s、每1 s输出。六面空气对流与灰体辐射。')
+    expected = {'initial_temperature': 873.15, 'ambient_temperature': 293.15,
+                'heat_transfer_coefficient': 15., 'emissivity': .65, 'duration': 180., 'output_interval': 1.}
+    for name, value in expected.items():
+        assert plan['parameters'][name]['value'] == value
+        assert name not in plan['completion']['parameters']
+    assert plan['runnable'] is False and plan['completion'] is not None
+
+
+def test_excluded_contact_phase_change_and_resolved_flow_do_not_demote_cooling():
+    from app.scientific.cooling import cooling_plan
+    from app.scientific.request_analysis import analyze_request
+    from app.agent.planner import faithful_workflow
+    prompt = ('三维铁块瞬态冷却5 mm x 5 mm x 25 mm，初温600 °C，环境20 °C，持续180 s。'
+              '六面采用对流与灰体辐射，无支撑接触，无解析空气流动，无氧化或相变。')
+    brief = analyze_request(prompt)
+    assert brief.model_outline['contact_requested'] is False
+    assert brief.model_outline['phase_change_requested'] is False
+    assert faithful_workflow(cooling_plan(prompt), brief, prompt)
+    for extra in ('需要接触热传递', '需要考虑相变', '需要解析空气流动'):
+        requested = prompt + '。但是' + extra
+        assert not faithful_workflow(cooling_plan(requested), analyze_request(requested), requested)

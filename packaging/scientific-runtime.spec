@@ -1,4 +1,4 @@
-# PyInstaller inputs for the SKY 3.1 Scientific Runtime.
+# PyInstaller inputs for the SKY Scientific Runtime.
 from pathlib import Path
 from hashlib import sha256
 import json
@@ -9,6 +9,9 @@ from PyInstaller.building.datastruct import TOC
 from PyInstaller.utils.hooks import collect_data_files, collect_dynamic_libs, collect_submodules, copy_metadata
 
 root = Path(SPECPATH).parent
+contract = root / "vnext" / "3d" / "minimal_3d_contracts.json"
+if not contract.is_file():
+    raise RuntimeError("Required vNext 3D contract is missing from the source tree")
 native_manifest = json.loads((root / "packaging" / "native-inputs.json").read_text(encoding="utf-8"))
 hidden = []
 for package in ("uvicorn", "fastapi", "pydantic", "mph", "jpype"):
@@ -21,8 +24,9 @@ binaries = collect_dynamic_libs("jpype")
 datas = [
     (str(root / "frontend" / "dist"), "frontend_dist"),
     (str(root / "java_bridge"), "java_bridge"),
-    (str(root / "vnext" / "3d" / "minimal_3d_contracts.json"), "vnext/3d"),
+    (str(contract), "vnext/3d"),
     (str(root / "backend" / "mathics_worker.py"), "."),
+    (str(root / "backend" / "app" / "engines" / "vasp_wsl_worker.py"), "app/engines"),
     (str(root / "knowledge" / "public" / "manifest.json"), "public_knowledge"),
     (str(root / "knowledge" / "public" / "units.json"), "public_knowledge"),
 ]

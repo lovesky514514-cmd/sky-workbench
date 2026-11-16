@@ -13,10 +13,13 @@ test('home separates imported MPH from newly created work', () => {
 
 test('drop import auto-requests real preview without displaying scientific success', () => {
   const ui = source('../src/components/ImportedMphWorkspace.tsx')
+  const studio = source('../src/WarmStudio.tsx')
+  const viewer = source('../src/components/ComsolModelView.tsx')
   assert.match(ui, /await api\.importMph\(file\)/)
-  assert.match(ui, /await loadPreview\(item\.id\)/)
-  assert.match(ui, /preview\.model_state_verified/)
-  assert.match(ui, /not a solve, a modification, or scientific validation/)
+  assert.match(ui, /onOpen\(item\)/)
+  assert.match(studio, /setOpenedImport\(\{ item, project: importProject \}\); setSoftwareOwner\(null\); setPage\('model'\)/)
+  assert.match(viewer, /if \(kind === 'imported'\) void refresh/)
+  assert.match(ui, /Import does not run a solver or certify scientific results/)
 })
 
 test('desktop opens only its fixed imported-model folder', () => {

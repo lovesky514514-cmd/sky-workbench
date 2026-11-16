@@ -21,6 +21,7 @@ from app.comsol.discovery import ComsolJavaEnvironment, discover_comsol_java
 from app.comsol.owned_process import OwnedProcess
 from app.config import WORKSPACE_ROOT
 from app.engines.capabilities import CapabilityRegistry, executable_hash
+from app.engines.native_installations import registered_install_roots
 
 
 PROBE_MARKER = "SWB_ENGINE_PROBE_OK"
@@ -96,11 +97,22 @@ def _find_executable(engine: str, names: tuple[str, ...]) -> str:
         "MATLAB": ("MATLAB/R*/bin/matlab.exe",),
         "LAMMPS": ("LAMMPS*/bin/lmp.exe",),
         "VASP": (),
-        "Materials Studio": ("BIOVIA/Materials Studio*/etc/Scripting/RunMatScript.bat", "BIOVIA/Materials Studio*/MaterialsStudio.exe"),
+        "Materials Studio": ("BIOVIA/Materials Studio*/etc/Scripting/bin/RunMatScript.bat", "BIOVIA/Materials Studio*/etc/Scripting/RunMatScript.bat", "BIOVIA/Materials Studio*/MaterialsStudio.exe"),
     }[engine]
     for root in roots:
         for pattern in patterns:
             for path in sorted(root.glob(pattern), reverse=True):
+                if path.is_file():
+                    return str(path)
+    # 自定义盘符安装由登记的厂商根定位，仅检查有界的安装布局。
+    layouts = {
+        "MATLAB": ("bin/matlab.exe", "R*/bin/matlab.exe"),
+        "Materials Studio": ("etc/Scripting/bin/RunMatScript.bat", "Materials Studio*/etc/Scripting/bin/RunMatScript.bat"),
+        "LAMMPS": ("bin/lmp.exe", "lmp.exe"),
+    }
+    for root in registered_install_roots(engine):
+        for layout in layouts.get(engine, ()):
+            for path in sorted(root.glob(layout), reverse=True):
                 if path.is_file():
                     return str(path)
     return ""
@@ -109,7 +121,8 @@ def _find_executable(engine: str, names: tuple[str, ...]) -> str:
 def probe_command(engine: str, executable: str) -> list[str]:
     """Never place a user prompt or user path into an engine command."""
     if engine == "MATLAB":
-        return [executable, "-batch", f"disp('{PROBE_MARKER}')"]
+        from app.script_workspace import matlab_command
+        return matlab_command(executable, f"disp('{PROBE_MARKER}')")
     raise ValueError("No safe local handshake is defined for this engine")
 
 
@@ -129,7 +142,7 @@ async def _handshake(command: list[str]) -> tuple[str, int]:
         try:
             from app.script_workspace import child_environment
 
-            owned = await OwnedProcess.spawn(command, cwd=workspace, env=child_environment())
+            owned = await OwnedProcess.spawn(command, cwd=workspace, env=child_environment("MATLAB"))
         except (OSError, RuntimeError):
             return "START_FAILED", round((time.perf_counter() - started) * 1000)
         try:

@@ -8,9 +8,9 @@ use std::{
     net::{SocketAddr, TcpListener, TcpStream},
     path::{Path, PathBuf},
     process::Command,
-    sync::Mutex,
+    sync::{Mutex, Arc, atomic::{AtomicBool, Ordering}},
     thread,
-    time::Duration,
+    time::{Duration, Instant},
 };
 #[cfg(windows)]
 use std::os::windows::process::CommandExt;
@@ -49,6 +49,7 @@ struct DesktopBootstrap {
 
 struct RuntimeProcess {
     child: Option<CommandChild>,
+    exited: Arc<AtomicBool>,
     bootstrap: DesktopBootstrap,
 }
 
@@ -245,19 +246,25 @@ fn spawn_runtime(app: &AppHandle) -> Result<RuntimeProcess, String> {
     };
     let log_path = paths.logs_dir.join("scientific-runtime.log");
     let log_token = token.clone();
+    let exited = Arc::new(AtomicBool::new(false));
+    let receiver_exited = Arc::clone(&exited);
     tauri::async_runtime::spawn(async move {
         while let Some(event) = receiver.recv().await {
             match event {
                 CommandEvent::Stdout(bytes) => append_runtime_log(&log_path, "stdout", &bytes, &log_token),
                 CommandEvent::Stderr(bytes) => append_runtime_log(&log_path, "stderr", &bytes, &log_token),
                 CommandEvent::Error(error) => append_runtime_log(&log_path, "error", error.as_bytes(), &log_token),
-                CommandEvent::Terminated(payload) => append_runtime_log(&log_path, "terminated", format!("{payload:?}").as_bytes(), &log_token),
+                CommandEvent::Terminated(payload) => {
+                    receiver_exited.store(true, Ordering::Release);
+                    append_runtime_log(&log_path, "terminated", format!("{payload:?}").as_bytes(), &log_token);
+                },
                 _ => {}
             }
         }
     });
     Ok(RuntimeProcess {
         child: Some(child),
+        exited,
         bootstrap: DesktopBootstrap {
             desktop: true,
             version: VERSION.to_string(),
@@ -296,8 +303,16 @@ fn request_shutdown(bootstrap: &DesktopBootstrap) {
 
 fn stop_owned_runtime(process: &mut RuntimeProcess) {
     request_shutdown(&process.bootstrap);
-    thread::sleep(Duration::from_millis(800));
+    // 给持有事件流的运行时有界退出时间；仅在未收到退出回执时回收自有进程树。
+    let deadline = Instant::now() + Duration::from_secs(5);
+    while !process.exited.load(Ordering::Acquire) && Instant::now() < deadline {
+        thread::sleep(Duration::from_millis(50));
+    }
     if let Some(child) = process.child.take() {
+        if process.exited.load(Ordering::Acquire) {
+            process.bootstrap.runtime_state = "stopped".to_string();
+            return;
+        }
         #[cfg(windows)]
         {
             // PyInstaller one-file executables use a bootloader parent plus the
@@ -393,6 +408,12 @@ fn shutdown_desktop(app: AppHandle) {
 }
 
 fn main() {
+    #[cfg(windows)]
+    if std::env::args_os().nth(1).as_deref() == Some(std::ffi::OsStr::new("--check-webview2")) {
+        // 在 Runtime 启动前探测 / Check WebView2 before starting the Runtime.
+        std::process::exit(if tauri::webview_version().is_ok() { 0 } else { 2 });
+    }
+
     let app = tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
         .on_window_event(|window, event| {

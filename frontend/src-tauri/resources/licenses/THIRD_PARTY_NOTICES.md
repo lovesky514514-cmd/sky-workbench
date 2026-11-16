@@ -321,6 +321,7 @@ The Rust inventory distinguishes Windows normal dependencies from conservative b
 | node | react | 19.1.1 | MIT | 1 | NOTICE_TEXT_COLLECTED |
 | node | react-dom | 19.1.1 | MIT | 1 | NOTICE_TEXT_COLLECTED |
 | node | scheduler | 0.26.0 | MIT | 1 | NOTICE_TEXT_COLLECTED |
+| node | three | 0.187.0 | MIT | 1 | NOTICE_TEXT_COLLECTED |
 | python_native_components | ahash | 0.8.12 | MIT OR Apache-2.0 | 2 | EXACT_SBOM_SOURCE_NOTICES_COLLECTED |
 | python_native_components | aho-corasick | 1.1.3 | Unlicense OR MIT | 2 | EXACT_SBOM_SOURCE_NOTICES_COLLECTED |
 | python_native_components | archery | 1.2.3 | MIT | 1 | EXACT_SBOM_SOURCE_NOTICES_COLLECTED |

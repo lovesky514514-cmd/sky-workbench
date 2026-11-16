@@ -40,7 +40,7 @@ QUANTITIES = {
     "density": (r"密度|density|\brho\s*=", "density"),
     "heat_capacity": (r"比热容|比热|heat capacity|\bCp\s*=", "heat_capacity"),
     "duration": (
-        r"时长|计算时间|(?:冷却|计算)(?=\s*[\d.eE+-]+\s*(?:s\b|秒|分钟))|观察|duration|end time",
+        r"时长|计算时间|持续|(?:冷却|计算)(?=\s*[\d.eE+-]+\s*(?:s\b|秒|分钟))|观察|duration|end time",
         "time",
     ),
     "output_interval": (
@@ -485,10 +485,10 @@ def analyze_request(text: str) -> RequestBrief:
                     re.search(r"比较|对比|哪个|两种|compare|comparison", text, re.I)
                 ),
                 "contact_requested": bool(
-                    re.search(r"接触|贴在|粘在|contact|support", text, re.I)
+                    positive_mentions(text, ('接触', '贴在', '粘在', 'contact', 'support'))[0]
                 ),
                 "phase_change_requested": bool(
-                    re.search(r"熔化|熔融|相变|melt|phase change", text, re.I)
+                    positive_mentions(text, ('熔化', '熔融', '相变', 'melt', 'phase change'))[0]
                 ),
                 "environment": "liquid"
                 if re.search(

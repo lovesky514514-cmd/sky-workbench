@@ -3,14 +3,22 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
-from typing import Any, Callable, Literal
 import asyncio
+from pathlib import Path
+from typing import Any, Callable, Literal
 import os
+import re
+from uuid import uuid4
 
 import httpx
 
+from app.recovery.ingest import BridgeAuthenticationUnavailable, bridge_signal, digest
+from app.recovery.http_execution import HTTP_RECOVERY
+
 from app.config import settings_store
 from app.comsol.bridge_auth import BRIDGE_TOKEN_HEADER, valid_bridge_token
+from app.execution.files import reject_reparse
+from app.execution.scientific_transfer import CONTROL_BYTES, decode_object, load_transfer
 
 
 BridgeEventType = Literal["command", "model_change", "progress", "critical_failure"]
@@ -91,7 +99,7 @@ class JavaBridgeClient:
                 "model_connected": False,
                 "connected": False,
                 "real_comsol": False,
-                "detail": f"Java Bridge unavailable: {type(exc).__name__}: {exc}",
+                "detail": "Java Bridge unavailable; inspect the scoped diagnostic record.",
                 "base_url": self.configured_url(),
                 "command_success": False,
                 "model_state_verified": False,
@@ -109,6 +117,13 @@ class JavaBridgeClient:
         params = {"model_tag": model_tag} if model_tag else None
         return await self._request("GET", "/model/tree", params=params)
 
+    async def visualization(self, request_id: str, *, staging_name: str, heat_result=False) -> dict[str, Any]:
+        params = {"request_id": request_id, "staging": staging_name}
+        if heat_result:
+            params["field"] = "saved_heat"
+        return await self._request("GET", "/model/visualization", params=params,
+                                   request_timeout=httpx.Timeout(45.0, connect=0.75))
+
     async def test_feature(self, payload: dict[str, str]) -> dict[str, Any]:
         return await self._request("POST", "/commands/test-feature", json=payload, retries=0)
 
@@ -116,7 +131,7 @@ class JavaBridgeClient:
         return await self._request("GET", "/model/parameters")
 
     async def set_parameter(self, name: str, value: str) -> dict[str, Any]:
-        return await self._request("POST", "/model/parameter", json={"name": name, "value": value}, retries=1)
+        return await self._request("POST", "/model/parameter", json={"name": name, "value": value}, retries=0)
 
     async def boundary_feature(self, *, component_tag: str, physics_tag: str,
                                feature_tag: str, property_key: str) -> dict[str, Any]:
@@ -142,7 +157,7 @@ class JavaBridgeClient:
         }, retries=0)
 
     async def remove_parameter(self, name: str) -> dict[str, Any]:
-        return await self._request("DELETE", "/model/parameter", params={"name": name}, retries=1)
+        return await self._request("DELETE", "/model/parameter", params={"name": name}, retries=0)
 
     async def run_study(self, study_tag: str = "std1") -> dict[str, Any]:
         return await self._request(
@@ -153,11 +168,30 @@ class JavaBridgeClient:
             request_timeout=httpx.Timeout(600.0, connect=2.0),
         )
 
-    async def heat_field(self) -> dict[str, Any]:
-        return await self._request(
+    async def heat_field(self, run_id: str, attempt_id: str, attempt_root: Path,
+                         check_current: Callable[[], None]) -> dict[str, Any]:
+        if (not all(re.fullmatch(r'[A-Za-z0-9-]{1,100}', value) for value in (run_id, attempt_id))
+                or attempt_root.parts[-4:] != ('models', 'attempts', run_id, attempt_id)):
+            raise PermissionError('bridge_field_scope_invalid')
+        check_current()
+        request_id = uuid4().hex
+        root = attempt_root / 'bridge-readbacks' / request_id
+        reject_reparse(root)
+        root.mkdir(parents=True, exist_ok=False)
+        payload = await self._request(
             'GET', '/model/heat-field', retries=0,
+            params={'run_id': run_id, 'attempt_id': attempt_id, 'request_id': request_id},
             request_timeout=httpx.Timeout(120.0, connect=2.0),
         )
+        check_current()
+        if payload.get('request_id') != request_id or 'data' not in payload:
+            raise ValueError('bridge_field_receipt_mismatch')
+        value = await asyncio.to_thread(load_transfer, root, payload['data'], run_id=run_id,
+                                        attempt_id=attempt_id, producer='java_bridge', data_type='bridge-heat-field.v1')
+        check_current()
+        if payload.get('sample_count') != len(value['x']) or any(name in payload for name in value):
+            raise ValueError('bridge_field_receipt_shape_mismatch')
+        return {**payload, **value}
 
     async def export_corrected_heat(self, run_id: str, attempt_id: str) -> dict[str, Any]:
         try:
@@ -207,34 +241,53 @@ class JavaBridgeClient:
         method: str,
         path: str,
         *,
-        retries: int = 2,
+        retries: int = 0,
         request_timeout: httpx.Timeout | None = None,
         **kwargs: Any,
     ) -> dict[str, Any]:
         # No token means no network request: loopback and a random port are not authentication.
         token = self.token_provider()
         if not valid_bridge_token(token):
-            raise ValueError("Java Bridge authentication unavailable")
+            error = BridgeAuthenticationUnavailable("Java Bridge authentication unavailable")
+            error._sky_failure_signal = bridge_signal(method, path, error)
+            raise error
         headers = httpx.Headers(kwargs.pop("headers", None))
         headers[BRIDGE_TOKEN_HEADER] = token
+        headers['Accept-Encoding'] = 'identity'
         timeout = request_timeout or httpx.Timeout(3.0, connect=0.75)
-        last_error: Exception | None = None
-        for attempt in range(max(0, min(2, retries)) + 1):
-            try:
-                async with httpx.AsyncClient(timeout=timeout, transport=self.transport, trust_env=False) as client:
-                    response = await client.request(method, f"{self.configured_url()}{path}", headers=headers, **kwargs)
-                    response.raise_for_status()
-                    payload = response.json()
-                if not isinstance(payload, dict):
-                    raise ValueError("Java Bridge response must be a JSON object")
-                return payload
-            except (httpx.TransportError, httpx.TimeoutException) as exc:
-                last_error = exc
-                if attempt >= retries:
-                    raise
-                await asyncio.sleep(0.1 * (attempt + 1))
-        assert last_error is not None
-        raise last_error
+        base_url = self.configured_url()
+        # retries 参数保留调用兼容；真正重试只由持久化的只读恢复上下文控制。
+        try:
+            async with httpx.AsyncClient(timeout=timeout, transport=self.transport, trust_env=False,
+                                         follow_redirects=False) as client:
+                async def send():
+                    request = client.build_request(method, f"{base_url}{path}", headers=headers, **kwargs)
+                    limit = (CONTROL_BYTES if path in {'/model/heat-field', '/model/visualization'} else
+                             65_536 if HTTP_RECOVERY.get() is not None else 4_000_000)
+                    response = await client.send(request, stream=True)
+                    data = bytearray()
+                    try:
+                        if response.headers.get('Content-Encoding', 'identity').lower() != 'identity':
+                            raise ValueError('Bridge compressed response is not supported')
+                        declared = response.headers.get('Content-Length')
+                        if declared is not None and (not declared.isdecimal() or int(declared) > limit):
+                            raise ValueError('Bridge response exceeded its limit')
+                        async for chunk in response.aiter_bytes(chunk_size=8192):
+                            if len(data) + len(chunk) > limit:
+                                raise ValueError('Bridge response exceeded its limit')
+                            data.extend(chunk)
+                        return httpx.Response(response.status_code, headers=response.headers, content=bytes(data), request=request)
+                    finally:
+                        await response.aclose()
+
+                recovery = HTTP_RECOVERY.get()
+                fingerprint = digest([method,path,base_url,kwargs.get('params')])
+                response = await recovery.request(method, path, send, fingerprint=fingerprint) if recovery else await send()
+                response.raise_for_status()
+                return decode_object(response.content)
+        except (httpx.HTTPError, ValueError) as exc:
+            exc._sky_failure_signal = bridge_signal(method, path, exc)
+            raise
 
 
 def _event_type(value: Any) -> BridgeEventType:

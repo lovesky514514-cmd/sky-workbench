@@ -30,21 +30,19 @@ from app.scientific.schemas import ScientificPlan
 from app.scientific.heat_recertification import corrected_heat_execution, normalize_heat_core
 from app.scientific.resource_guard import ResourceMonitor, assess_risk, hardware_profile
 from app.session.store import PlanRevisionConflict, SessionStore, session_store, utc_now
+from app.recovery.ingest import Signal, attached_signals, capture, requires_commit_readback
+from app.recovery.schemas import Cause, Facts, Origin
 from app.session.state_grounding import ModelStateLedger, Provenance, rebuild_context_snapshot
 from app.session.run_journal import RunCanceled, StaleAttempt
 from app.session.assumptions import AssumptionLedger
 from app.scientific.plan_completion import accept_completion, sanitize_plan_edit
 from app.memory.store import MemoryAdmissionPolicy, MemoryCandidate, MemoryStore, MemoryType
-from app.recovery.controller import ControllerInput, RecoverabilityActionController
 from app.execution.graph import ExecutionGraph, NodeState, TypedCorrection
 from app.execution.live_interrupt import LiveInterruptAdapter, comsol_parameter_name
 from app.validators import plan_quality_validator, validator_registry
 from app.validators.base_validator import ValidationReport, ValidationCheck
 from app.scientific.solver_gate import solver_input_issues
-
-
-class ScientificValidationError(RuntimeError):
-    pass
+from app.scientific.errors import ScientificValidationError
 
 
 class AgentRuntime:
@@ -59,14 +57,15 @@ class AgentRuntime:
         self.sessions = sessions
         self.providers = providers
         self.knowledge = knowledge
-        self.planner = planner
+        self.planner = ScientificPlanner(providers) if planner is scientific_planner and providers is not provider_manager else planner
         self.tools = tools
         self._tasks: dict[str, asyncio.Task[None]] = {}
         self._pending_runs: dict[str, str] = {}
         self._pending_boundary_reviews: dict[str, dict[str, Any]] = {}
-        self.recovery = RecoverabilityActionController()
         self.live_interrupt = LiveInterruptAdapter(sessions, java_bridge_client)
         if isinstance(self.tools, ToolRegistry): self.tools.sessions = sessions
+        from app.orchestration.controller import ResearchController
+        self.controller = ResearchController(self)
 
     async def cancel_run(self, session_id: str, *, force: bool = False) -> dict[str, Any]:
         intent = self.sessions.request_cancel(session_id, force=force)
@@ -200,6 +199,7 @@ class AgentRuntime:
         return result
 
     async def shutdown(self) -> None:
+        await self.controller.shutdown_research()
         for sid, task in list(self._tasks.items()):
             if task.done(): continue
             try:
@@ -212,6 +212,7 @@ class AgentRuntime:
         await self.reconcile()
 
     async def reconcile(self):
+        self.controller.reconcile_research()
         results = await asyncio.to_thread(self.sessions.reconcile_active_runs)
         for lifecycle in results:
             run = self.sessions.get_run(lifecycle['run_id'])
@@ -230,12 +231,15 @@ class AgentRuntime:
                                       AgentMode.RUN, run_lifecycle=lifecycle, artifacts=artifacts, **verdict.fields())
         return results
 
-    async def handle_message(self, session_id: str, mode: AgentMode, content: str) -> dict[str, Any]:
-        self._begin_turn(session_id, mode, content)
+    async def handle_message(self, session_id: str, mode: AgentMode, content: str,
+                             *, intent_confirmation: dict | None = None) -> dict[str, Any]:
+        if mode != AgentMode.ASK and self.sessions.has_heat_simulation(session_id):
+            return self._simulation_only(session_id, mode)
+        self._begin_turn(session_id, mode, content, intent_confirmation=intent_confirmation)
         if mode == AgentMode.ASK:
             await self._ask(session_id, content)
         elif mode == AgentMode.PLAN:
-            await self._plan(session_id, content)
+            await self.controller.plan(session_id, content)
         else:
             await self._start_run(session_id)
         return self.sessions.get(session_id)
@@ -245,10 +249,13 @@ class AgentRuntime:
     ) -> AsyncIterator[dict[str, Any]]:
         """Stream visible answer text; hidden model reasoning is never exposed."""
 
+        if mode != AgentMode.ASK and self.sessions.has_heat_simulation(session_id):
+            yield {"type": "session", "session": self._simulation_only(session_id, mode)}
+            return
         self._begin_turn(session_id, mode, content)
         if mode != AgentMode.ASK:
             if mode == AgentMode.PLAN:
-                await self._plan(session_id, content)
+                await self.controller.plan(session_id, content)
             else:
                 await self._start_run(session_id)
             yield {"type": "session", "session": self.sessions.get(session_id)}
@@ -256,6 +263,11 @@ class AgentRuntime:
         async for event in self._ask_stream(session_id, content):
             yield event
         yield {"type": "session", "session": self.sessions.get(session_id)}
+
+    def _simulation_only(self, session_id: str, mode: AgentMode) -> dict[str, Any]:
+        self.sessions.add_message(session_id, 'assistant',
+                                  'This is a Heat simulation session. Use the Heat simulation panel for controls.', mode)
+        return self.sessions.get(session_id)
 
     async def update_plan(self, session_id: str, payload: dict[str, Any]) -> dict[str, Any]:
         if not self.sessions.exists(session_id):
@@ -293,12 +305,14 @@ class AgentRuntime:
         await self._transition(session_id, AgentState.PLAN_READY)
         return self.sessions.get(session_id)
 
-    def _begin_turn(self, session_id: str, mode: AgentMode, content: str) -> None:
+    def _begin_turn(self, session_id: str, mode: AgentMode, content: str,
+                    *, intent_confirmation: dict | None = None) -> None:
         if not self.sessions.exists(session_id):
             raise KeyError(session_id)
         self.sessions.set_mode(session_id, mode)
         self.sessions.set_title_from_prompt(session_id, content)
-        self.sessions.add_message(session_id, "user", content, mode)
+        fields = {} if intent_confirmation is None else {"intent_confirmation": intent_confirmation}
+        self.sessions.add_message(session_id, "user", content, mode, **fields)
 
     def _retrieve(self, session_id: str, prompt: str, limit: int) -> list[dict[str, Any]]:
         knowledge_status = self.knowledge.status()
@@ -396,6 +410,10 @@ class AgentRuntime:
         self.sessions.add_message(session_id, "assistant", answer, AgentMode.ASK, provider=provider, model=model, citations=[item["citation"] for item in citations], visible_reasoning_summary=f"Retrieved {len(citations)} local source chunk(s); no tools were executed.")
 
     async def _plan(self, session_id: str, prompt: str) -> ScientificPlan | None:
+        draft = await self._propose_plan(session_id, prompt)
+        return await self._publish_plan(session_id, draft) if draft is not None else None
+
+    async def _propose_plan(self, session_id: str, prompt: str, planner=None):
         previous = self.sessions.get(session_id).get("plan") or {}
         expected_revision = int(previous.get("revision", 0))
         ledger = ModelStateLedger(self.sessions)
@@ -418,7 +436,7 @@ class AgentRuntime:
         timeline_id = self._timeline_start(session_id, category="LLM", phase="Planning", label="Generating a typed ScientificPlan", tool="agent.scientific_planner", input_summary=bundle.summary())
         started = time.perf_counter()
         try:
-            payload, provider, model = await self.planner.plan(canonical_prompt, citations, bundle.supplemental_context, original_prompt=prompt)
+            payload, provider, model = await (planner or self.planner).plan(canonical_prompt, citations, bundle.supplemental_context, original_prompt=prompt)
         except PlanGenerationFailure as exc:
             self._timeline_finish(
                 session_id,
@@ -453,6 +471,14 @@ class AgentRuntime:
         plan.runnable = plan.runnable and plan.completion is None
         plan.planning_status = "READY" if plan.runnable else "DRAFT_NEEDS_INPUT"
         plan.revision = expected_revision + 1
+        from app.orchestration.planning import PlanDraft
+        return PlanDraft(plan, expected_revision, provider, model, citations, timeline_id, started)
+
+    async def _publish_plan(self, session_id, draft):
+        plan, expected_revision = draft.plan, draft.expected_revision
+        provider, model, citations = draft.provider, draft.model, draft.citations
+        timeline_id, started = draft.timeline_id, draft.started
+        ledger = ModelStateLedger(self.sessions)
         self.sessions.commit_plan_revision(session_id, plan.model_dump(mode="json"), expected_revision)
         ledger.append(session_id, 'plan.workflow_id', plan.workflow_id, Provenance.PLAN)
         ledger.append(session_id, 'plan.parameters', plan.model_dump(mode='json')['parameters'], Provenance.PLAN)
@@ -585,6 +611,9 @@ class AgentRuntime:
         )
 
     async def _start_run(self, session_id: str) -> None:
+        await self.controller.start(session_id)
+
+    async def _prepare_run(self, session_id: str):
         current = self.sessions.get(session_id)
         payload = current.get("plan")
         if not payload:
@@ -618,6 +647,8 @@ class AgentRuntime:
         bridge_pid = java_bridge_process_manager.status().get("pid")
         if isinstance(bridge_pid, int):
             process_ids["java_bridge"] = bridge_pid
+        # 首次使用或直接调用运行服务时，配置的工作区可能尚未由桌面生命周期创建。
+        WORKSPACE_ROOT.mkdir(parents=True, exist_ok=True)
         profile = await asyncio.to_thread(hardware_profile, WORKSPACE_ROOT, process_ids)
         resource_assessment = assess_risk(plan, profile, stage="prebuild")
         self.sessions.append_event(session_id, "resource.precheck", resource_assessment)
@@ -636,399 +667,10 @@ class AgentRuntime:
         pending_run_id = str(uuid.uuid4())
         self.sessions.begin_run(session_id, pending_run_id, plan.model_dump(mode='json'))
         await self._transition(session_id, AgentState.PRECHECK)
-        self._pending_runs[session_id] = pending_run_id
-        task = asyncio.create_task(self._execute_run(session_id, plan), name=f"comsol-run-{session_id}")
-        self._tasks[session_id] = task
+        return plan, pending_run_id
 
     async def _execute_run(self, session_id: str, plan: ScientificPlan) -> None:
-        run_id = self._pending_runs.pop(session_id, None)
-        if run_id is None:
-            run_id = str(uuid.uuid4())
-            self.sessions.begin_run(session_id, run_id, plan.model_dump(mode='json'))
-        attempt_id = None
-        verdict: ExecutionVerdict | None = None
-        execution: dict[str, Any] | None = None
-        solution_report: ValidationReport | None = None
-        run_started = time.perf_counter()
-        repair_history: list[dict[str, Any]] = []
-        outer_timeline = self._timeline_start(session_id, category="SYSTEM", phase="Execution", label="Executing saved ScientificPlan", tool="runtime.execution_protocol", input_summary={"run_id": run_id, "plan_id": plan.plan_id, "workflow_id": plan.workflow_id})
-        resource_samples: list[dict[str, Any]] = []
-
-        async def record_resource_sample(sample: dict[str, Any]) -> None:
-            resource_samples.append(sample)
-            self.sessions.append_resource_sample(session_id, run_id, sample)
-            thresholds = sample.get("thresholds", {})
-            if thresholds.get("events"):
-                self.sessions.append_event(session_id, "resource.warning", sample)
-
-        monitor = ResourceMonitor(
-            WORKSPACE_ROOT,
-            plan,
-            record_resource_sample,
-            process_ids=lambda: {"scientific_runtime": os.getpid(), **self.tools.process_ids(session_id)},
-        )
-        try:
-            self.sessions.assert_current(run_id)
-            validator = validator_registry.get(plan.workflow_id)
-            if validator is None:
-                raise ScientificValidationError(f"No validator registered for {plan.workflow_id}")
-            precheck_id = self._timeline_start(session_id, category="VALIDATION", phase="Precheck", label="Validating plan, parameters and boundary definitions", tool=f"validators.{plan.workflow_id}.precheck", input_summary={"plan_id": plan.plan_id})
-            precheck_started = time.perf_counter()
-            precheck = self._validate_plan(plan)
-            self.sessions.append_event(session_id, "validation.precheck", precheck.model_dump(mode="json"))
-            precheck_ms = round((time.perf_counter() - precheck_started) * 1000, 3)
-            self._timeline_finish(session_id, precheck_id, status="success" if precheck.passed else "error", output_summary=summarize_report(precheck), duration_ms=precheck_ms)
-            if not precheck.passed:
-                self.sessions.finish_run(run_id, None, 'PrecheckRejected')
-                await self._transition(session_id, AgentState.VALIDATION_FAILED)
-                self.sessions.add_message(session_id, "assistant", "RUN stopped at PRECHECK. Scientific validation failed before COMSOL was started.", AgentMode.RUN, plan_id=plan.plan_id, validation=precheck.model_dump(mode="json"))
-                return
-
-            if java_bridge_process_manager.status().get("running"):
-                # Avoid two concurrent COMSOL JVMs while the isolated worker owns
-                # the build/solve; the solved MPH is reloaded into the Bridge below.
-                await java_bridge_process_manager.stop()
-                self.sessions.append_event(session_id, "comsol.command", {"event_type": "command", "phase": "bridge", "status": "success", "command_success": True, "model_state_verified": False, "scientific_validation_passed": False, "detail": "Stopped the Workbench-owned Bridge before isolated COMSOL solve", "created_at": utc_now()})
-
-            max_repairs = max(0, min(int(settings_store.load().get("execution", {}).get("max_repairs", 1)), 3))
-            execution: dict[str, Any] | None = None
-            solution_report: ValidationReport | None = None
-            for attempt in range(max_repairs + 1):
-                self.sessions.assert_current(run_id)
-                attempt_id = self.sessions.begin_attempt(run_id)
-                self._record_plan_assumptions(session_id, run_id, attempt_id, plan)
-                if plan.workflow_id in {"heat_transfer_2d_stationary", "tds_2d_stationary_diffusion"}:
-                    graph = ExecutionGraph.small_supported(run_id, attempt_id, str(plan.workflow_id))
-                    self.live_interrupt.register(session_id, graph, replace=True)
-                    self.live_interrupt.start(run_id, "build")
-                if attempt == 0:
-                    await self._transition(session_id, AgentState.BUILDING)
-                else:
-                    current_state = AgentState(self.sessions.get(session_id)["state"])
-                    if current_state != AgentState.REPAIRING:
-                        await self._transition(session_id, AgentState.REPAIRING)
-                    await self._transition(session_id, AgentState.REVALIDATING)
-                    await self._transition(session_id, AgentState.BUILDING)
-                try:
-                    monitor.start()
-                    tool_name = {
-                        'tds_2d_transient_closed': 'comsol.tds_2d_transient_closed',
-                        "heat_transfer_3d_cooling": "comsol.heat_transfer_3d_cooling",
-                        "heat_transfer_2d_stationary": "comsol.heat_transfer_2d",
-                        "tds_2d_stationary_diffusion": "comsol.tds_2d_stationary_diffusion",
-                        "solid_mechanics_uniaxial_bar": "comsol.solid_mechanics_uniaxial_bar",
-                        "electrochem_primary_current": "comsol.electrochem_primary_current",
-                        "lithium_ion_battery_baseline": "comsol.lithium_ion_battery_baseline",
-                        "heat_tds_temperature_coupling": "comsol.heat_tds_temperature_coupling",
-                    }[str(plan.workflow_id)]
-                    self.sessions.assert_plan_binding(session_id, plan.model_dump(mode='json'))
-                    execution = await self.tools.execute(
-                        tool_name,
-                        {"run_id": run_id, "attempt_id": attempt_id, "session_id": session_id, "workspace": str(WORKSPACE_ROOT), "plan": plan.execution_payload(), "attempt": attempt + 1},
-                        lambda event, aid=attempt_id: self._handle_attempt_event(session_id, run_id, aid, event),
-                        retries=0,
-                    )
-                except Exception as exc:
-                    self.sessions.assert_current(run_id, attempt_id)
-                    if isinstance(exc, StaleAttempt): raise
-                    repair_history.append({"run_id": run_id, "attempt_id": attempt_id, "attempt": attempt + 1, "reason": str(exc), "outcome": "retry" if attempt < max_repairs else "failed", "time": utc_now()})
-                    if attempt < max_repairs:
-                        self.sessions.end_attempt(run_id, attempt_id, 'RetryableFailure')
-                        current_state = AgentState(self.sessions.get(session_id)["state"])
-                        if current_state != AgentState.REPAIRING:
-                            await self._transition(session_id, AgentState.REPAIRING)
-                        continue
-                    raise
-                finally:
-                    await monitor.stop()
-                self.sessions.assert_current(run_id, attempt_id)
-                if execution.get('attempt_id', attempt_id) != attempt_id:
-                    raise StaleAttempt('worker result belongs to a stale attempt')
-                execution['attempt_id'] = attempt_id
-                self.sessions.update_run(run_id, attempt_id, artifacts=execution.get('artifacts', {}))
-                solution_report = validator.validate_execution(plan, execution)
-                derived_evidence = await asyncio.to_thread(
-                    evaluate_evidence_contract, execution, run_id, attempt_id,
-                )
-                verdict = execution_verdict(
-                    str(plan.workflow_id), run_id, execution, solution_report,
-                    expected_attempt_id=attempt_id, derived_evidence=derived_evidence,
-                )
-                self.sessions.append_event(session_id, "validation.solution", verdict.validation_report(solution_report))
-                if verdict.completed:
-                    break
-                await self._transition(session_id, AgentState.VALIDATION_FAILED)
-                repair_history.append({"run_id": run_id, "attempt_id": attempt_id, "attempt": attempt + 1, "reason": "; ".join(verdict.issues), "outcome": "retry" if attempt < max_repairs else "failed", "time": utc_now()})
-                if (verdict.command_success and verdict.model_state_verified
-                        and verdict.scientific_validation_success
-                        and not verdict.evidence_contract_passed):
-                    repair_history[-1]["outcome"] = "failed"
-                    decision = self.recovery.decide(ControllerInput(
-                        plan_node_id="validate", missing_required_evidence=True,
-                        evidence_acquisition_available=False,
-                    ))
-                    self.sessions.append_event(session_id, "recovery.decision", {
-                        "run_id": run_id, "attempt_id": attempt_id,
-                        "action": decision.action.value, "priority": decision.priority,
-                        "reason": decision.reason,
-                    })
-                    raise ScientificValidationError(
-                        "Execution evidence is incomplete; automatic rerun is forbidden because a second solve cannot repair missing provenance"
-                    )
-                if attempt >= max_repairs:
-                    raise ScientificValidationError("; ".join(verdict.issues))
-                self.sessions.end_attempt(run_id, attempt_id, 'RetryableFailure')
-
-            if execution is None or solution_report is None or verdict is None or not verdict.completed:
-                raise ScientificValidationError("Execution did not produce a validated result")
-            certification = self.recovery.decide(ControllerInput(
-                plan_node_id="validate", all_certification_gates_passed=True,
-            ))
-            self.sessions.append_event(session_id, "recovery.decision", {
-                "run_id": run_id, "attempt_id": attempt_id,
-                "action": certification.action.value, "priority": certification.priority,
-                "reason": certification.reason,
-            })
-            verdict_report = verdict.validation_report(solution_report)
-            execution["repair_history"] = repair_history
-            final_profile = await asyncio.to_thread(hardware_profile, WORKSPACE_ROOT, {"scientific_runtime": os.getpid(), **self.tools.process_ids(session_id)})
-            validation_metrics = execution.get("validation", {})
-            stage_b = assess_risk(
-                plan,
-                final_profile,
-                stage="post_mesh",
-                mesh_elements=validation_metrics.get("element_count"),
-                dof=validation_metrics.get("dof"),
-            )
-            execution["resource"] = {
-                "stage_b": stage_b,
-                "sample_count": len(resource_samples),
-                "peak_process_memory_gb": max(
-                    (
-                        float(item.get("rss_gb") or 0)
-                        for sample in resource_samples
-                        for item in sample.get("profile", {}).get("process_memory", {}).values()
-                    ),
-                    default=0.0,
-                ),
-            }
-            self.sessions.append_event(session_id, "resource.post_mesh", stage_b)
-            execution.setdefault("performance", {})["precheck_ms"] = precheck_ms
-            execution["artifacts"]["execution_log"] = execution.get("log_path", "")
-            boundary_request = self._pending_boundary_reviews.pop(run_id, None)
-            bridge_required = plan.workflow_id == 'tds_2d_stationary_diffusion' or (
-                plan.workflow_id == 'heat_transfer_2d_stationary' and boundary_request is not None)
-            if bridge_required:
-                try:
-                    if boundary_request is not None:
-                        if boundary_request['attempt_id'] != attempt_id:
-                            raise StaleAttempt('boundary review queued for a stale attempt')
-                        self.live_interrupt.register_heat_boundaries(run_id, execution.get('boundary_map') or {})
-                    await self._verify_java_bridge(session_id, execution)
-                    if boundary_request is not None:
-                        await self.live_interrupt.request_boundary_review(
-                            run_id, boundary_request['boundary_object_id'],
-                            boundary_request['proposed_value'], boundary_request['unit'],
-                            boundary_request['reason'])
-                        self.live_interrupt.request_pause(run_id)
-                    boundary_state = self.live_interrupt.safe_boundary(run_id, "build")
-                    if boundary_state is NodeState.PAUSED:
-                        self.sessions.update_run(run_id, attempt_id, phase="PAUSED")
-                        await self._transition(session_id, AgentState.PAUSED)
-                        await self.live_interrupt.wait_for_resume(run_id)
-                    graph = self.live_interrupt.graph(run_id)
-                    if graph.corrections:
-                        invalidation_issue = "human_correction_invalidated_pre_correction_scientific_evidence"
-                        verdict = verdict.invalidate_scientific_evidence(invalidation_issue)
-                        evidence_contract = execution.get("evidence_contract")
-                        if isinstance(evidence_contract, dict):
-                            evidence_issues = list(evidence_contract.get("issues") or [])
-                            if invalidation_issue not in evidence_issues:
-                                evidence_issues.append(invalidation_issue)
-                            execution["evidence_contract"] = {
-                                **evidence_contract, "passed": False, "issues": evidence_issues,
-                            }
-                        self.sessions.append_event(session_id, "validation.invalidated_by_human_correction", {
-                            "run_id": run_id, "attempt_id": attempt_id,
-                            "invalidated_nodes": [name for name, node in graph.nodes.items() if node.state is NodeState.INVALIDATED],
-                            "reason": "Pre-correction numerical and scientific evidence cannot certify the corrected model",
-                        })
-                        if (plan.workflow_id != 'heat_transfer_2d_stationary'
-                                or len(graph.corrections) != 1
-                                or graph.corrections[0].get('path') not in {
-                                    'boundary_conditions.left', 'boundary_conditions.right'}):
-                            raise ScientificValidationError(
-                                'This correction has no supported fresh scientific recertification path')
-                        self.sessions.assert_current(run_id, attempt_id)
-                        await self._transition(session_id, AgentState.BUILD_VALIDATION)
-                        tree = await java_bridge_client.model_tree()
-                        left = await java_bridge_client.boundary_feature(
-                            component_tag='comp1', physics_tag='ht',
-                            feature_tag='temp_left', property_key='T0')
-                        right = await java_bridge_client.boundary_feature(
-                            component_tag='comp1', physics_tag='ht',
-                            feature_tag='temp_right', property_key='T0')
-                        await self._transition(session_id, AgentState.SOLVING)
-                        field = await java_bridge_client.heat_field()
-                        resumed = next((item for item in reversed(self.sessions.get(session_id)['events'])
-                                        if item.get('type') == 'execution.resumed'
-                                        and (item.get('payload') or {}).get('run_id') == run_id
-                                        and (item.get('payload') or {}).get('attempt_id') == attempt_id), None)
-                        study_date = int(((resumed or {}).get('payload') or {}).get('study', {}).get('last_computation_date') or 0)
-                        self.sessions.assert_current(run_id, attempt_id)
-                        exported = await java_bridge_client.export_corrected_heat(run_id, attempt_id)
-                        attempt_workspace = WORKSPACE_ROOT / 'models' / 'attempts' / run_id / attempt_id
-                        corrected_plan, corrected_execution = corrected_heat_execution(
-                            plan=plan, original=execution, correction=graph.corrections[0],
-                            left_readback=left, right_readback=right, field=field,
-                            exported=exported, study_date=study_date,
-                            run_id=run_id, attempt_id=attempt_id,
-                            attempt_workspace=attempt_workspace, model_tree=tree,
-                        )
-                        self.sessions.assert_current(run_id, attempt_id)
-                        corrected_plan.revision = plan.revision+1
-                        self.sessions.commit_plan_revision(session_id,corrected_plan.model_dump(mode='json'),plan.revision)
-                        self.sessions.append_event(session_id,'run.reviewed_plan_rebound',{
-                            'run_id':run_id,'attempt_id':attempt_id,'revision':corrected_plan.revision})
-                        execution = corrected_execution
-                        plan = corrected_plan
-                        self.sessions.update_run(run_id, attempt_id, artifacts=execution['artifacts'])
-                        image = Path(execution['artifacts']['temperature_image'])
-                        image_digest = hashlib.sha256(image.read_bytes()).hexdigest()
-                        self.sessions.append_event(session_id, 'result.available', {
-                            'run_id': run_id, 'attempt_id': attempt_id,
-                            'artifact_id': f'artifact-{run_id}-{attempt_id}-temperature_image',
-                            'path': str(image), 'sha256': image_digest,
-                            'variable': 'Temperature', 'unit': 'K',
-                            'minimum': execution['validation']['temperature_min_K'],
-                            'maximum': execution['validation']['temperature_max_K'],
-                            'evidence_state': 'pending',
-                        })
-                        await self._transition(session_id, AgentState.SOLUTION_VALIDATION)
-                        solution_report = validator.validate_execution(plan, execution)
-                        derived_evidence = await asyncio.to_thread(
-                            evaluate_evidence_contract, execution, run_id, attempt_id)
-                        verdict = execution_verdict(
-                            str(plan.workflow_id), run_id, execution, solution_report,
-                            expected_attempt_id=attempt_id, derived_evidence=derived_evidence)
-                        self.sessions.append_event(session_id, 'validation.solution', {
-                            'run_id': run_id, 'attempt_id': attempt_id,
-                            **verdict.validation_report(solution_report)})
-                        self.sessions.append_event(session_id, 'evidence.contract', {
-                            'run_id': run_id, 'attempt_id': attempt_id,
-                            **execution['evidence_contract']})
-                        if not verdict.completed:
-                            raise ScientificValidationError(
-                                'Corrected Heat numerical validation or evidence contract did not pass: '
-                                + '; '.join(verdict.issues))
-                    for node_id in ("solve", "validate", "export"):
-                        self.live_interrupt.start(run_id, node_id)
-                        self.live_interrupt.safe_boundary(run_id, node_id)
-                finally:
-                    if java_bridge_process_manager.status().get('running') or java_bridge_process_manager.status().get('state') == 'starting':
-                        await java_bridge_process_manager.stop()
-            else:
-                self._pending_boundary_reviews.pop(run_id, None)
-            self.sessions.assert_current(run_id, attempt_id)
-            lifecycle = {'run_id': run_id, 'attempt_id': attempt_id, 'outcome': 'Completed', 'state': 'COMPLETED', 'cancel_requested': False}
-            execution['run_lifecycle'] = lifecycle
-            model_state = execution["model_state"]
-            model_state['run_lifecycle'] = lifecycle
-            model_state["validation"] = verdict_report
-            model_state["execution_verdict"] = verdict.as_dict()
-            model_state["evidence_contract"] = execution.get("evidence_contract", {})
-            model_state["sources"] = [source.model_dump(mode="json") for source in plan.sources]
-            self.sessions.set_model(session_id, model_state)
-            ledger = ModelStateLedger(self.sessions)
-            for field in ('geometry', 'materials', 'physics', 'parameters', 'selections', 'boundary_conditions', 'mesh', 'study', 'solver', 'results'):
-                if field in model_state:
-                    ledger.append(session_id, f'model.{field}', model_state[field], Provenance.COMSOL_READBACK,
-                                  run_id=run_id, attempt_id=attempt_id)
-            ledger.append(session_id, 'execution.verdict', verdict.as_dict(), Provenance.DETERMINISTIC_CHECK,
-                          run_id=run_id, attempt_id=attempt_id)
-            ledger.append(session_id, 'execution.validation', execution.get('validation', {}), Provenance.SOLVER_RESULT,
-                          run_id=run_id, attempt_id=attempt_id)
-            self._admit_completed_run_memory(session_id, run_id, attempt_id, plan, verdict, execution)
-            current_state = AgentState(self.sessions.get(session_id)["state"])
-            if current_state != AgentState.EXPORTING:
-                await self._transition(session_id, AgentState.EXPORTING)
-            await self._transition(session_id, AgentState.REPORTING)
-            card_started = time.perf_counter()
-            card_path = generate_model_card(
-                run_id=run_id,
-                session_id=session_id,
-                plan=plan.model_dump(mode="json"),
-                execution=execution,
-                validation_report=verdict_report,
-                verdict=verdict,
-                repair_history=repair_history,
-            )
-            execution["performance"]["model_card_ms"] = round((time.perf_counter() - card_started) * 1000, 3)
-            execution["performance"]["runtime_total_ms"] = round((time.perf_counter() - run_started) * 1000, 3)
-            # Refresh the card once so its performance table includes reporting time.
-            card_path = generate_model_card(
-                run_id=run_id,
-                session_id=session_id,
-                plan=plan.model_dump(mode="json"),
-                execution=execution,
-                validation_report=verdict_report,
-                verdict=verdict,
-                repair_history=repair_history,
-            )
-            execution["artifacts"]["model_card"] = str(card_path)
-            lifecycle = self.sessions.finish_run(run_id, attempt_id, 'Completed')
-            self.sessions.append_event(session_id, "run.completed", {"run_id": run_id, 'attempt_id': attempt_id, 'run_lifecycle': lifecycle, "plan_id": plan.plan_id, "artifacts": execution["artifacts"], "evidence_contract": execution.get("evidence_contract", {}), **verdict.fields(), "validation": execution["validation"], "build_readback": execution.get("build_readback"), "boundary_map": execution.get("boundary_map"), "validation_report": verdict_report, "repair_history": repair_history, "tool": execution["tool"], "duration_ms": execution["duration_ms"], "performance": execution["performance"], "java_bridge": execution.get("java_bridge"), "resource": execution.get("resource")})
-            await self._transition(session_id, AgentState.COMPLETED)
-            self._timeline_finish(session_id, outer_timeline, status="success", output_summary=verdict.summary(), duration_ms=execution["duration_ms"], fallback=bool(repair_history), raw_output=execution.get("raw_log", ""), verdict=verdict)
-            primary_field = execution["artifacts"].get("concentration_image") or execution["artifacts"].get("temperature_image") or execution["artifacts"].get("stress_image") or execution["artifacts"].get("potential_image")
-            self.sessions.add_message(session_id, "assistant", f"RUN completed from ScientificPlan `{plan.plan_id}`. {verdict.summary()}\n\n- Model: `{execution['artifacts']['model']}`\n- Primary field: `{primary_field}`\n- Model Card 2.0: `{card_path}`", AgentMode.RUN, plan_id=plan.plan_id, run_id=run_id, attempt_id=attempt_id, run_lifecycle=lifecycle, artifacts=execution["artifacts"], evidence_contract=execution.get("evidence_contract", {}), **verdict.fields(), validation=execution["validation"], validation_report=verdict_report, repair_history=repair_history)
-        except (Exception, asyncio.CancelledError) as exc:
-            self._pending_boundary_reviews.pop(run_id, None)
-            await monitor.stop()
-            run = self.sessions.get_run(run_id)
-            if run['outcome'] is not None:
-                self.sessions.append_event(session_id, 'runtime.warning', {'message': f'Post-terminal publication issue: {exc}'})
-                return
-            outcome = 'Canceled' if run['cancel_requested'] else 'Interrupted' if isinstance(exc, asyncio.CancelledError) else 'FatalFailure'
-            lifecycle = self.sessions.finish_run(run_id, attempt_id, outcome)
-            outcome = lifecycle['outcome']
-            verdict = (verdict or ExecutionVerdict(run_id, str(plan.workflow_id), False, False, False, ())).reject(f"execution_failed:{exc}")
-            if outcome == 'FatalFailure':
-                await self._transition_to_failed(session_id, str(exc))
-            else:
-                self.sessions.set_state(session_id, AgentState(lifecycle['state']), error=str(exc))
-            execution = {**(execution or {}), 'run_lifecycle': lifecycle, 'attempt_id': attempt_id}
-            self.sessions.set_model(session_id, {**execution.get('model_state', {}), 'run_lifecycle': lifecycle, 'execution_verdict': verdict.as_dict(), 'validation': verdict.validation_report(solution_report) if solution_report else verdict.fields()})
-            if attempt_id and outcome in {'FatalFailure', 'Interrupted'}:
-                try:
-                    self._admit_failure_memory(
-                        session_id=session_id,
-                        run_id=run_id,
-                        attempt_id=attempt_id,
-                        plan=plan,
-                        outcome=outcome,
-                        failure_class=type(exc).__name__,
-                        failed_phase=str(lifecycle.get('phase') or run.get('phase') or 'UNKNOWN'),
-                        attempted_action=(repair_history[-1].get('outcome', 'NONE') if repair_history else 'NONE'),
-                    )
-                except (OSError, ValueError, TypeError) as memory_error:
-                    self.sessions.append_event(session_id, "runtime.warning", {
-                        "message": f"Failure memory unavailable: {memory_error}",
-                        "run_id": run_id,
-                        "attempt_id": attempt_id,
-                    })
-            failure_artifacts: dict[str, str] = {}
-            try:
-                card_path = generate_model_card(run_id=run_id, session_id=session_id, plan=plan.model_dump(mode="json"),
-                    execution=execution or {}, validation_report=verdict.validation_report(solution_report) if solution_report else {},
-                    repair_history=repair_history, verdict=verdict)
-                failure_artifacts["model_card"] = str(card_path)
-            except (OSError, ValueError, TypeError) as card_error:
-                self.sessions.append_event(session_id, "runtime.warning", {"message": f"Failure Model Card unavailable: {card_error}"})
-            event_kind = 'run.canceled' if outcome == 'Canceled' else 'run.interrupted' if outcome == 'Interrupted' else 'run.failed'
-            self.sessions.append_event(session_id, event_kind, {"run_id": run_id, "attempt_id": attempt_id, 'run_lifecycle': lifecycle, "artifacts": failure_artifacts, **verdict.fields()})
-            self._timeline_finish(session_id, outer_timeline, status="error", output_summary=f"{verdict.summary()} {exc}", duration_ms=round((time.perf_counter() - run_started) * 1000), fallback=bool(repair_history), verdict=verdict)
-            self.sessions.add_message(session_id, "assistant", f"RUN {outcome}. {verdict.summary()} {exc}", AgentMode.RUN, plan_id=plan.plan_id, run_id=run_id, attempt_id=attempt_id, run_lifecycle=lifecycle, artifacts=failure_artifacts, **verdict.fields(), validation_report=verdict.validation_report(solution_report) if solution_report else {"scope": "solution", "passed": False, "checks": [], **verdict.fields()}, repair_history=repair_history)
+        await self.controller.execute(session_id, plan)
 
     async def _handle_attempt_event(self, session_id, run_id, attempt_id, event):
         run = self.sessions.get_run(run_id)

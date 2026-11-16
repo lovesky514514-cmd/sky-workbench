@@ -23,6 +23,8 @@ ARTIFACTS = {
     'potential_image': ('electrolyte_potential.png', 'Electric potential', 'V', 'potential_min_V', 'potential_max_V'),
 }
 WORKFLOW_ARTIFACTS = {
+    ('heat_transfer_3d_cooling', 'temperature_image'):
+        ('temperature_final.png', 'Temperature', 'degC', None, None),
     ('lithium_ion_battery_baseline', 'concentration_image'):
         ('battery_electrolyte_concentration.png', 'Electrolyte concentration', 'mol/m³',
          'concentration_min_mol_per_m3', 'concentration_max_mol_per_m3'),

@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "data_origin": "public_synthetic_research_premises",
+  "limitations": "Intervals and boundary interpretations are benchmark premises, not measured material properties. No solver result is generated.",
+  "cases": [
+    {
+      "case_id": "parameter_uncertainty",
+      "goal": "Review thermal conductivity applicability for an iron Heat model. Keep unresolved evidence explicit.",
+      "expected_readiness": "NEEDS_EVIDENCE",
+      "evidence": [{"evidence_id": "material-range", "source": "synthetic benchmark premise", "captured_at": "2026-11-08T00:00:00Z", "applicability": "reasoning benchmark only", "text": "The premise supplies an interval without temperature or material-state applicability.", "parameter_ranges": [{"parameter": "conductivity", "lower": 40.0, "upper": 55.0, "unit": "W/(m*K)", "conditions": []}]}]
+    },
+    {
+      "case_id": "boundary_conflict",
+      "goal": "Review opposing boundary interpretations for a Heat task. Do not resolve by voting or invented evidence.",
+      "expected_readiness": "NEEDS_EVIDENCE",
+      "evidence": [
+        {"evidence_id": "insulation-note", "source": "synthetic note A", "captured_at": "2026-11-08T00:00:00Z", "applicability": "unspecified geometry", "text": "Note A says insulated boundary.", "boundary_interpretation": "insulated"},
+        {"evidence_id": "convection-note", "source": "synthetic note B", "captured_at": "2026-11-08T00:00:00Z", "applicability": "unspecified geometry", "text": "Note B says convection boundary.", "boundary_interpretation": "convection"}
+      ]
+    },
+    {
+      "case_id": "failed_physics",
+      "goal": "A synthetic prior Heat result failed Fourier heat-flux checks. Propose minimal evidence-based rework without another RUN or a text-based score increase.",
+      "expected_readiness": "NEEDS_EVIDENCE",
+      "evidence": [{"evidence_id": "physics-verdict", "source": "synthetic failed validator fixture", "captured_at": "2026-11-08T00:00:00Z", "applicability": "test result only", "text": "The declared flux check failed. No successful calculation is supplied.", "validation_checks": {"heat_flux": false}}]
+    }
+  ]
+}

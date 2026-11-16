@@ -19,8 +19,9 @@ for (const [name, source] of components) {
   assert.ok(app.includes('<WarmStudio'), 'production workspace is not mounted')
 }
 
-assert.ok(warm.includes("['ASK', 'PLAN', 'RUN']"), 'ASK/PLAN/RUN must remain available')
-assert.ok(!app.includes('className="panel conversation-panel"'), 'chat must not remain the central panel')
+assert.ok(warm.includes("['ASK', 'PLAN']") && warm.includes("props.onSend('RUN')"), 'ASK and PLAN must remain available with a separate RUN control')
+assert.ok(warm.includes('className="warm-conversation"') && !warm.includes('className="warm-secondary-tools"'),
+  'the conversation must be visible after the task starts')
 assert.ok(css.includes('grid-template-areas:'))
 assert.ok(css.includes('"tree canvas control"'))
 assert.ok(css.includes('"tree timeline timeline"'))

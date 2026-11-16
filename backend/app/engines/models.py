@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 class EngineInput(BaseModel):
@@ -56,6 +56,45 @@ class Atom(EngineInput):
     z: float
 
 
+class VaspWslInput(EngineInput):
+    kind: Literal["vasp_wsl"] = "vasp_wsl"
+    files: dict[str, str]
+    potentials: dict[str, str] = Field(default_factory=dict, max_length=64)
+
+    @model_validator(mode="after")
+    def validate_local_references(self):
+        import re
+        from app.engines.vasp import validate_vasp_files
+
+        if set(self.files) != {"INCAR", "POSCAR", "KPOINTS"}:
+            raise ValueError("WSL VASP accepts INCAR, POSCAR and KPOINTS; POTCAR is resolved in Ubuntu")
+        if any(not text.strip() or "\x00" in text or len(text.encode()) > 8_000_000 for text in self.files.values()):
+            raise ValueError("Invalid VASP input text")
+        species = validate_vasp_files(self.files, local_potentials=True)["species"]
+        if not self.potentials.keys() <= set(species) or any(
+            not re.fullmatch(r"[A-Z][a-z]?(?:_[A-Za-z0-9]+)*", folder)
+            for folder in self.potentials.values()
+        ):
+            raise ValueError("Invalid local potential selection")
+        return self
+
+
+class VaspSiliconDraft(EngineInput):
+    lattice_angstrom: float = Field(gt=0, le=20)
+    cutoff_ev: float = Field(default=400, gt=0, le=2000)
+    mesh: int = Field(default=4, strict=True, ge=1, le=32)
+
+    def files(self) -> dict[str, str]:
+        half = self.lattice_angstrom / 2
+        return {
+            "INCAR": f"SYSTEM = Si diamond primitive\nENCUT = {self.cutoff_ev:g}\nPREC = Accurate\n"
+                     "EDIFF = 1E-6\nIBRION = -1\nNSW = 0\n",
+            "POSCAR": f"Si diamond primitive\n1.0\n0 {half:g} {half:g}\n{half:g} 0 {half:g}\n"
+                      f"{half:g} {half:g} 0\nSi\n2\nDirect\n0 0 0\n0.25 0.25 0.25\n",
+            "KPOINTS": f"Gamma mesh\n0\nGamma\n{self.mesh} {self.mesh} {self.mesh}\n0 0 0\n",
+        }
+
+
 class MaterialsStudioInput(EngineInput):
     kind: Literal["ms_forcite_energy"] = "ms_forcite_energy"
     coordinate_unit: Literal["angstrom"] = "angstrom"
@@ -64,7 +103,7 @@ class MaterialsStudioInput(EngineInput):
 
 
 TaskInput = Annotated[
-    LammpsInput | VaspInput | MaterialsStudioInput, Field(discriminator="kind")
+    LammpsInput | VaspInput | VaspWslInput | MaterialsStudioInput, Field(discriminator="kind")
 ]
 
 
@@ -74,11 +113,13 @@ class EngineTaskRequest(EngineInput):
     inputs: TaskInput
     timeout_seconds: int = Field(default=600, ge=10, le=86400)
     confirmed: bool = False
+    review_ticket: str | None = Field(default=None, max_length=2048)
 
 
 def engine_for(inputs: TaskInput) -> str:
     return {
         "lammps_lj": "LAMMPS",
         "vasp_files": "VASP",
+        "vasp_wsl": "VASP",
         "ms_forcite_energy": "Materials Studio",
     }[inputs.kind]

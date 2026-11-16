@@ -26,6 +26,12 @@ const slides = select(session, 'run-1', 'attempt-1')
 assert.equal(slides.length, 2)
 assert.deepEqual(slides.map((item) => item.filename), ['temperature.png', 'plot.png'])
 assert.equal(slides[0].name, 'Temperature field')
+const coolingImage = 'C:/private/temperature_final.png'
+const cooling = select({ messages: [{ ...message, execution_verdict: { ...verdict, workflow_id: 'heat_transfer_3d_cooling' },
+  artifacts: { temperature_image: coolingImage }, evidence_contract: { ...evidence, artifacts: {
+    temperature_image: { path: coolingImage, sha256: 'hash-cooling' },
+  } } }] }, 'run-1', 'attempt-1')
+assert.equal(cooling[0].unit, '°C')
 assert.equal(slides[1].name, 'plot.png')
 assert.equal(slides[1].quantity, '')
 assert.equal(select(session, 'other-run', 'attempt-1').length, 0)

@@ -3,15 +3,18 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
+from hashlib import sha256
 from pathlib import Path
 from threading import RLock
 from typing import Any
 
 from app.app_paths import app_paths
 from app.providers.deepseek import DEFAULT_MODEL as DEEPSEEK_MODEL
+from app.providers.endpoints import endpoint_identity, provider_endpoint
 
 BACKEND_ROOT = app_paths.backend_root
 PROJECT_ROOT = app_paths.project_root
@@ -25,6 +28,8 @@ SETTINGS_PATH = app_paths.settings_path
 DATABASE_PATH = app_paths.database_path
 JAVA_BRIDGE_ROOT = app_paths.java_bridge_dir
 CACHE_ROOT = app_paths.cache_dir
+_logger = logging.getLogger(__name__)
+_ENDPOINT_BINDINGS = "provider_credential_endpoints"
 
 WORKSPACE_DIRS = (
     "models",
@@ -89,6 +94,7 @@ DEFAULT_SETTINGS: dict[str, Any] = {
         "warning_disk_free_gb": 5.0,
         "critical_disk_free_gb": 1.0,
     },
+    "research": {"enabled": True, "model_calls": 8, "token_limit": 160000, "output_tokens": 1800, "concurrency": 3, "role_models": {}},
     "providers": {
         "ollama": {
             "enabled": True,
@@ -171,12 +177,12 @@ class SettingsStore:
 
     path: Path = SETTINGS_PATH
     _lock: RLock = field(init=False, repr=False)
-    _secrets: dict[str, str] = field(init=False, repr=False)
+    _secrets: dict[str, tuple[str, str]] = field(init=False, repr=False)
     _migration: dict[str, Any] = field(init=False, repr=False)
 
     def __post_init__(self) -> None:
         self._lock = RLock()
-        self._secrets: dict[str, str] = {}
+        self._secrets = {}
         self._migration = {"status": "not_required", "backup": None, "detail": "Configuration schema is current"}
 
     def load(self) -> dict[str, Any]:
@@ -197,17 +203,61 @@ class SettingsStore:
                         "backup": self._existing_backup(),
                         "detail": f"Configuration migration failed. Your previous configuration was preserved. {type(exc).__name__}: {exc}",
                     }
+            for name, config in settings["providers"].items():
+                if isinstance(config, dict) and "api_key" in config:
+                    config.pop("api_key")
+                    settings.setdefault(_ENDPOINT_BINDINGS, {})[name] = None
             _apply_product_runtime_overrides(settings)
             return settings
 
     def update(self, update: dict[str, Any]) -> dict[str, Any]:
         with self._lock:
-            clean = self._extract_secrets(update)
             settings = self.load()
             if self._migration.get("status") == "failed":
                 raise RuntimeError("Configuration migration failed; retry or explicitly use defaults before saving")
+            clean = json.loads(json.dumps(update))
+            clean.pop(_ENDPOINT_BINDINGS, None)
+            provider_updates = clean.get("providers", {})
+            bindings = dict(settings.get(_ENDPOINT_BINDINGS, {}))
+            secrets = self._secrets.copy()
+            endpoint_changes = []
+            for name, patch in provider_updates.items():
+                if name not in DEFAULT_SETTINGS["providers"] or not isinstance(patch, dict):
+                    raise ValueError("invalid_provider_profile")
+                existing = settings["providers"][name]
+                old = self._identity(existing.get("base_url", ""))
+                new = self._identity(patch.get("base_url", existing.get("base_url", "")))
+                if "base_url" in patch and new is None:
+                    # 无效地址可能含内嵌凭据。保留未配置状态，避免把原地址写回设置。
+                    patch["base_url"] = ""
+                previous_binding = bindings.get(name)
+                if ("base_url" in patch and new is not None and new.startswith("http://")
+                        and any(isinstance(value, str) and value.startswith("https://")
+                                for value in (old, previous_binding))):
+                    raise ValueError("provider_https_downgrade")
+                if "base_url" in patch and old != new:
+                    # 回到旧地址也要重新录入；空绑定表示旧凭据已失效。
+                    secrets.pop(name, None)
+                    bindings[name] = previous_binding if previous_binding else None
+                    endpoint_changes.append((name, old, new))
+                key = patch.pop("api_key", None)
+                if isinstance(key, str) and key:
+                    try:
+                        bound = provider_endpoint(name, patch.get("base_url", existing["base_url"]))
+                    except ValueError:
+                        bindings[name] = None
+                        secrets.pop(name, None)
+                    else:
+                        bindings[name] = bound
+                        secrets[name] = (bound, key)
             self._merge(settings, clean)
+            if bindings:
+                settings[_ENDPOINT_BINDINGS] = bindings
             self._write_atomic(settings)
+            self._secrets = secrets
+            for name, old, new in endpoint_changes:
+                before, after = (sha256(value.encode()).hexdigest() if value else None for value in (old, new))
+                _logger.info("provider.endpoint_changed provider=%s previous=%s current=%s", name, before, after)
             return settings
 
     def migration_status(self) -> dict[str, Any]:
@@ -227,35 +277,45 @@ class SettingsStore:
                 backup = self._backup_original(self.path.read_text(encoding="utf-8-sig"))
             defaults = json.loads(json.dumps(DEFAULT_SETTINGS))
             self._write_atomic(defaults)
+            self._secrets.clear()
             self._migration = {"status": "defaults", "backup": backup, "detail": "Safe defaults are active; the previous configuration backup was preserved"}
             return defaults
 
-    def secret(self, provider: str) -> str:
-        env_name = f"COMSOL_WORKBENCH_{provider.upper()}_API_KEY"
-        # DeepSeek's conventional environment name is also accepted. Neither
-        # name is copied into settings, logs, API responses or diagnostic files.
-        conventional = os.getenv("DEEPSEEK_API_KEY", "") if provider == "deepseek" else ""
-        return self._secrets.get(provider, "") or os.getenv(env_name, "") or conventional
+    @staticmethod
+    def _identity(base_url: str) -> str | None:
+        try:
+            return endpoint_identity(str(base_url))
+        except ValueError:
+            return None
 
-    def _extract_secrets(self, update: dict[str, Any]) -> dict[str, Any]:
-        clean = json.loads(json.dumps(update))
-        providers = clean.get("providers", {})
-        if isinstance(providers, dict):
-            for name, config in providers.items():
-                if isinstance(config, dict) and "api_key" in config:
-                    value = config.pop("api_key")
-                    if isinstance(value, str) and value:
-                        self._secrets[name] = value
-        return clean
+    def secret(self, provider: str, base_url: str | None = None) -> str:
+        with self._lock:
+            settings = self.load()
+            profile = settings["providers"].get(provider, {})
+            current = self._identity(profile.get("base_url", ""))
+            requested = self._identity(base_url) if base_url is not None else current
+            if not current or requested != current or self._migration["status"] == "failed":
+                return ""
+            bindings = settings.get(_ENDPOINT_BINDINGS, {})
+            if provider in bindings:
+                bound, key = self._secrets.get(provider, ("", ""))
+                return key if bound == bindings[provider] == current else ""
+            # 进程环境凭据只适用于产品内置端点。旧配置中的密钥不会迁入。
+            if current != self._identity(DEFAULT_SETTINGS["providers"].get(provider, {}).get("base_url", "")):
+                return ""
+            env_name = f"COMSOL_WORKBENCH_{provider.upper()}_API_KEY"
+            conventional = os.getenv("DEEPSEEK_API_KEY", "") if provider == "deepseek" else ""
+            return os.getenv(env_name, "") or conventional
 
     def _migrate_v070(self, stored: dict[str, Any], original: str) -> dict[str, Any]:
         backup = self._existing_backup() or self._backup_original(original)
         migrated = json.loads(json.dumps(stored))
         providers = migrated.get("providers")
         if isinstance(providers, dict):
-            for config in providers.values():
-                if isinstance(config, dict):
-                    config.pop("api_key", None)
+            for name, config in providers.items():
+                if isinstance(config, dict) and "api_key" in config:
+                    config.pop("api_key")
+                    migrated.setdefault(_ENDPOINT_BINDINGS, {})[name] = None
         migrated["schema_version"] = DEFAULT_SETTINGS["schema_version"]
         merged = json.loads(json.dumps(DEFAULT_SETTINGS))
         self._merge(merged, migrated)

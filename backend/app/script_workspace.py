@@ -77,7 +77,7 @@ def command_for(engine: str, executable: str, filename: str) -> list[str]:
     if engine == "Python" and filename == "main.py":
         return [executable, "-I", filename]
     if engine == "MATLAB" and filename == "main.m":
-        return [executable, "-batch", "run('main.m')"]
+        return matlab_command(executable, "run('main.m')")
     if engine == "Mathics3" and filename == "main.wl":
         return [executable, "-I", str(mathics_worker_path()), filename]
     raise ValueError("No supported local script runner for this engine")
@@ -98,9 +98,16 @@ def executable_for(engine: str) -> str | None:
     return None
 
 
-def child_environment() -> dict[str, str]:
+def matlab_command(executable: str, statement: str) -> list[str]:
+    # Windows 启动器需等待 MATLAB 退出，才能取得真实退出状态。
+    return [executable, *(["-wait"] if os.name == "nt" else []), "-batch", statement]
+
+
+def child_environment(engine: str | None = None) -> dict[str, str]:
     """Do not pass desktop/API credentials to vendor or user-authored scripts."""
-    return {name: value for name, value in os.environ.items() if not SECRET_NAME.search(name)}
+    allowed = {"MLM_LICENSE_FILE", "LM_LICENSE_FILE"} if engine == "MATLAB" else set()
+    return {name: value for name, value in os.environ.items()
+            if not SECRET_NAME.search(name) or name.upper() in allowed}
 
 
 @dataclass
@@ -173,7 +180,7 @@ class ScriptRunManager:
         started = time.perf_counter()
         path = Path(run.workspace.name)
         filename = f"main.{EXTENSIONS[run.engine]}"
-        lifecycle = OwnedTask(command_for(run.engine, executable, filename), cwd=str(path), env=child_environment())
+        lifecycle = OwnedTask(command_for(run.engine, executable, filename), cwd=str(path), env=child_environment(run.engine))
         try:
             (path / filename).write_text(source, encoding="utf-8")
             if run.state == "CANCELED":

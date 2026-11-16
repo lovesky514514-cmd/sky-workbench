@@ -1,6 +1,6 @@
 # 从源码构建
 
-本仓库是 3.1 源码，不附带 COMSOL 文件或模型权重。完整 Windows 11 x64 桌面构建需要 Node.js、Rust/Cargo、Python 3.12、Windows 构建工具和 Tauri/NSIS 依赖；科学执行另需用户单独安装并授权求解器。
+本仓库包含 SKY Workbench 4.0.0 源码。Windows 11 x64 桌面构建需要 Node.js、Rust/Cargo、Python 3.12、Windows 构建工具和 Tauri/NSIS 依赖。COMSOL 和模型权重需单独取得。科学求解使用用户授权的本地求解器。
 
 ## 源码检查
 
@@ -24,7 +24,7 @@ Tauri 声明 `scientific-runtime-x86_64-pc-windows-msvc.exe` 为外部二进制�
 
 目前没有证明另一台机器可以逐字节复现 sidecar 或 Setup；本轮证明的是同一候选源码与输入的构建绑定。更换原生输入后，必须重新审查载荷、许可证与实际运行结果。历史测试不认证新构建。
 
-## 3.1 固定输入与验证
+## 固定输入与验证
 
 独立 Python 3.12 x64 环境使用 `packaging/requirements-win-py312.lock`，包含 57 个发行包及 wheel 哈希。开发范围声明不代替这个 Windows 构建锁。
 
@@ -42,13 +42,18 @@ python -m venv .venv
 
 每次输出目录必须全新。验证期间不修改源码。JSON 记录完整命令、选择集、源码文件哈希、日志哈希与前后摘要，不能把旧日志计入本轮结果。
 
-检查冻结程序的 `--native-self-test-report <新报告路径>`，确认原生模块、FFI callback、OpenSSL 3.5.9、时区数据和冻结包内路径。再以独立 `--workspace-dir/--app-data-dir/--kb-dir` 启动 API，检查 3.1.0、公共知识 8 条、项目隔离与退出。私有 COMSOL 资料不进入发行包。
+检查冻结程序的 `--native-self-test-report <新报告路径>`，确认原生模块、FFI callback、OpenSSL 3.5.9、时区数据和冻结包内路径。再以独立 `--workspace-dir/--app-data-dir/--kb-dir` 启动 API，检查 4.0.0、公共知识 8 条、项目隔离与退出。
 
 ```powershell
-./scripts/build_v3_public.ps1 -FrozenSidecarPath <本轮exe> -ExpectedSidecarSha256 <64位大写SHA256> -TargetDir <工作区内新目录>
+$env:SKY_FROZEN_SIDECAR_PATH = '<冻结 Runtime exe 的绝对路径>'
+$env:SKY_EXPECTED_SIDECAR_SHA256 = '<64 位大写 SHA-256>'
+cd frontend
+npm.cmd run tauri -- build --bundles nsis
 ```
 
-该入口生成标准名称的 NSIS 安装包；默认产品标识与原产品一致，不能声称自动保留独立的 3.0 注册安装。升级保留项目、重启与实际 UI 需要目标电脑验收。不要将 `NOTICE_COLLECTION_VERIFIED` 当成独立法律批准；最终分发审批与实际 Setup 载荷检查分别记录。许可证清单保留 `public_release_approved=false`，不会用内部构建成功代替批准。
+使用与 `src-tauri/binaries/` 中暂存文件不同的路径传入冻结 Runtime。默认配置生成标准产品名称的离线 NSIS，沿用该产品的安装标识。安装器执行 WebView2 版本 API 检测，失败时返回 2 并提示修复 WebView2。验收时另测原生窗口是否启动，以及升级、退出与卸载是否保留项目数据。
+
+第三方通知清单、实际 Setup 载荷和分发审批分别留存。许可证清单目前记录 `public_release_approved=false`。
 
 ## TLS 附属数据
 

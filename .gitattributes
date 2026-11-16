@@ -13,9 +13,9 @@
 *.icns binary
 *.crate binary
 *.gz binary
-frontend/src-tauri/resources/licenses/** -text
+frontend/src-tauri/resources/licenses/** -text whitespace=cr-at-eol
 # Hash-bound build inputs retain their recorded byte representation.
 packaging/tls/codex-rejected-cas.pem -text
 packaging/requirements-win-py312.lock -text
-frontend/package-lock.json -text
-frontend/src-tauri/Cargo.lock -text
+frontend/package-lock.json -text whitespace=cr-at-eol
+frontend/src-tauri/Cargo.lock -text whitespace=cr-at-eol

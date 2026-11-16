@@ -5,6 +5,7 @@ import os
 import unittest
 from unittest.mock import patch
 from pathlib import Path
+from tempfile import TemporaryDirectory
 
 import httpx
 
@@ -50,8 +51,12 @@ class JavaBridgeAuthTests(unittest.TestCase):
 
 
     def test_client_authenticates_every_direct_bridge_request(self) -> None:
+        from app.execution.scientific_transfer import publish_transfer
         token = new_bridge_token()
         observed = []
+        directory = TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        root = Path(directory.name) / 'models/attempts/run/attempt'
 
         def handler(request: httpx.Request) -> httpx.Response:
             self.assertEqual(request.headers.get(BRIDGE_TOKEN_HEADER), token)
@@ -60,6 +65,11 @@ class JavaBridgeAuthTests(unittest.TestCase):
                 return httpx.Response(200, json={"latest_sequence": 0, "events": []})
             if request.url.path == "/health":
                 return httpx.Response(200, json={"connected": True})
+            if request.url.path == '/model/heat-field':
+                request_id = request.url.params['request_id']
+                item = publish_transfer(root/'bridge-readbacks'/request_id, {'x': [0.], 'y': [1.], 'temperature_K': [300.]},
+                    run_id='run', attempt_id='attempt', producer='java_bridge', data_type='bridge-heat-field.v1')
+                return httpx.Response(200, json={'request_id': request_id, 'sample_count': 1, 'data': item.model_dump()})
             return httpx.Response(200, json={"command_success": True})
 
         client = JavaBridgeClient("http://bridge.test", httpx.MockTransport(handler), token_provider=lambda: token)
@@ -76,7 +86,8 @@ class JavaBridgeAuthTests(unittest.TestCase):
                                               property_key="T0", expected_selection=1,
                                               expected_expression="293[K]", proposed_expression="294[K]")
             await client.run_study()
-            await client.heat_field()
+            field = await client.heat_field('run', 'attempt', root, lambda: None)
+            self.assertEqual(field['temperature_K'], [300.])
             await client.export_corrected_heat("run", "attempt")
             await client.test_feature({"tag": "wb_probe_test"})
             await client.events()

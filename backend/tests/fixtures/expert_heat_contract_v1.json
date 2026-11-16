@@ -1,0 +1,73 @@
+{
+  "scope": {
+    "project_id": "heat-fixture-project", "session_id": "heat-fixture-session",
+    "case_id": "steady-heat", "plan_id": "heat-plan", "plan_revision": 1,
+    "run_id": "expert-run-heat", "attempt_id": "expert-attempt-1"
+  },
+  "evidence": [
+    {
+      "schema_version": 1, "evidence_id": "reference-1", "kind": "reference",
+      "source_ref": "fixture:steady-heat-analytic", "locator": "center_temperature",
+      "applicability": "Uniform rectangle, constant conductivity, fixed end temperatures and insulated sides"
+    },
+    {
+      "schema_version": 1, "evidence_id": "readback-1", "kind": "run_artifact",
+      "source_ref": "fixture:heat-readback", "locator": "validation.center_temperature",
+      "applicability": "Synthetic readback for contract tests",
+      "artifact": {
+        "run_id": "fixture-solver-run", "attempt_id": "fixture-solver-attempt",
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
+    }
+  ],
+  "tasks": [
+    {
+      "schema_version": 1, "task_id": "materials", "capability": "materials_research",
+      "objective": "Check the material assumptions and analytical reference",
+      "input_evidence_refs": ["reference-1"], "requested_tools": ["knowledge.search"],
+      "budget_estimate": {"agent_calls": 1, "solver_runs": 0}
+    },
+    {
+      "schema_version": 1, "task_id": "solve", "capability": "heat_execution",
+      "objective": "Request the controlled Heat execution entry point",
+      "dependencies": ["materials"], "requested_tools": ["heat.run"],
+      "budget_estimate": {"agent_calls": 1, "solver_runs": 1}
+    },
+    {
+      "schema_version": 1, "task_id": "review", "capability": "scientific_review",
+      "objective": "Compare readback to the analytical reference",
+      "dependencies": ["solve"], "input_evidence_refs": ["reference-1", "readback-1"],
+      "budget_estimate": {"agent_calls": 1, "solver_runs": 0}
+    }
+  ],
+  "result": {
+    "schema_version": 1, "task_id": "review", "summary": "The synthetic readback requires review",
+    "claims": [{
+      "claim_id": "center-temperature", "statement": "The midplane temperature is consistent with the analytic reference",
+      "evidence_refs": ["reference-1", "readback-1"]
+    }]
+  },
+  "score": {
+    "schema_version": 1, "rubric_version": "heat-v1",
+    "dimensions": [
+      {"criterion": "goal_alignment", "points": 20, "reason": "The goal is retained", "evidence_refs": ["reference-1"]},
+      {"criterion": "scientific_correctness", "points": 24, "reason": "Readback needs review", "evidence_refs": ["readback-1"]},
+      {"criterion": "evidence", "points": 20, "reason": "Source and readback are identified", "evidence_refs": ["readback-1"]},
+      {"criterion": "reproducibility", "points": 15, "reason": "Attempt identity is retained", "evidence_refs": ["readback-1"]},
+      {"criterion": "delivery", "points": 15, "reason": "The scope is recorded", "evidence_refs": ["reference-1"]}
+    ]
+  },
+  "proposal": {
+    "schema_version": 1, "revision_id": "revision-1",
+    "issues": [{
+      "schema_version": 1, "issue_id": "issue-1", "claim_id": "center-temperature",
+      "category": "intent_mismatch", "reason": "Confirm the boundary selection in the synthetic readback",
+      "evidence_refs": ["reference-1", "readback-1"], "affected_task_ids": ["solve", "review"]
+    }],
+    "actions": [{
+      "task_id": "solve", "action": "revise_plan", "target": "boundary_conditions.left",
+      "expected_evidence": "Readback with the corrected boundary selection"
+    }],
+    "budget_estimate": {"agent_calls": 1, "solver_runs": 1}
+  }
+}

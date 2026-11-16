@@ -1,0 +1,149 @@
+{
+  "schema_version": 1,
+  "notice": "仅供 N03 模拟故障注入与验收，不是真实 COMSOL 求解或回放记录。",
+  "cases": [
+    {
+      "fixture_id": "plan_revision_conflict",
+      "origin_layer": "API",
+      "method": "PUT",
+      "route_template": "/api/sessions/{session_id}/plan",
+      "http_status": 409,
+      "safe_error_detail": "Plan changed; reload the current revision before saving",
+      "expected_classification": "PLAN_REVISION_CONFLICT",
+      "expected_next_action_class": "SAFE_REFRESH",
+      "auto_execute_real_run": false
+    },
+    {
+      "fixture_id": "completion_review_stale",
+      "origin_layer": "API",
+      "method": "POST",
+      "route_template": "/api/sessions/{session_id}/plan/completion",
+      "http_status": 409,
+      "safe_error_detail": "Reviewed values changed; reload the current proposal",
+      "expected_classification": "REVIEW_DIGEST_STALE",
+      "expected_next_action_class": "SAFE_REFRESH",
+      "auto_execute_real_run": false
+    },
+    {
+      "fixture_id": "bridge_owner_busy",
+      "origin_layer": "API",
+      "method": "POST",
+      "route_template": "/api/imported-mph/{item_id}/preview",
+      "http_status": 409,
+      "safe_error_detail": "Another COMSOL model currently owns the Bridge",
+      "expected_classification": "BRIDGE_OWNER_BUSY",
+      "expected_next_action_class": "DIAGNOSE_ONLY",
+      "auto_execute_real_run": false
+    },
+    {
+      "fixture_id": "heat_core_incomplete",
+      "origin_layer": "JAVA_BRIDGE",
+      "method": "GET",
+      "route_template": "/model/heat-core",
+      "http_status": 409,
+      "safe_error_detail": "Core Heat geometry, mesh, study or solver readback incomplete",
+      "expected_classification": "MODEL_READBACK_INCOMPLETE",
+      "expected_next_action_class": "DIAGNOSE_ONLY",
+      "auto_execute_real_run": false
+    },
+    {
+      "fixture_id": "heat_field_mismatch",
+      "origin_layer": "JAVA_BRIDGE",
+      "method": "GET",
+      "route_template": "/model/heat-field",
+      "http_status": 409,
+      "safe_error_detail": "Numerical field arrays are missing or misaligned",
+      "expected_classification": "FIELD_ARRAY_MISMATCH",
+      "expected_next_action_class": "DIAGNOSE_ONLY",
+      "auto_execute_real_run": false
+    },
+    {
+      "fixture_id": "study_unverified",
+      "origin_layer": "JAVA_BRIDGE",
+      "method": "POST",
+      "route_template": "/model/study/run",
+      "http_status": 409,
+      "safe_error_detail": "Study returned without verified last computation date",
+      "expected_classification": "SOLVE_STATE_UNVERIFIED",
+      "expected_next_action_class": "DIAGNOSE_ONLY",
+      "auto_execute_real_run": false
+    },
+    {
+      "fixture_id": "parameter_readback_drift",
+      "origin_layer": "JAVA_BRIDGE",
+      "method": "POST",
+      "route_template": "/model/parameter",
+      "http_status": 409,
+      "safe_error_detail": "Parameter write returned but model-state readback mismatched",
+      "expected_classification": "POST_MUTATION_READBACK_MISMATCH",
+      "expected_next_action_class": "DIAGNOSE_ONLY",
+      "auto_execute_real_run": false
+    },
+    {
+      "fixture_id": "export_existing",
+      "origin_layer": "JAVA_BRIDGE",
+      "method": "POST",
+      "route_template": "/model/heat-export",
+      "http_status": 409,
+      "safe_error_detail": "Corrected artifacts already exist; overwrite refused",
+      "expected_classification": "ARTIFACT_ALREADY_EXISTS",
+      "expected_next_action_class": "DIAGNOSE_ONLY",
+      "auto_execute_real_run": false
+    },
+    {
+      "fixture_id": "bridge_handshake_failed",
+      "origin_layer": "API",
+      "method": "POST",
+      "route_template": "/api/engine-tasks/connect",
+      "http_status": 409,
+      "safe_error_detail": "Connector handshake did not pass; review its local installation",
+      "expected_classification": "BRIDGE_START_FAILED",
+      "expected_next_action_class": "DIAGNOSE_ONLY",
+      "auto_execute_real_run": false
+    },
+    {
+      "fixture_id": "run_approval_missing",
+      "origin_layer": "EXPERT_SCHEDULER",
+      "method": "POST",
+      "route_template": "expert:run_request",
+      "http_status": null,
+      "safe_error_detail": "This run does not have a current explicit RUN authorization",
+      "expected_classification": "RUN_APPROVAL_MISSING",
+      "expected_next_action_class": "FORBIDDEN",
+      "auto_execute_real_run": false
+    },
+    {
+      "fixture_id": "unknown_conflict",
+      "origin_layer": "API",
+      "method": "POST",
+      "route_template": "/api/example/unknown",
+      "http_status": 409,
+      "safe_error_detail": "Unrecognized conflict",
+      "expected_classification": "UNKNOWN",
+      "expected_next_action_class": "DIAGNOSE_ONLY",
+      "auto_execute_real_run": false
+    },
+    {
+      "fixture_id": "network_timeout_post_run",
+      "origin_layer": "JAVA_BRIDGE",
+      "method": "POST",
+      "route_template": "/model/study/run",
+      "http_status": null,
+      "safe_error_detail": "Timeout waiting for response after request was sent",
+      "expected_classification": "SOLVE_COMMIT_UNKNOWN",
+      "expected_next_action_class": "DIAGNOSE_ONLY",
+      "auto_execute_real_run": false
+    },
+    {
+      "fixture_id": "evidence_wrong_scope",
+      "origin_layer": "EXPERT_SCHEDULER",
+      "method": "POST",
+      "route_template": "expert:evidence_admission",
+      "http_status": null,
+      "safe_error_detail": "Evidence belongs to another project",
+      "expected_classification": "EVIDENCE_SCOPE_VIOLATION",
+      "expected_next_action_class": "FORBIDDEN",
+      "auto_execute_real_run": false
+    }
+  ]
+}

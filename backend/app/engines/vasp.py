@@ -30,7 +30,7 @@ def numeric_tag(tags: dict[str, str], name: str, default: float) -> float:
     return value
 
 
-def validate_vasp_files(files: dict[str, str]) -> dict:
+def validate_vasp_files(files: dict[str, str], *, local_potentials: bool = False) -> dict:
     tags = incar_tags(files["INCAR"])
     for name, default, minimum, integer in [("ENCUT", 0, 0, False), ("EDIFF", 1e-4, -1, False),
                                             ("NELM", 60, 0, True), ("NSW", 0, -1, True)]:
@@ -42,19 +42,24 @@ def validate_vasp_files(files: dict[str, str]) -> dict:
     ibrion = numeric_tag(tags, "IBRION", -1)
     if ibrion != int(ibrion) or int(ibrion) not in {-1, 0, 1, 2, 3, 5, 6, 7, 8, 44}:
         raise ValueError("Unsupported or invalid INCAR IBRION")
-    titles = re.findall(r"^\s*TITEL\s*=\s*(.+)$", files["POTCAR"], re.M)
-    species = []
-    for title in titles:
-        tokens = title.split()
-        if len(tokens) < 2 or not re.fullmatch(r"[A-Z][a-z]?(?:_\w+)?", tokens[1]):
-            raise ValueError("POTCAR species identifiers are not readable")
-        species.append(tokens[1].split("_", 1)[0])
-    if not species:
-        raise ValueError("POTCAR must contain readable TITEL species identifiers")
     lines = [line.strip() for line in files["POSCAR"].splitlines() if line.strip()]
     if len(lines) < 8:
         raise ValueError("Incomplete POSCAR")
     vasp4 = all(token.isdigit() for token in lines[5].split())
+    if local_potentials:
+        if vasp4 or not all(re.fullmatch(r"[A-Z][a-z]?", item) for item in lines[5].split()):
+            raise ValueError("WSL VASP requires explicit element symbols in POSCAR")
+        species = lines[5].split()
+    else:
+        titles = re.findall(r"^\s*TITEL\s*=\s*(.+)$", files["POTCAR"], re.M)
+        species = []
+        for title in titles:
+            tokens = title.split()
+            if len(tokens) < 2 or not re.fullmatch(r"[A-Z][a-z]?(?:_\w+)?", tokens[1]):
+                raise ValueError("POTCAR species identifiers are not readable")
+            species.append(tokens[1].split("_", 1)[0])
+        if not species:
+            raise ValueError("POTCAR must contain readable TITEL species identifiers")
     elements = species if vasp4 else lines[5].split()
     if elements != species:
         raise ValueError("POSCAR element order does not match POTCAR TITEL order")

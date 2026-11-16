@@ -144,6 +144,31 @@ def cooling_plan(prompt: str) -> dict | None:
         )
         for name, value in DEFAULTS.items()
     }
+    explicit_issues = []
+    labels = {
+        'initial_temperature': (r'initial_temperature|initial temperature|初始温度|初温|T0\s*=', 'temperature'),
+        'ambient_temperature': (r'ambient_temperature|ambient temperature|环境温度|环境|Tamb\s*=', 'temperature'),
+        'thermal_conductivity': (r'thermal_conductivity|thermal conductivity|导热系数|热导率|(?<![A-Za-z])k\s*=', 'thermal_conductivity'),
+        'density': (r'density|密度|rho\s*=', 'density'),
+        'heat_capacity': (r'heat_capacity|heat capacity|比热容|比热|Cp\s*=', 'heat_capacity'),
+        'heat_transfer_coefficient': (r'heat_transfer_coefficient|convection coefficient|换热系数|(?<![A-Za-z])h\s*=', 'heat_transfer_coefficient'),
+        'emissivity': (r'emissivity|发射率|epsilon\s*=', 'dimensionless'),
+        'duration': (r'duration|持续|总时长|t_end\s*=', 'time'),
+        'output_interval': (r'output_interval|output interval|每|输出间隔', 'time'),
+    }
+    for name, (label, kind) in labels.items():
+        quantity = find_quantity(prompt, label, kind, gap=12)
+        if quantity is None:
+            continue
+        # 用户明确给出的值优先于旧探索默认值；无效单位保留缺口而非偷偷替换。
+        proposed.pop(name, None)
+        if quantity.issue or quantity.normalized_value is None:
+            explicit_issues.append('Valid ' + name + ' with supported unit')
+            continue
+        parameters[name] = ScientificParameter(name=name, symbol=name, value=quantity.normalized_value,
+            unit=UNITS[name], original_value=quantity.original_value, original_unit=quantity.original_unit,
+            normalized_value=quantity.normalized_value, normalized_unit=UNITS[name],
+            source='user prompt', status='User Provided', verified=True, assumption=False, quantity=asdict(quantity))
     if not dimensions:
         for name, value in {"width": 0.003, "height": 0.003, "length": 0.02}.items():
             proposed[name] = ScientificParameter(
@@ -180,7 +205,7 @@ def cooling_plan(prompt: str) -> dict | None:
         term in prompt.lower()
         for term in ("水", "油", "真空", "water", "oil", "vacuum", "持续加热")
     )
-    remaining = ["Required decision: boundary_conditions"] if incompatible else []
+    remaining = (["Required decision: boundary_conditions"] if incompatible else []) + explicit_issues
     if incompatible:
         decisions.pop("boundary_conditions")
         reason = (

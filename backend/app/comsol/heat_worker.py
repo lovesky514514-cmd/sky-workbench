@@ -2,7 +2,7 @@
 
 The worker runs outside FastAPI because the audited legacy project reports
 cross-model degradation in long-lived MPh sessions. It calibrates boundary
-numbers for this model instead of assuming an edge ordering.
+numbers from geometry coordinates without an extra calibration solve.
 """
 
 from __future__ import annotations
@@ -16,6 +16,15 @@ import traceback
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
+
+if __package__:
+    from .boundary_selection import rectangle_boundary_map
+else:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+    from boundary_selection import rectangle_boundary_map
+
+from app.execution.scientific_transfer import emit_result as result
+from app.comsol.view_checkpoint import publish_checkpoint
 
 
 def emit(phase: str, label: str, status: str = "running", **extra: Any) -> None:
@@ -41,10 +50,6 @@ def emit(phase: str, label: str, status: str = "running", **extra: Any) -> None:
         **extra,
     }
     print("WORKBENCH_EVENT:" + json.dumps(payload, ensure_ascii=False), flush=True)
-
-
-def result(payload: dict[str, Any]) -> None:
-    print("WORKBENCH_RESULT:" + json.dumps(payload, ensure_ascii=False), flush=True)
 
 
 def parameter(plan: dict[str, Any], name: str) -> tuple[float, str]:
@@ -143,46 +148,17 @@ def main(request_path: Path) -> int:
         material.label("Aluminum - user-defined values" if any("Aluminum" in name for name in plan.get("materials", [])) else "User-defined thermal material")
         emit("Build", "Physics and material assigned", "success")
 
-        emit("Build", "Calibrating boundary numbers from coordinates")
-        calibration_temperatures = {1: 311.0, 2: 322.0, 3: 333.0, 4: 344.0}
-        calibration_tags: list[str] = []
-        for edge, temperature in calibration_temperatures.items():
-            tag = f"cal{edge}"
-            boundary = physics.feature().create(tag, "TemperatureBoundary")
-            boundary.selection().set([edge])
-            boundary.set("T0", f"{temperature:g}[K]")
-            calibration_tags.append(tag)
-
+        emit("Build", "Selecting boundaries from geometry coordinates without solving")
+        edge_map = rectangle_boundary_map(component, width, height)
+        tolerance = min(width, height) * 1e-6
         mesh = java_model.component("comp1").mesh().create("mesh1")
         mesh.run()
         study = java_model.study().create("std1")
         study.label("Stationary")
         study.feature().create("stat", "Stationary")
-        study.run()
-
-        coordinates_x = np.real(np.asarray(model.evaluate("x")).reshape(-1))
-        coordinates_y = np.real(np.asarray(model.evaluate("y")).reshape(-1))
-        temperatures = np.real(np.asarray(model.evaluate("T")).reshape(-1))
-        tolerance = max(width, height) * 1e-5 + 1e-8
-        physical_medians = {
-            "left": median_on_mask(temperatures, np.abs(coordinates_x - 0.0) <= tolerance),
-            "right": median_on_mask(temperatures, np.abs(coordinates_x - width) <= tolerance),
-            "bottom": median_on_mask(temperatures, np.abs(coordinates_y - 0.0) <= tolerance),
-            "top": median_on_mask(temperatures, np.abs(coordinates_y - height) <= tolerance),
-        }
-        edge_map = {
-            side: min(calibration_temperatures, key=lambda edge: abs(calibration_temperatures[edge] - value))
-            for side, value in physical_medians.items()
-        }
-        if len(set(edge_map.values())) != 4:
-            raise RuntimeError(
-                f"Boundary calibration was ambiguous: medians={physical_medians}, map={edge_map}"
-            )
-        for tag in calibration_tags:
-            physics.feature().remove(tag)
         emit(
             "Build",
-            "Boundary calibration complete",
+            "Coordinate boundary selection complete",
             "success",
             output_summary=json.dumps(edge_map, ensure_ascii=False),
         )
@@ -216,13 +192,14 @@ def main(request_path: Path) -> int:
             ),
         )
 
+        publish_checkpoint(model, str(client.version), workspace, request.get("visualization_classes"))
         emit("Solve", "Solving the stationary heat-transfer study")
         study.run()
         emit("Solve", "Stationary solver converged", "success")
 
         emit("Solution Validation", "Checking coordinate-resolved temperatures and analytical solution")
-        x_values = np.real(np.asarray(model.evaluate("x")).reshape(-1))
-        y_values = np.real(np.asarray(model.evaluate("y")).reshape(-1))
+        x_values = np.real(np.asarray(model.evaluate("x", unit=length_unit)).reshape(-1))
+        y_values = np.real(np.asarray(model.evaluate("y", unit=length_unit)).reshape(-1))
         t_values = np.real(np.asarray(model.evaluate("T")).reshape(-1))
         left_median = median_on_mask(t_values, np.abs(x_values) <= tolerance)
         right_median = median_on_mask(t_values, np.abs(x_values - width) <= tolerance)
@@ -300,6 +277,7 @@ def main(request_path: Path) -> int:
                 'physics_tag': 'comp1:ht', 'physics_type': str(physics.getType()),
                 'study_tag': 'std1', 'study_type': 'stationary', 'solver_tag': 'sol1',
                 'mesh_tag': 'comp1:mesh1',
+                'boundary_selection_method': 'geometry_box_inside',
                 'left_bc': {'tag': 'temp_left', 'type': str(left_boundary.getType()),
                             'selection': [int(edge) for edge in left_boundary.selection().entities()],
                             'expression': str(left_boundary.getString('T0'))},

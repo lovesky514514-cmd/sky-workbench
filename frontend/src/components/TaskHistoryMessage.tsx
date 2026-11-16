@@ -12,9 +12,10 @@ type Props = {
   message: Session['messages'][number]
   currentPlan: Plan | null
   onSavePlan: (plan: Plan) => Promise<void>
+  onReviseIntent?: () => void
 }
 
-export function TaskHistoryMessage({ locale, message, currentPlan, onSavePlan }: Props) {
+export function TaskHistoryMessage({ locale, message, currentPlan, onSavePlan, onReviseIntent }: Props) {
   const t = (value: string) => translate(locale, value)
   const structured = phase2Plan(message.structured)
   const displayedPlan = displayPlanForMessage(message.structured, currentPlan)
@@ -27,11 +28,20 @@ export function TaskHistoryMessage({ locale, message, currentPlan, onSavePlan }:
       {message.provider && <small>{message.provider}{message.model ? ` / ${message.model}` : ''}</small>}
     </div>
     <div className="message-content">{message.content}</div>
+    {message.role === 'user' && message.intent_confirmation?.source === 'user_intent_confirmation' &&
+      <div className="warm-intent-receipt">
+        <span>{locale === 'zh-CN' ? '已确认意图' : 'Intent confirmed'}</span>
+        {onReviseIntent && <button type="button" onClick={onReviseIntent}>
+          {locale === 'zh-CN' ? '修订条件' : 'Revise conditions'}
+        </button>}
+      </div>}
     {message.visible_reasoning_summary && <div className="reasoning-summary">
       <strong>{t('Visible reasoning summary')}</strong>
       <span>{message.visible_reasoning_summary}</span>
     </div>}
-    {displayedPlan && <PlanCard plan={displayedPlan} editable={editable} onSave={onSavePlan} />}
+    {displayedPlan && <details className="warm-history-detail"><summary>{t('Scientific plan available')}</summary>
+      <PlanCard plan={displayedPlan} editable={editable} onSave={onSavePlan} />
+    </details>}
     {message.structured && !structured && <div className="legacy-plan-notice">
       {t('Legacy Phase 1 plan retained for audit. Create a new PLAN to migrate it into ScientificPlan 2.0 before RUN.')}
     </div>}
@@ -42,11 +52,11 @@ export function TaskHistoryMessage({ locale, message, currentPlan, onSavePlan }:
       </details>}
     {message.run_id && message.artifacts?.concentration_image &&
       <ConcentrationResult runId={message.run_id} validation={message.validation ?? {}} />}
-    {message.artifacts && <div className="artifacts">
+    {message.artifacts && <details className="warm-history-detail"><summary>{t('Evidence')}</summary><div className="artifacts">
       {Object.entries(message.artifacts).map(([name, path]) => <div key={name}>
         <span>{name}</span><code title={path}>{path}</code>
       </div>)}
-    </div>}
+    </div></details>}
     <ExecutionVerdictBadge verdict={message.execution_verdict} t={t} />
   </article>
 }

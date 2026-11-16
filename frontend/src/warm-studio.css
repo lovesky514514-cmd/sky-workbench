@@ -528,24 +528,159 @@
   justify-content:flex-end;
   gap:10px
 }
-.warm-secondary-tools{
-  margin:28px 0 50px;
-  border-top:1px solid var(--warm-border);
+.warm-task-dialogue .warm-compose{
+  position:sticky;
+  bottom:0;
+  z-index:2;
+  min-height:0;
+  margin:18px 0 0;
+  padding:14px 18px;
+  box-shadow:0 -8px 24px #342d2310
+}
+.warm-task-dialogue .warm-compose textarea{
+  height:64px;
+  min-height:48px;
+  font-size:15px
+}
+.warm-task-dialogue .warm-compose-actions{
+  padding-top:8px;
+  flex-wrap:wrap
+}
+.warm-conversation .message{
+  margin-bottom:18px;
+  background:var(--warm-surface);
+  border-color:var(--warm-border)
+}
+.warm-conversation .message.user{
+  margin-inline-start:min(12%, 92px);
+  background:var(--warm-hover, var(--warm-surface))
+}
+.warm-conversation .message-content{
+  color:var(--warm-text);
   font-size:14px
 }
-.warm-secondary-tools>summary{
-  padding:14px 0;
-  cursor:pointer;
-  color:var(--warm-muted)
+.warm-history-detail{
+  margin-top:8px;
+  color:var(--warm-muted);
+  font-size:13px
 }
-.warm-secondary-tools .task-history-list{
-  max-height:400px;
-  overflow:auto
+.warm-history-detail summary{
+  cursor:pointer
+}
+.warm-workflow-link,.warm-evidence-workflow{
+  padding:8px 12px;
+  border:1px solid var(--warm-border);
+  border-radius:8px;
+  background:var(--warm-surface)
+}
+.warm-evidence-workflow{
+  margin-bottom:14px
+}
+.warm-evidence-workflow>summary{
+  cursor:pointer
+}
+.warm-workflow-controls{
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:12px;
+  margin:12px 0;
+  font-size:13px
+}
+.warm-workflow-controls label{
+  display:flex;
+  align-items:center;
+  gap:8px
+}
+.warm-workflow-viewport{
+  max-height:320px;
+  overflow:auto;
+  border:1px solid var(--warm-border);
+  border-radius:8px;
+  background:var(--warm-hover, var(--warm-surface))
+}
+.warm-workflow-map{
+  position:relative
+}
+.warm-workflow-map path{
+  fill:none;
+  stroke:var(--warm-accent);
+  stroke-width:1.5
+}
+.warm-workflow-node{
+  position:absolute;
+  display:grid;
+  align-content:center;
+  width:184px;
+  min-height:54px;
+  padding:6px;
+  border:1px solid var(--warm-border);
+  border-radius:7px;
+  background:var(--warm-surface);
+  color:var(--warm-text);
+  overflow-wrap:anywhere;
+  font-size:12px
+}
+.warm-workflow-node[aria-pressed="true"]{
+  border-color:var(--warm-accent)
+}
+.warm-workflow-node span{
+  color:var(--warm-muted);
+  font-size:11px
+}
+.warm-intent-receipt{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-top:8px;
+  color:var(--warm-muted);
+  font-size:12px
+}
+.warm-intent-receipt button{
+  padding:3px 9px;
+  border:1px solid var(--warm-border);
+  border-radius:6px;
+  background:var(--warm-surface)
+}
+.warm-plan-review .intent-confirmation{
+  margin:0;
+  padding:0;
+  border:0;
+  background:transparent
+}
+.warm-plan-review .intent-confirmation :is(dt, dd, header strong, header em, footer button, details, .intent-missing, .intent-errors){
+  font-size:13px
+}
+.intent-options, .intent-details{
+  display:grid;
+  gap:7px;
+  margin:12px 0;
+  font-size:13px
+}
+.intent-options{
+  border:1px solid var(--warm-border);
+  border-radius:6px
+}
+.intent-options input{
+  margin-inline-end:7px
+}
+.intent-details textarea{
+  min-height:54px;
+  resize:vertical;
+  padding:7px;
+  border:1px solid var(--warm-border);
+  border-radius:6px;
+  background:var(--warm-surface);
+  color:var(--warm-text)
 }
 .warm-mode-row{
   display:flex;
   gap:7px;
   margin-bottom:12px
+}
+.warm-task-dialogue .warm-mode-row{
+  margin-bottom:0;
+  flex-wrap:wrap
 }
 .warm-mode-row button{
   padding:6px 12px;

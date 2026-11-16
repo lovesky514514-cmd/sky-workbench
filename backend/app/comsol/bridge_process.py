@@ -22,11 +22,13 @@ from app.comsol.bridge_auth import BRIDGE_TOKEN_ENV, BRIDGE_TOKEN_HEADER, new_br
 from app.config import CACHE_ROOT, JAVA_BRIDGE_ROOT, PROJECT_ROOT, WORKSPACE_ROOT, settings_store
 from app.session.store import session_store
 from app.comsol.owned_process import OwnedProcess, attach_windows_job
+from app.execution.scientific_transfer import CONTROL_BYTES, decode_object
 
 
 SOURCE = JAVA_BRIDGE_ROOT / "src" / "main" / "java" / "workbench" / "bridge" / "ComsolBridgeServer.java"
 BUILD = CACHE_ROOT / "java_bridge_build11"
 LOG_ROOT = WORKSPACE_ROOT / "logs"
+_COMPILE_LOCK = RLock()
 
 
 def bridge_build_dir(environment: ComsolJavaEnvironment) -> Path:
@@ -36,6 +38,27 @@ def bridge_build_dir(environment: ComsolJavaEnvironment) -> Path:
     return BUILD / hashlib.sha256(identity.encode("utf-8")).hexdigest()[:16]
 
 
+def compile_visualization_bridge(environment: ComsolJavaEnvironment) -> Path:
+    build = bridge_build_dir(environment)
+    sources = sorted(SOURCE.parent.glob("*.java"))
+    marker = build / ".compiled"
+    identity = hashlib.sha256(b"".join(source.read_bytes() for source in sources)).hexdigest()
+    with _COMPILE_LOCK:
+        if marker.is_file() and marker.read_text(encoding="ascii") == identity:
+            return build
+        build.mkdir(parents=True, exist_ok=True)
+        compiled = subprocess.run(
+            [environment.javac, "-encoding", "UTF-8", "-d", str(build), *map(str, sources)],
+            cwd=JAVA_BRIDGE_ROOT, capture_output=True, text=True, encoding="utf-8",
+            errors="replace", timeout=60, check=False,
+            creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0,
+        )
+        if compiled.returncode:
+            raise RuntimeError(f"Java Bridge compile failed: {compiled.stderr[-4000:]}")
+        marker.write_text(identity, encoding="ascii")
+    return build
+
+
 class JavaBridgeProcessManager:
     """Start one standalone COMSOL-backed Bridge; never touch unrelated processes."""
 
@@ -43,6 +66,7 @@ class JavaBridgeProcessManager:
         self._process: subprocess.Popen[str] | None = None
         self._task: asyncio.Task[None] | None = None
         self._lock = RLock()
+        self._lifecycle = asyncio.Lock()
         self._events: deque[dict[str, Any]] = deque(maxlen=max_events)
         self._sequence = 0
         self._stdout = None
@@ -72,9 +96,25 @@ class JavaBridgeProcessManager:
         config = settings_store.load().get("comsol", {}).get("java_bridge", {})
         return str(config.get("base_url", "http://127.0.0.1:8765")).rstrip("/")
 
-    async def start(self, model_path: str | None = None, *, owner_id: str | None = None) -> dict[str, Any]:
+    async def start(self, model_path: str | None = None, *, owner_id: str | None = None,
+                    preview_fingerprint: str | None = None) -> dict[str, Any]:
+        async with self._lifecycle:
+            return await self._start(model_path, owner_id, preview_fingerprint)
+
+    async def _start(self, model_path: str | None, owner_id: str | None,
+                     preview_fingerprint: str | None) -> dict[str, Any]:
         selected = self._validate_model_path(model_path)
         selected_owner = owner_id or 'bridge'
+        current = self.status()
+        if current['running'] or current['state'] == 'starting':
+            same_path = current.get('model_path') == str(selected)
+            if preview_fingerprint is not None and (not same_path
+                    or current.get('preview_fingerprint') != preview_fingerprint):
+                if current.get('preview_fingerprint') is None or self._owner_id != 'bridge':
+                    raise RuntimeError('COMSOL_PREVIEW_SOURCE_CONFLICT')
+                await self._stop()
+            elif current.get('preview_fingerprint') is not None and not same_path:
+                raise RuntimeError('COMSOL_PREVIEW_SOURCE_CONFLICT')
         session_store.acquire_bridge_owner(selected_owner)
         self._owner_id = selected_owner
         if self._task and not self._task.done():
@@ -93,6 +133,7 @@ class JavaBridgeProcessManager:
             "state": "starting",
             "mode": "standalone",
             "model_path": str(selected),
+            "preview_fingerprint": preview_fingerprint,
             "base_url": self._configured_url(),
             "environment": environment.as_dict(),
             "started_at": _now(),
@@ -102,6 +143,17 @@ class JavaBridgeProcessManager:
         return self.status()
 
     async def stop(self) -> dict[str, Any]:
+        async with self._lifecycle:
+            return await self._stop()
+
+    async def stop_preview(self, model_path: Path, fingerprint: str) -> None:
+        # 只回收这次读回所用的进程，勿阻断科学 RUN 或另一模型。
+        async with self._lifecycle:
+            if (self._owner_id == "bridge" and self._state.get("model_path") == str(model_path)
+                    and self._state.get("preview_fingerprint") == fingerprint):
+                await self._stop()
+
+    async def _stop(self) -> dict[str, Any]:
         self._stop_requested.set()
         await asyncio.to_thread(self._stop_sync)
         # Do not cancel to_thread: its synchronous compile/start would keep running.
@@ -174,25 +226,7 @@ class JavaBridgeProcessManager:
         if not environment.found:
             raise RuntimeError("REAL_COMSOL_JAVA_CLASSPATH_NOT_FOUND")
         compile_started = time.perf_counter()
-        build = bridge_build_dir(environment)
-        class_file = build / "workbench" / "bridge" / "ComsolBridgeServer.class"
-        build.mkdir(parents=True, exist_ok=True)
-        if not class_file.is_file() or class_file.stat().st_mtime_ns < SOURCE.stat().st_mtime_ns:
-            compiled = subprocess.run(
-                [environment.javac, "-encoding", "UTF-8", "-d", str(build), str(SOURCE)],
-                cwd=JAVA_BRIDGE_ROOT,
-                capture_output=True,
-                text=True,
-                encoding="utf-8",
-                errors="replace",
-                timeout=60,
-                check=False,
-                # javac is another console executable. Preserve diagnostics in
-                # captured streams without opening a transient desktop window.
-                creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0,
-            )
-            if compiled.returncode:
-                raise RuntimeError(f"Java Bridge compile failed: {compiled.stderr[-4000:]}")
+        build = compile_visualization_bridge(environment)
         compile_ms = round((time.perf_counter() - compile_started) * 1000, 3)
 
         base_url = self._configured_url()
@@ -362,10 +396,10 @@ def _port_free(port: int) -> bool:
 def _json_get(url: str, timeout: float, token: str) -> dict[str, Any]:
     request = urllib.request.Request(url, headers={BRIDGE_TOKEN_HEADER: token})
     with urllib.request.urlopen(request, timeout=timeout) as response:
-        payload = json.loads(response.read().decode("utf-8"))
-    if not isinstance(payload, dict):
-        raise ValueError("Bridge response must be a JSON object")
-    return payload
+        raw = response.read(CONTROL_BYTES + 1)
+    if len(raw) > CONTROL_BYTES:
+        raise ValueError('Bridge startup response exceeded its limit')
+    return decode_object(raw)
 
 
 def _bridge_child_environment(token: str) -> dict[str, str]:
