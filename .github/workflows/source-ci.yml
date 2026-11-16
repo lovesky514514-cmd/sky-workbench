@@ -14,8 +14,6 @@ jobs:
     runs-on: windows-2025
     timeout-minutes: 25
     env:
-      COMSOL_WORKBENCH_APP_DATA_DIR: ${{ runner.temp }}\sky-appdata
-      COMSOL_WORKBENCH_WORKSPACE_DIR: ${{ runner.temp }}\sky-workspace
       PYTHONPATH: ${{ github.workspace }}\backend
 
     steps:
@@ -35,9 +33,9 @@ jobs:
           $expected = 'D29144DEFF3A68AA93CED33DDDF84B7FDC26070ADD4AA0F4513094C8332AFC4E'
           if ((Get-FileHash -LiteralPath $zip).Hash -ne $expected) { throw 'Scanner checksum mismatch' }
           Expand-Archive -LiteralPath $zip -DestinationPath $dir
-          & (Join-Path $dir 'gitleaks.exe') dir . --redact=100 --no-banner
+          & (Join-Path $dir 'gitleaks.exe') dir . --redact=100 --max-archive-depth 1 --max-decode-depth 1 --no-banner
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          & (Join-Path $dir 'gitleaks.exe') git . --log-opts='--all --full-history -m' --redact=100 --no-banner
+          & (Join-Path $dir 'gitleaks.exe') git . --log-opts='--all --full-history -m' --redact=100 --max-archive-depth 1 --max-decode-depth 1 --no-banner
           exit $LASTEXITCODE
 
       - uses: actions/setup-python@v5
@@ -61,8 +59,11 @@ jobs:
         run: python -m pip install --require-hashes --only-binary=:all: -r packaging/requirements-win-py312.lock
 
       - name: Run selected backend and local trust-boundary tests
+        env:
+          COMSOL_WORKBENCH_APP_DATA_DIR: ${{ runner.temp }}\sky-appdata
+          COMSOL_WORKBENCH_WORKSPACE_DIR: ${{ runner.temp }}\sky-workspace
         run: >-
-          python -m pytest -q
+          python -X utf8 -m pytest -q --basetemp "$env:RUNNER_TEMP/sky-pytest"
           backend/tests/test_expert_scheduler.py
           backend/tests/test_research_controller.py
           backend/tests/test_scientific_transfer.py

@@ -2,7 +2,9 @@
 
 # SKY Workbench 4.0
 
-4.0.0 源码与构建说明在本仓库公开。Windows 安装包用于内部部署和验收。功能及验证范围见[官网 4.0 页面](https://lovesky514514-cmd.github.io/scientific-workbench-beta/releases/4.0/)。
+4.0.0 源码与构建说明在本仓库公开。Windows 安装包用于内部部署和验收。
+
+[4.0 更新说明](RELEASE_NOTES_4.0.0.md) · [4.0 使用指南](docs/USER_GUIDE_4.0_CN.md) · [4.0 验证记录](docs/VALIDATION_4.0.md) · [官网](https://lovesky514514-cmd.github.io/scientific-workbench-beta/releases/4.0/)
 
 4.0 由 `ResearchController` 统一组织科研任务，复用 N01 契约、N02 调度隔离、N03 独立审核、N04 定向返工以及既有执行器、RUN 审批与运行账本。真实模型专家通过受限证据工具协作；确定性检查由程序完成，Recovery 只负责诊断和受控提案。实现与调用链见[4.0 架构记录](docs/ARCHITECTURE_4.0.md)。
 
@@ -12,7 +14,7 @@
 
 面向有限元、分子动力学、第一性原理和数学计算的本地桌面助手：从自然语言草案、候选参数审核，到受控执行、模型读回和结果证据。草案、预检通过、显式 RUN 与求解完成分别判断。
 
-[官方网站](https://lovesky514514-cmd.github.io/scientific-workbench-beta/) · [3.1 更新说明](RELEASE_NOTES_3.1.0.md) · [中文使用帮助](docs/USER_GUIDE_V3_CN.md) · [版本验证记录](docs/VALIDATION_3.1.md)
+[3.1 历史更新说明](RELEASE_NOTES_3.1.0.md) · [3.x 历史使用帮助](docs/USER_GUIDE_V3_CN.md) · [3.1 历史验证](docs/VALIDATION_3.1.md)
 
 下述内容保留 **3.1.0 历史基线** 的说明。该版安装包的获取说明、文件名与 SHA-256 见[官网版本页](https://lovesky514514-cmd.github.io/scientific-workbench-beta/releases/3.1/#get-version)；本仓库没有上传 exe 或预编译科学运行时。商业求解器、API JAR、许可证、模型权重、私有项目、知识库和 API Key 不随源码提供。
 

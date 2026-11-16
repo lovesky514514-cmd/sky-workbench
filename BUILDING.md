@@ -53,7 +53,11 @@ npm.cmd run tauri -- build --bundles nsis
 
 使用与 `src-tauri/binaries/` 中暂存文件不同的路径传入冻结 Runtime。默认配置生成标准产品名称的离线 NSIS，沿用该产品的安装标识。安装器执行 WebView2 版本 API 检测，失败时返回 2 并提示修复 WebView2。验收时另测原生窗口是否启动，以及升级、退出与卸载是否保留项目数据。
 
-第三方通知清单、实际 Setup 载荷和分发审批分别留存。许可证清单目前记录 `public_release_approved=false`。
+第三方通知与配套源码按 [许可证清单](frontend/src-tauri/resources/licenses/LICENSE_MANIFEST.json) 和 [源码可用性](frontend/src-tauri/resources/licenses/SOURCE_AVAILABILITY.md) 核对。清单目前记录 `public_release_approved=false`。
+
+公开知识库的八条笔记沿用内容版本 3.1.0，桌面程序版本独立为 4.0.0。构建校验检查 `units.json` 的清单摘要。人工发放安装包也须核对该安装包对应的许可和分发范围。
+
+本次重建、回归和实测范围见 [4.0 验证记录](docs/VALIDATION_4.0.md)。
 
 ## TLS 附属数据
 
