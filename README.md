@@ -1,6 +1,6 @@
 <p align="center"><img src="frontend/src/assets/brand/workbench-icon-256.png" alt="SKY Workbench" width="96"></p>
 
-# SKY Workbench 4.0
+# <p align="center"> SKY Workbench 4.0
 
 4.0.0 源码与构建说明在本仓库公开。Windows 安装包用于内部部署和验收。
 
